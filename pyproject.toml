@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=70.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bol"
+version = "0.1.0"
+description = "Behavioral Operating Layer — AI-Mediated Human-Computer Interaction Framework"
+requires-python = ">=3.9"
+license = {text = "Proprietary"}
+
+dependencies = [
+    "mss>=9.0",
+    "Pillow>=10.0",
+    "opencv-python>=4.9",
+    "pytesseract>=0.3.10",
+    "pyautogui>=0.9.54",
+    "pydantic>=2.5",
+    "pydantic-settings>=2.1",
+    "psutil>=5.9",
+    "numpy>=1.26",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+]
+
+[project.scripts]
+bol = "bol.main:main"
+
+[tool.setuptools.packages.find]
+include = ["bol*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

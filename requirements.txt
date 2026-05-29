@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+mss
+opencv-python
+pillow
+pytesseract
+pyautogui
+psutil

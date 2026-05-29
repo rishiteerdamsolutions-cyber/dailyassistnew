@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BOL Kinematic Sandbox</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f3f2ef;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow: hidden; /* Prevent scrolling for this specific test so absolute positions don't shift */
+        }
+        .header {
+            width: 100%;
+            height: 60px;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-sizing: border-box;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #0a66c2;
+        }
+        .cmd-center {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .cmd-center input {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+            width: 250px;
+            outline: none;
+        }
+        .cmd-center input:focus {
+            border-color: #0a66c2;
+        }
+        .cmd-center button {
+            padding: 8px 16px;
+            background-color: #0a66c2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .cmd-center button:hover {
+            background-color: #004182;
+        }
+        
+        #button-field {
+            position: absolute;
+            top: 70px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+        
+        .target-btn {
+            position: absolute;
+            padding: 10px 20px;
+            background-color: #fff;
+            color: #333;
+            border: 2px solid #ccc;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        .target-btn.clicked {
+            background-color: #4CAF50 !important;
+            color: white !important;
+            border-color: #388E3C !important;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>BOL Kinematic Sandbox</div>
+        <div class="cmd-center">
+            <input type="text" id="cmd-input" placeholder="Type button name (e.g. Button 12)">
+            <button id="cmd-submit">Command Agent</button>
+        </div>
+    </div>
+    
+    <div id="button-field"></div>
+    
+    <div class="policy-panel" style="position: absolute; top: 70px; right: 20px; width: 350px; background: white; border: 2px solid #0a66c2; border-radius: 8px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 300;">
+        <div style="font-weight: bold; margin-bottom: 10px; color: #0a66c2;">Policy Engine (Personalities)</div>
+        <select id="policy-select" style="width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc;">
+            <option value="">Loading Personalities...</option>
+        </select>
+        <textarea id="policy-text" rows="3" style="width: 100%; padding: 8px; box-sizing: border-box; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Paste a paragraph here to simulate typing..."></textarea>
+        <button id="policy-submit" style="width: 100%; padding: 8px; background: #0a66c2; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Simulate Personality Math</button>
+        
+        <div id="policy-results" style="margin-top: 15px; font-size: 0.9rem; display: none; background: #f3f2ef; padding: 10px; border-radius: 4px;">
+            <div style="font-weight: bold; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-bottom: 5px;">Mathematical Profile</div>
+            <div><span style="color: #666;">Start Speed:</span> <span id="res-start" style="font-weight:bold;"></span> WPM</div>
+            <div><span style="color: #666;">End Speed:</span> <span id="res-end" style="font-weight:bold;"></span> WPM</div>
+            <div><span style="color: #666;">Stamina Depletion:</span> <span id="res-drop" style="font-weight:bold; color: #E63946;"></span> WPM</div>
+            <div><span style="color: #666;">Errors Generated:</span> <span id="res-typos" style="font-weight:bold; color: #E63946;"></span></div>
+            <div><span style="color: #666;">Total Time Taken:</span> <span id="res-time" style="font-weight:bold;"></span> sec</div>
+        </div>
+        
+        <div style="margin-top: 15px; font-weight: bold; color: #333;">Physical Execution:</div>
+        <div id="policy-physical-output" style="width: 100%; height: 100px; padding: 10px; box-sizing: border-box; border: 1px solid #0a66c2; border-radius: 4px; background: #fafafa; overflow-y: auto; white-space: pre-wrap; font-family: monospace; font-size: 14px;"></div>
+    </div>
+    
+    <div class="lifecycle-panel" style="position: absolute; top: 70px; left: 20px; width: 350px; background: white; border: 2px solid #0a66c2; border-radius: 8px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 300;">
+        <div style="font-weight: bold; margin-bottom: 10px; color: #0a66c2;">Lifecycle Engine (Biological Schedule)</div>
+        
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f3f2ef; border-radius: 4px;">
+            <label style="font-weight: bold; flex: 1;">Biological Mode (24/7):</label>
+            <input type="checkbox" id="lifecycle-toggle" style="width: 20px; height: 20px; cursor: pointer;">
+        </div>
+        
+        <div style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">Time Travel (Spoofing):</div>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <input type="date" id="lifecycle-date" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px;" title="Spoof Date">
+            <input type="number" id="lifecycle-hour" min="0" max="23" placeholder="Hour (0-23)" style="width: 80px; padding: 6px; border: 1px solid #ccc; border-radius: 4px;" title="Spoof Hour (e.g. 3 for 3 AM)">
+        </div>
+        
+        <button id="lifecycle-submit" style="width: 100%; padding: 8px; background: #0a66c2; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Evaluate Next Execution</button>
+        
+        <div id="lifecycle-results" style="margin-top: 15px; font-size: 0.9rem; display: none; background: #222; color: #0f0; padding: 10px; border-radius: 4px; font-family: monospace;">
+        </div>
+    </div>
+    
+    <div class="visual-panel" id="visual-panel" style="position: fixed; bottom: 0; left: 0; width: 100%; height: 280px; background: white; border-top: 2px solid #ccc; z-index: 200; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);">
+        <div style="font-weight: bold; margin-bottom: 10px; color: #0a66c2;">Visual Agent (OCR) Scanner & Orchestrator</div>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="visual-input" placeholder="e.g. Button 4" style="padding: 8px; width: 250px; border: 1px solid #ccc; border-radius: 4px;">
+            <button id="visual-submit" style="padding: 8px 16px; background: #0a66c2; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Capture & Scan Screen</button>
+            <button id="visual-click-submit" style="padding: 8px 16px; background: #E63946; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Find & Click (Full Autonomous)</button>
+        </div>
+        <div style="flex: 1; overflow: auto; background: #222; text-align: center; border-radius: 4px;">
+            <img id="visual-result" style="max-height: 100%; display: none; margin: 0 auto;">
+            <div id="visual-loading" style="display: none; color: white; margin-top: 20px;">Executing Vision Engine...</div>
+        </div>
+    </div>
+
+    <script>
+        const field = document.getElementById('button-field');
+        const numButtons = 20;
+        const buttons = [];
+
+        // Generate 20 random buttons
+        for (let i = 1; i <= numButtons; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'target-btn';
+            btn.textContent = `Button ${i}`;
+            btn.id = `btn-${i}`;
+            
+            // Random position (avoiding header and edges)
+            const top = Math.random() * 75 + 5; // 5% to 80%
+            const left = Math.random() * 85 + 5; // 5% to 90%
+            
+            btn.style.top = `${top}%`;
+            btn.style.left = `${left}%`;
+            
+            // Add click listener to turn green
+            btn.addEventListener('click', function() {
+                this.classList.add('clicked');
+                setTimeout(() => this.classList.remove('clicked'), 2000);
+            });
+            
+            field.appendChild(btn);
+            buttons.push(btn);
+        }
+
+        // Handle Command Agent submit
+        document.getElementById('cmd-submit').addEventListener('click', () => {
+            const query = document.getElementById('cmd-input').value.trim().toLowerCase();
+            if (!query) return;
+
+            // Find matching button
+            const target = buttons.find(b => b.textContent.toLowerCase() === query);
+            
+            if (target) {
+                // Calculate physical OS screen coordinates
+                const rect = target.getBoundingClientRect();
+                
+                const screenX = window.screenX + rect.left + (rect.width / 2);
+                const toolbarHeight = window.outerHeight - window.innerHeight;
+                const screenY = window.screenY + toolbarHeight + rect.top + (rect.height / 2);
+                
+                // Send physical click command to backend
+                fetch('http://localhost:8000/api/kinematic/physical_click', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        x: screenX,
+                        y: screenY,
+                        width: rect.width,
+                        height: rect.height
+                    })
+                }).then(res => {
+                    if(!res.ok) alert("Backend error executing click.");
+                }).catch(err => {
+                    alert("Could not connect to BOL server. Is it running?");
+                });
+                
+            } else {
+                alert(`Could not find "${query}" on the screen!`);
+            }
+        });
+        
+        // Allow hitting Enter in the input box
+        document.getElementById('cmd-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                document.getElementById('cmd-submit').click();
+            }
+        });
+
+        // Visual Agent Scan Only Logic
+        document.getElementById('visual-submit').addEventListener('click', () => {
+            const inputEl = document.getElementById('visual-input');
+            const word = inputEl.value.trim();
+            if(!word) return;
+            
+            const btn = document.getElementById('visual-submit');
+            const img = document.getElementById('visual-result');
+            const loading = document.getElementById('visual-loading');
+            
+            btn.textContent = 'Scanning...';
+            btn.disabled = true;
+            img.style.display = 'none';
+            loading.style.display = 'block';
+            
+            inputEl.value = ''; // Hide text
+            
+            setTimeout(() => {
+                fetch('http://localhost:8000/api/visual/scan_text', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_word: word })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    inputEl.value = word; // Restore text
+                    btn.textContent = 'Capture & Scan Screen';
+                    btn.disabled = false;
+                    loading.style.display = 'none';
+                    
+                    if(data.status === 'success') {
+                        img.src = data.image_data;
+                        img.style.display = 'block';
+                        alert(`Vision Engine Found ${data.matches_found} occurrences of "${word}"!`);
+                    } else {
+                        alert(data.message || 'Error executing scan.');
+                    }
+                })
+                .catch(err => {
+                    inputEl.value = word; // Restore text
+                    alert('Error connecting to Vision Engine: ' + err);
+                    btn.textContent = 'Capture & Scan Screen';
+                    btn.disabled = false;
+                    loading.style.display = 'none';
+                });
+            }, 200);
+        });
+
+        // Visual Agent Find & Click Logic
+        document.getElementById('visual-click-submit').addEventListener('click', () => {
+            const inputEl = document.getElementById('visual-input');
+            const wordInput = inputEl.value.trim();
+            if(!wordInput) return;
+            
+            // Split by comma to support chain execution
+            const targetWords = wordInput.split(',').map(w => w.trim()).filter(w => w);
+            if (targetWords.length === 0) return;
+            
+            const btn = document.getElementById('visual-click-submit');
+            const originalText = btn.textContent;
+            
+            btn.textContent = `Executing Chain (${targetWords.length} targets)... Hands Off!`;
+            btn.disabled = true;
+            
+            inputEl.value = ''; // Hide text
+            
+            setTimeout(() => {
+                fetch('http://localhost:8000/api/orchestrator/chain_click', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_words: targetWords })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    inputEl.value = wordInput; // Restore text
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                    if(data.status !== 'success') {
+                        alert(data.message);
+                    } else {
+                        console.log("Chain Execution Results:", data.chain_results);
+                    }
+                })
+                .catch(err => {
+                    inputEl.value = wordInput; // Restore text
+                    alert('Error connecting to Orchestrator: ' + err);
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                });
+            }, 200);
+        });
+
+        document.getElementById('visual-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                document.getElementById('visual-submit').click();
+            }
+        });
+
+        // Policy Engine Logic
+        fetch('http://localhost:8000/api/policy/personalities')
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById('policy-select');
+                select.innerHTML = '';
+                data.personalities.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.name;
+                    opt.textContent = `${p.name} (wpm: ${p.base_wpm_min}-${p.base_wpm_max})`;
+                    select.appendChild(opt);
+                });
+            });
+
+        document.getElementById('policy-submit').addEventListener('click', () => {
+            const personality = document.getElementById('policy-select').value;
+            const text = document.getElementById('policy-text').value.trim();
+            if(!text || !personality) {
+                alert("Please select a personality and paste some text.");
+                return;
+            }
+            
+            const btn = document.getElementById('policy-submit');
+            btn.textContent = 'Simulating Math...';
+            
+            fetch('http://localhost:8000/api/policy/simulate_typing', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ personality_name: personality, text: text })
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.textContent = 'Simulate Personality Math';
+                if(data.status === 'success') {
+                    document.getElementById('policy-results').style.display = 'block';
+                    document.getElementById('res-start').textContent = data.stats.start_wpm;
+                    document.getElementById('res-end').textContent = data.stats.end_wpm;
+                    document.getElementById('res-drop').textContent = data.stats.fatigue_drop_wpm;
+                    document.getElementById('res-typos').textContent = data.stats.simulated_typos;
+                    document.getElementById('res-time').textContent = data.stats.total_time_seconds;
+                    
+                    const outBox = document.getElementById('policy-physical-output');
+                    outBox.textContent = ''; 
+                    
+                    let delayAccumulator = 0;
+                    data.events.forEach(event => {
+                        delayAccumulator += event.delay_before_ms;
+                        setTimeout(() => {
+                            if (event.character === '\b') {
+                                outBox.textContent = outBox.textContent.slice(0, -1);
+                            } else {
+                                outBox.textContent += event.character;
+                            }
+                            outBox.scrollTop = outBox.scrollHeight;
+                        }, delayAccumulator);
+                    });
+                    
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch(err => {
+                alert('Error connecting to Policy Engine: ' + err);
+                btn.textContent = 'Simulate Personality Math';
+            });
+        });
+
+        // Lifecycle Engine Logic
+        document.getElementById('lifecycle-submit').addEventListener('click', () => {
+            const isEnabled = document.getElementById('lifecycle-toggle').checked;
+            const spoofDate = document.getElementById('lifecycle-date').value;
+            const spoofHour = document.getElementById('lifecycle-hour').value;
+            
+            const btn = document.getElementById('lifecycle-submit');
+            btn.textContent = 'Evaluating...';
+            
+            fetch('http://localhost:8000/api/lifecycle/evaluate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    lifecycle_mode_enabled: isEnabled,
+                    spoof_date: spoofDate,
+                    spoof_hour: spoofHour ? parseInt(spoofHour) : -1
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.textContent = 'Evaluate Next Execution';
+                if(data.status === 'success') {
+                    const resBox = document.getElementById('lifecycle-results');
+                    resBox.style.display = 'block';
+                    resBox.style.color = data.decision ? '#0f0' : '#f00';
+                    resBox.innerHTML = `> EVALUATING CONTEXT...<br>> MODE: ${isEnabled ? 'BIOLOGICAL' : 'MANUAL'}<br>> DAY TYPE: ${data.day_type.toUpperCase()}<br><br>> ${data.reason}`;
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch(err => {
+                alert('Error connecting to Lifecycle Engine: ' + err);
+                btn.textContent = 'Evaluate Next Execution';
+            });
+        });
+
+    </script>
+</body>
+</html>
