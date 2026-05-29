@@ -11,6 +11,12 @@ import numpy as np
 import pytesseract
 from PIL import Image
 from pytesseract import Output
+import sys
+
+# Windows compatibility for Tesseract binary
+if sys.platform.startswith('win'):
+    # Common installation path on Windows
+    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 from bol.schemas.visual import BoundingBox, OCRResult, OCRWord
 from bol.utils.logging import get_logger
@@ -50,23 +56,27 @@ class OCREngine:
         # Scale by 2x for better OCR on small web fonts
         scaled = cv2.resize(screen_bgr, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
         
-        # 1. Normal pass
-        rgb = scaled[:, :, ::-1]
-        pil_image = Image.fromarray(rgb)
-        data_normal = pytesseract.image_to_data(pil_image, output_type=Output.DICT, config='--psm 11')
-        
-        # 2. Threshold passes
-        gray = cv2.cvtColor(scaled, cv2.COLOR_BGR2GRAY)
-        _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        
-        # 2a. Thresh (fixes low contrast)
-        pil_thresh = Image.fromarray(thresh)
-        data_thresh = pytesseract.image_to_data(pil_thresh, output_type=Output.DICT, config='--psm 11')
-        
-        # 2b. Inverted Thresh (fixes white text on colored backgrounds)
-        inverted = cv2.bitwise_not(thresh)
-        pil_inverted = Image.fromarray(inverted)
-        data_inverted = pytesseract.image_to_data(pil_inverted, output_type=Output.DICT, config='--psm 11')
+        try:
+            # 1. Normal pass
+            rgb = scaled[:, :, ::-1]
+            pil_image = Image.fromarray(rgb)
+            data_normal = pytesseract.image_to_data(pil_image, output_type=Output.DICT, config='--psm 11')
+            
+            # 2. Threshold passes
+            gray = cv2.cvtColor(scaled, cv2.COLOR_BGR2GRAY)
+            _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            
+            # 2a. Thresh (fixes low contrast)
+            pil_thresh = Image.fromarray(thresh)
+            data_thresh = pytesseract.image_to_data(pil_thresh, output_type=Output.DICT, config='--psm 11')
+            
+            # 2b. Inverted Thresh (fixes white text on colored backgrounds)
+            inverted = cv2.bitwise_not(thresh)
+            pil_inverted = Image.fromarray(inverted)
+            data_inverted = pytesseract.image_to_data(pil_inverted, output_type=Output.DICT, config='--psm 11')
+        except pytesseract.TesseractNotFoundError:
+            logger.error("Tesseract OCR binary not found on this system!")
+            return OCRResult(words=[], full_text="")
 
         words: list[OCRWord] = []
         

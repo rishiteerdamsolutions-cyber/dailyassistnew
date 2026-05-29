@@ -99,6 +99,20 @@ class BOLConfig(BaseSettings):
         le=100,
         description="Minimum confidence for pytesseract OCR results.",
     )
+    
+    # ── AI Vision ────────────────────────────────────────────────────
+    vision_provider: Literal["gemini", "local"] = Field(
+        default="gemini",
+        description="The vision provider to use for intent-based clicking.",
+    )
+    gemini_api_key: str | None = Field(
+        default=None,
+        description="Google Gemini API Key for vision capabilities.",
+    )
+    gemini_model_name: str = Field(
+        default="gemini-1.5-pro",
+        description="The Gemini model to use for vision tasks.",
+    )
 
     # ── Posting ──────────────────────────────────────────────────────
     posting_hour_start: int = Field(
