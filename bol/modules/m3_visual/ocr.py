@@ -77,7 +77,8 @@ class OCREngine:
             
             # 2. Threshold passes
             gray = cv2.cvtColor(scaled, cv2.COLOR_BGR2GRAY)
-            _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            # Use Adaptive Thresholding to handle varied lighting and colored buttons
+            thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
             
             # 2a. Thresh (fixes low contrast)
             pil_thresh = Image.fromarray(thresh)

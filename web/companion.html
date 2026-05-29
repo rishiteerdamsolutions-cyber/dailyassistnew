@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BOL Autonomous Companion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-primary: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.5);
+            --user-msg-bg: #2563eb;
+            --agent-msg-bg: rgba(51, 65, 85, 0.8);
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15), transparent 25%),
+                              radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15), transparent 25%);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Glassmorphism utility */
+        .glass {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+        }
+
+        /* Layout */
+        .app-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        /* Left Panel - Chat */
+        .chat-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 500px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+
+        .chat-history {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .msg-user {
+            align-self: flex-end;
+            background-color: var(--user-msg-bg);
+            border-bottom-right-radius: 4px;
+        }
+
+        .msg-agent {
+            align-self: flex-start;
+            background-color: var(--agent-msg-bg);
+            border-bottom-left-radius: 4px;
+        }
+
+        .msg-system {
+            align-self: center;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-style: italic;
+            text-align: center;
+        }
+
+        .chat-input-area {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent-primary);
+        }
+
+        button {
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 25px var(--accent-glow);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        /* Action Buttons Area */
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-resume {
+            background: var(--warning);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+            display: none; /* Hidden by default */
+            width: 100%;
+            padding: 12px;
+        }
+        
+        .btn-resume:hover {
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.8);
+        }
+
+        /* Right Panel - Vision Feed */
+        .vision-panel {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .vision-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .vision-content {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .vision-content img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .empty-vision {
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top-color: var(--accent-primary);
+            animation: spin 1s ease-in-out infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Chat Panel -->
+        <aside class="chat-panel glass">
+            <header class="chat-header">
+                <h2><div class="status-dot"></div> BOL Companion</h2>
+            </header>
+            
+            <div class="chat-history" id="chat-history">
+                <div class="message msg-system">Agent initialized. Ready to execute intents.</div>
+                <div class="message msg-agent">Hello! Where would you like to go today? Tell me a website and what you want to do.</div>
+            </div>
+
+            <div class="chat-input-area">
+                <div class="action-bar">
+                    <button class="btn-resume" id="resume-btn">I'm done with manual steps, Resume Agent!</button>
+                </div>
+                <div class="input-wrapper">
+                    <input type="text" id="chat-input" placeholder="e.g. Open MakeMyTrip and book a flight to Delhi..." autocomplete="off">
+                    <button id="send-btn">Send</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Vision Feed -->
+        <main class="vision-panel glass">
+            <header class="vision-header">
+                <h3>Live Vision Feed</h3>
+            </header>
+            <div class="vision-content">
+                <div class="empty-vision" id="empty-vision">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    <p>Waiting for agent to capture screen...</p>
+                    <div class="loader" id="vision-loader"></div>
+                </div>
+                <img id="vision-image" style="display: none;" src="" alt="Agent Vision Feed">
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const chatHistory = document.getElementById('chat-history');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const resumeBtn = document.getElementById('resume-btn');
+        const visionImage = document.getElementById('vision-image');
+        const emptyVision = document.getElementById('empty-vision');
+        const visionLoader = document.getElementById('vision-loader');
+
+        let isAgentPaused = false;
+
+        function addMessage(text, type) {
+            const msg = document.createElement('div');
+            msg.className = `message msg-${type}`;
+            msg.textContent = text;
+            chatHistory.appendChild(msg);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function showLoader(show) {
+            if (show) {
+                emptyVision.style.display = 'flex';
+                visionImage.style.display = 'none';
+                visionLoader.style.display = 'block';
+                emptyVision.querySelector('p').textContent = "Agent is analyzing screen...";
+            } else {
+                visionLoader.style.display = 'none';
+            }
+        }
+
+        function updateVision(base64Data) {
+            if (base64Data) {
+                visionImage.src = base64Data;
+                visionImage.style.display = 'block';
+                emptyVision.style.display = 'none';
+            }
+        }
+
+        async function sendIntent(intentText, isResume = false, hideMessage = false) {
+            // Append user message if not just a hidden resume ping
+            if (!hideMessage) {
+                addMessage(intentText, 'user');
+                chatInput.value = '';
+            }
+
+            chatInput.disabled = true;
+            sendBtn.disabled = true;
+            resumeBtn.style.display = 'none';
+            isAgentPaused = false;
+            showLoader(true);
+
+            try {
+                // Determine endpoint (chat vs resume)
+                const path = isResume ? '/api/agent/resume' : '/api/agent/chat';
+                const endpoint = 'http://127.0.0.1:8000' + path;
+                
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ text: intentText })
+                });
+                
+                const data = await res.json();
+                
+                showLoader(false);
+                
+                if (data.image_data) {
+                    updateVision(data.image_data);
+                }
+
+                if (data.status === 'error') {
+                    const errMsg = data.messages ? data.messages[0] : (data.message || 'Unknown error');
+                    addMessage(`Error: ${errMsg}`, 'system');
+                } else {
+                    // Iterate through agent responses
+                    if (data.messages) {
+                        data.messages.forEach(m => addMessage(m, 'agent'));
+                    }
+                    
+                    if (data.is_paused) {
+                        addMessage("Agent is paused. Complete the manual steps, then click Resume.", 'system');
+                        isAgentPaused = true;
+                        resumeBtn.style.display = 'block';
+                    } else if (data.is_done) {
+                        addMessage("Agent has completed the task!", 'system');
+                    } else if (data.is_asking) {
+                        addMessage("Agent is waiting for your response...", 'system');
+                    } else {
+                        // AUTO-LOOP: Continue to the next step
+                        addMessage("Agent is waiting 10 seconds before the next step...", 'system');
+                        setTimeout(() => {
+                            sendIntent("Please continue to the next step.", false, true);
+                        }, 10000);
+                    }
+                }
+            } catch (err) {
+                showLoader(false);
+                addMessage(`Connection error: ${err.message}`, 'system');
+            } finally {
+                chatInput.disabled = false;
+                sendBtn.disabled = false;
+                chatInput.focus();
+            }
+        }
+
+        sendBtn.addEventListener('click', () => {
+            const text = chatInput.value.trim();
+            if (text) sendIntent(text);
+        });
+
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const text = chatInput.value.trim();
+                if (text) sendIntent(text);
+            }
+        });
+
+        resumeBtn.addEventListener('click', () => {
+            if (isAgentPaused) {
+                addMessage("Resuming agent workflow...", 'system');
+                sendIntent("USER_RESUMED", true, true);
+            }
+        });
+    </script>
+</body>
+</html>

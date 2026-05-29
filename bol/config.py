@@ -110,7 +110,7 @@ class BOLConfig(BaseSettings):
         description="Google Gemini API Key for vision capabilities.",
     )
     gemini_model_name: str = Field(
-        default="gemini-1.5-pro",
+        default="gemini-3.1-flash-lite",
         description="The Gemini model to use for vision tasks.",
     )
 

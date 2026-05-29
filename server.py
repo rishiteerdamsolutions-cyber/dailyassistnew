@@ -58,6 +58,10 @@ app.mount("/static", StaticFiles(directory="web"), name="static")
 def serve_index():
     return FileResponse("web/index.html")
 
+@app.get("/companion")
+def serve_companion():
+    return FileResponse("web/companion.html")
+
 @app.get("/api/timing")
 def get_timing():
     config = TimingConfig(
@@ -566,3 +570,39 @@ def evaluate_lifecycle(req: EvaluateLifecycleRequest):
         "reason": f"{prefix} Reason: {decision.reason}",
         "day_type": decision.day_type.value
     }
+
+# --- Autonomous Companion Endpoints ---
+
+from bol.config import get_config
+from bol.modules.m8_orchestrator.agent import AutonomousCompanion
+
+# Global singleton for the agent session
+_agent_instance = None
+
+def get_agent():
+    global _agent_instance
+    if _agent_instance is None:
+        config = get_config()
+        _agent_instance = AutonomousCompanion(config)
+    return _agent_instance
+
+class AgentChatRequest(BaseModel):
+    text: str
+
+@app.post("/api/agent/chat")
+def agent_chat(req: AgentChatRequest):
+    try:
+        agent = get_agent()
+        result = agent.step(user_message=req.text)
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/agent/resume")
+def agent_resume(req: AgentChatRequest):
+    try:
+        agent = get_agent()
+        result = agent.step(user_message="User has completed the manual step. Please resume workflow.")
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
