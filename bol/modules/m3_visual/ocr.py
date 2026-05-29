@@ -12,11 +12,20 @@ import pytesseract
 from PIL import Image
 from pytesseract import Output
 import sys
+import os
+from pathlib import Path
 
 # Windows compatibility for Tesseract binary
 if sys.platform.startswith('win'):
-    # Common installation path on Windows
-    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+    # Look for bundled tesseract in the project root first
+    project_root = Path(__file__).parent.parent.parent.parent
+    bundled_tesseract = project_root / "tesseract" / "tesseract.exe"
+    
+    if bundled_tesseract.exists():
+        pytesseract.pytesseract.tesseract_cmd = str(bundled_tesseract)
+    else:
+        # Fallback to common installation path
+        pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 from bol.schemas.visual import BoundingBox, OCRResult, OCRWord
 from bol.utils.logging import get_logger

@@ -15,6 +15,7 @@ from bol.modules.m3_visual.capture import ScreenCapturePipeline
 from bol.modules.m3_visual.ocr import OCREngine
 from bol.modules.m3_visual.targeting import TargetingEngine
 from bol.modules.m3_visual.template import TemplateMatcher
+from bol.modules.m3_visual.ai_vision import AIVisionEngine
 from bol.schemas.kinematic import CursorTarget
 from bol.schemas.visual import BoundingBox, ScreenCapture
 from bol.utils.logging import get_logger
@@ -47,6 +48,7 @@ class VisualCortex:
             confidence_threshold=config.ocr_confidence_threshold,
         )
         self._targeting = TargetingEngine()
+        self._ai_vision = AIVisionEngine(config)
 
     def locate_element(self, template_name: str) -> CursorTarget | None:
         """
@@ -105,6 +107,43 @@ class VisualCortex:
         logger.info(
             "Located text '%s' at (%d, %d) → click (%d, %d)",
             text, boxes[0].x, boxes[0].y, target.click_x, target.click_y,
+        )
+        return target
+
+    def locate_by_intent(self, intent: str) -> CursorTarget | None:
+        """
+        Locate a UI element by semantic intent using AI Vision, and compute a click target.
+
+        Parameters
+        ----------
+        intent : str
+            The high-level user intent (e.g., "book air india flight").
+
+        Returns
+        -------
+        CursorTarget | None
+            Off-center click target, or None if element not found.
+        """
+        _, screen = self._capture.capture_full_screen()
+        target_text = self._ai_vision.get_target_text_for_intent(screen, intent)
+
+        if not target_text:
+            logger.info("Could not resolve intent '%s' to an on-screen target.", intent)
+            return None
+
+        logger.info("Resolved intent '%s' -> target text: '%s'. Passing to OCR.", intent, target_text)
+        
+        # Now find this text on screen using OCR
+        boxes = self._ocr.find_text_on_screen(screen, target_text)
+        if not boxes:
+            logger.info("OCR failed to find the text '%s' that AI requested.", target_text)
+            return None
+
+        # Use the best match
+        target = self._targeting.compute_click_target(boxes[0])
+        logger.info(
+            "Located intent text '%s' at (%d, %d) → click (%d, %d)",
+            target_text, boxes[0].x, boxes[0].y, target.click_x, target.click_y,
         )
         return target
 
