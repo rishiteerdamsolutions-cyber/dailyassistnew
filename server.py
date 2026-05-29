@@ -1,3 +1,11 @@
+import sys
+if sys.platform == 'win32':
+    try:
+        import ctypes
+        ctypes.windll.user32.SetProcessDPIAware()
+    except Exception:
+        pass
+
 import os
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
