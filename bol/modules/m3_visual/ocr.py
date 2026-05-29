@@ -23,6 +23,10 @@ if sys.platform.startswith('win'):
     
     if bundled_tesseract.exists():
         pytesseract.pytesseract.tesseract_cmd = str(bundled_tesseract)
+        # Critical: Tell Tesseract where the language data is!
+        tessdata_dir = project_root / "tesseract" / "tessdata"
+        if tessdata_dir.exists():
+            os.environ["TESSDATA_PREFIX"] = str(tessdata_dir)
     else:
         # Fallback to common installation path
         pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -85,6 +89,9 @@ class OCREngine:
             data_inverted = pytesseract.image_to_data(pil_inverted, output_type=Output.DICT, config='--psm 11')
         except pytesseract.TesseractNotFoundError:
             logger.error("Tesseract OCR binary not found on this system!")
+            return OCRResult(words=[], full_text="")
+        except Exception as e:
+            logger.error(f"Tesseract Engine Error: {e}")
             return OCRResult(words=[], full_text="")
 
         words: list[OCRWord] = []
