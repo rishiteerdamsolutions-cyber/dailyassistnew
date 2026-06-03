@@ -7,6 +7,10 @@
       "maxDuration": 30
     }
   },
+  "redirects": [
+    { "source": "/companion", "destination": "/download", "permanent": false },
+    { "source": "/legal", "destination": "/legal.html", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" }
   ]

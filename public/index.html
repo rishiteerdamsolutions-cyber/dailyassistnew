@@ -3,73 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AHA UI</title>
-    <link rel="stylesheet" href="/static/styles.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>AHA — Your daily computer assistant</title>
+    <meta name="description" content="AHA helps you on your Mac or Windows when you ask — post to social, browse, and everyday tasks. Subscribe at dailyassist.xyz.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #0b1220; --card: #1e293b; --text: #f8fafc; --muted: #94a3b8; --accent: #3b82f6; --accent-hover: #2563eb; --border: rgba(255,255,255,0.1); }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; }
+        .nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; max-width: 1100px; margin: 0 auto; }
+        .logo { font-weight: 700; font-size: 1.25rem; color: var(--text); text-decoration: none; }
+        .nav-links { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.95rem; }
+        .nav-links a:hover { color: var(--text); }
+        .btn { display: inline-block; padding: 12px 24px; border-radius: 10px; font-weight: 600; font-size: 1rem; text-decoration: none; cursor: pointer; border: none; text-align: center; }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+        .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+        .hero { max-width: 1100px; margin: 0 auto; padding: 48px 24px 64px; text-align: center; }
+        .hero h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 700; line-height: 1.15; margin-bottom: 16px; letter-spacing: -0.02em; }
+        .hero .lead { font-size: 1.15rem; color: var(--muted); max-width: 560px; margin: 0 auto 32px; }
+        .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 48px; }
+        .features { max-width: 1100px; margin: 0 auto; padding: 0 24px 64px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+        .feature { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; text-align: left; }
+        .feature h3 { font-size: 1.1rem; margin-bottom: 8px; }
+        .feature p { color: var(--muted); font-size: 0.95rem; }
+        .steps { max-width: 640px; margin: 0 auto 64px; padding: 0 24px; }
+        .steps h2 { text-align: center; font-size: 1.5rem; margin-bottom: 24px; }
+        .step { display: flex; gap: 16px; margin-bottom: 20px; align-items: flex-start; }
+        .step-num { flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; }
+        .step p { color: var(--muted); }
+        footer { text-align: center; padding: 32px 24px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85rem; }
+        footer a { color: #60a5fa; text-decoration: none; margin: 0 6px; }
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Sidebar -->
-        <aside class="sidebar glass-panel">
-            <div class="brand">
-                <div class="logo"></div>
-                <h1>AHA</h1>
-            </div>
-            <p class="subtitle">AI-Mediated HCI Engine</p>
-            
-            <nav class="module-nav">
-                <button class="nav-btn active" data-module="timing">
-                    <span class="icon">⏱️</span> Chrono-Entropy
-                </button>
-                <button class="nav-btn" data-module="kinematic">
-                    <span class="icon">📈</span> Kinematics
-                </button>
-                <button class="nav-btn" data-module="policy">
-                    <span class="icon">🧠</span> Policy Engine
-                </button>
-                <button class="nav-btn" data-module="linguistic">
-                    <span class="icon">⌨️</span> Linguistic Variance
-                </button>
-                <button class="nav-btn" data-module="lifecycle">
-                    <span class="icon">📅</span> Lifecycle Controller
-                </button>
-                <button class="nav-btn" data-module="hardware">
-                    <span class="icon">💻</span> Hardware Jitter
-                </button>
-            </nav>
-        </aside>
+    <header class="nav">
+        <a href="/" class="logo">AHA</a>
+        <nav class="nav-links">
+            <a href="/subscribe">Pricing</a>
+            <a href="/download">Download</a>
+            <a href="/legal.html">Legal</a>
+            <a href="/subscribe" class="btn btn-primary">Get started</a>
+        </nav>
+    </header>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <header class="top-bar">
-                <h2 id="module-title">Chrono-Entropy & Timing Manager</h2>
-                <button id="run-btn" class="run-btn">Run Simulation</button>
-            </header>
+    <section class="hero">
+        <h1>Your assistant for everyday computer tasks</h1>
+        <p class="lead">
+            AHA helps on your Mac or Windows when you ask — like posting to social, filling forms, and browsing.
+            You stay in control; the assistant works on your screen like you would.
+        </p>
+        <div class="hero-cta">
+            <a href="/subscribe" class="btn btn-primary">Subscribe</a>
+            <a href="/download" class="btn btn-outline">Download app</a>
+        </div>
+    </section>
 
-            <div class="content-area glass-panel" id="content-area">
-                <div class="empty-state">
-                    <div class="pulse-ring"></div>
-                    <p>Click "Run Simulation" to execute this module.</p>
-                </div>
-            </div>
-            
-            <footer style="margin-top: auto; padding: 20px; text-align: center; font-size: 0.85rem; border-top: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">
-                <a href="/subscribe" style="color: #60a5fa; text-decoration: none; margin: 0 8px;">Subscribe</a>
-                <a href="/download" style="color: #94a3b8; text-decoration: none; margin: 0 8px;">Download</a>
-                <a href="https://dailyassist.xyz" style="color: #60a5fa; text-decoration: none;">dailyassist.xyz</a>
-                <span style="margin: 0 8px;">&middot;</span>
-                <a href="/legal.html" style="color: #94a3b8; text-decoration: none; margin: 0 8px;">Terms</a>
-                <a href="/legal.html#privacy" style="color: #94a3b8; text-decoration: none; margin: 0 8px;">Privacy</a>
-                <a href="/legal.html#refund" style="color: #94a3b8; text-decoration: none; margin: 0 8px;">Refunds</a>
-                <a href="/legal.html#delivery" style="color: #94a3b8; text-decoration: none; margin: 0 8px;">Delivery</a>
-                <br style="margin-top: 8px;">
-                <a href="mailto:support@dailyassist.xyz" style="color: #64748b; text-decoration: none; font-size: 0.8rem;">support@dailyassist.xyz</a>
-            </footer>
-        </main>
-    </div>
+    <section class="features">
+        <div class="feature">
+            <h3>Ask in plain language</h3>
+            <p>Chat with what you want done. The assistant understands your intent and carries it out on your machine.</p>
+        </div>
+        <div class="feature">
+            <h3>Mac &amp; Windows</h3>
+            <p>One subscription. Install on your computer, sign in, and use the same account on either platform.</p>
+        </div>
+        <div class="feature">
+            <h3>Private by design</h3>
+            <p>Runs locally on your computer. Optional AI keys stay in your settings — you bring your own for advanced tasks.</p>
+        </div>
+    </section>
 
-    <script src="/static/app.js"></script>
+    <section class="steps">
+        <h2>How it works</h2>
+        <div class="step">
+            <span class="step-num">1</span>
+            <div><strong>Subscribe</strong><p>Pay securely on this site, then create or sign in to your account.</p></div>
+        </div>
+        <div class="step">
+            <span class="step-num">2</span>
+            <div><strong>Download</strong><p>Get the Mac or Windows installer while your subscription is active.</p></div>
+        </div>
+        <div class="step">
+            <span class="step-num">3</span>
+            <div><strong>Install &amp; sign in</strong><p>Open AHA on your computer, sign in, and ask for help with your tasks.</p></div>
+        </div>
+    </section>
+
+    <footer>
+        <a href="mailto:support@dailyassist.xyz">support@dailyassist.xyz</a>
+        <span>&middot;</span>
+        <a href="/legal.html">Terms</a>
+        <a href="/legal.html#privacy">Privacy</a>
+        <a href="/legal.html#refund">Refunds</a>
+    </footer>
 </body>
 </html>

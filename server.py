@@ -140,6 +140,13 @@ def _html_page(filename: str):
 def serve_index():
     return FileResponse("web/index.html")
 
+
+@app.get("/demo")
+def serve_demo_dashboard():
+    """Internal module sandbox — not linked from public marketing site."""
+    return FileResponse("web/demo.html")
+
+
 @app.get("/companion")
 def serve_companion():
     return _html_page("companion.html")
