@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download AHA — Mac &amp; Windows</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; font-family: Inter, sans-serif; background: #0f172a; color: #f8fafc; min-height: 100vh; }
+        .wrap { max-width: 720px; margin: 0 auto; padding: 48px 24px; }
+        h1 { font-size: 1.75rem; }
+        .muted { color: #94a3b8; line-height: 1.6; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 32px 0; }
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+        .card { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px; text-align: center; }
+        .card h2 { margin: 0 0 8px; font-size: 1.2rem; }
+        a.dl { display: inline-block; margin-top: 16px; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; }
+        a.dl:hover { background: #2563eb; }
+        .banner { background: rgba(74, 222, 128, 0.15); border: 1px solid #4ade80; color: #4ade80; padding: 12px 16px; border-radius: 8px; margin-bottom: 24px; display: none; }
+        ol { color: #cbd5e1; padding-left: 20px; }
+        footer { margin-top: 48px; text-align: center; font-size: 0.85rem; color: #94a3b8; }
+        footer a { color: #60a5fa; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <a href="/subscribe" style="color:#60a5fa;">&larr; Subscribe</a>
+        <h1>Download AHA</h1>
+        <p class="muted">Same subscription works on <strong>Mac</strong> and <strong>Windows</strong>. Sign in with the account you used to pay, then the app syncs your license automatically.</p>
+
+        <div class="banner" id="paid-banner">Payment received — install below, then open AHA and sign in.</div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>macOS</h2>
+                <p class="muted">macOS 12+ · Apple Silicon or Intel</p>
+                <a class="dl" href="/downloads/AHA-mac.zip">Download for Mac</a>
+            </div>
+            <div class="card">
+                <h2>Windows</h2>
+                <p class="muted">Windows 10/11 · 64-bit</p>
+                <a class="dl" href="/downloads/AHA-win.zip">Download for Windows</a>
+            </div>
+        </div>
+
+        <h2 style="font-size:1.1rem;">After download</h2>
+        <ol>
+            <li>Unzip the folder anywhere (Desktop or Documents).</li>
+            <li><strong>Mac:</strong> double-click <code>start_companion.command</code> — use <strong>Open Anyway</strong> the first time (see <a href="/INSTALL.md" style="color:#60a5fa;">INSTALL.md</a>).</li>
+            <li><strong>Windows:</strong> double-click <code>start.bat</code> — choose <strong>Run anyway</strong> if SmartScreen appears.</li>
+            <li>Sign in with your dailyassist.xyz account; grant Accessibility and Screen Recording when prompted.</li>
+            <li>Optional: add your Gemini or OpenAI key in Settings for Tier-2 tasks.</li>
+        </ol>
+
+        <footer>
+            <a href="https://dailyassist.xyz">dailyassist.xyz</a> &middot;
+            <a href="/companion">Open AHA</a> &middot;
+            <a href="mailto:support@dailyassist.xyz">support@dailyassist.xyz</a>
+        </footer>
+    </div>
+    <script>
+        if (new URLSearchParams(location.search).get('paid') === '1') {
+            document.getElementById('paid-banner').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

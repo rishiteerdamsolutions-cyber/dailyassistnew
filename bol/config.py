@@ -113,6 +113,36 @@ class BOLConfig(BaseSettings):
         default="gemini-3.1-flash-lite",
         description="The Gemini model to use for vision tasks.",
     )
+    openai_api_key: str | None = Field(
+        default=None,
+        description="OpenAI API Key for high-reasoning steps.",
+    )
+    openai_model_name: str = Field(
+        default="gpt-4o",
+        description="The OpenAI model to use for high-reasoning steps.",
+    )
+
+    # ── Embedded Browser ─────────────────────────────────────────────
+    browser_window_enabled: bool = Field(
+        default=True,
+        description="Whether to use the native browser window instead of OS screen capture/automation.",
+    )
+    browser_window_x: int = Field(
+        default=540,
+        description="X coordinate of the native Chrome window.",
+    )
+    browser_window_y: int = Field(
+        default=50,
+        description="Y coordinate of the native Chrome window.",
+    )
+    browser_window_width: int = Field(
+        default=900,
+        description="Width of the native Chrome window.",
+    )
+    browser_window_height: int = Field(
+        default=950,
+        description="Height of the native Chrome window.",
+    )
 
     # ── Posting ──────────────────────────────────────────────────────
     posting_hour_start: int = Field(

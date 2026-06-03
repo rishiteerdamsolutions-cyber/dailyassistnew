@@ -16,6 +16,7 @@ from bol.modules.m3_visual.ocr import OCREngine
 from bol.modules.m3_visual.targeting import TargetingEngine
 from bol.modules.m3_visual.template import TemplateMatcher
 from bol.modules.m3_visual.ai_vision import AIVisionEngine
+from bol.modules.m3_visual.vision_buttons import VisionButtonLibrary
 from bol.schemas.kinematic import CursorTarget
 from bol.schemas.visual import BoundingBox, ScreenCapture
 from bol.utils.logging import get_logger
@@ -38,6 +39,7 @@ class VisualCortex:
         config : BOLConfig
             Global BOL configuration.
         """
+        self._config = config
         self._capture = ScreenCapturePipeline()
         self._templates = TemplateMatcher(
             templates_dir=config.resolved_templates_dir / config.target_platform,
@@ -49,6 +51,7 @@ class VisualCortex:
         )
         self._targeting = TargetingEngine()
         self._ai_vision = AIVisionEngine(config)
+        self._vision_buttons = VisionButtonLibrary()
 
     def locate_element(self, template_name: str) -> CursorTarget | None:
         """
@@ -179,4 +182,47 @@ class VisualCortex:
 
     def capture_current_state(self) -> tuple[ScreenCapture, np.ndarray]:
         """Capture the current screen state."""
+        if hasattr(self, "_config") and getattr(self._config, "browser_window_enabled", False):
+            from bol.schemas.visual import ScreenRegion
+            region = ScreenRegion(
+                monitor_index=1,
+                left=self._config.browser_window_x,
+                top=self._config.browser_window_y,
+                width=self._config.browser_window_width,
+                height=self._config.browser_window_height
+            )
+            return self._capture.capture_region(region)
         return self._capture.capture_full_screen()
+
+    def find_button(self, template_name: str, screenshot_bgr: np.ndarray) -> CursorTarget | None:
+        """
+        Find a named button from the VISIONBUTTONS library on the screenshot
+        and return a click target. Returns None if not found.
+
+        Parameters
+        ----------
+        template_name : str
+            e.g. 'instagram_share_button', 'x_post_button'
+        screenshot_bgr : np.ndarray
+            Live screenshot in BGR format.
+        """
+        match = self._vision_buttons.find(template_name, screenshot_bgr)
+        if match is None:
+            return None
+        target = self._targeting.compute_click_target(match.bbox)
+        logger.info(
+            "Vision button '%s' found at (%d,%d) conf=%.3f → click (%d,%d)",
+            template_name, match.bbox.x, match.bbox.y, match.confidence,
+            target.click_x, target.click_y,
+        )
+        return target
+
+    def find_button_for_action(self, platform: str, action: str, screenshot_bgr: np.ndarray) -> CursorTarget | None:
+        """
+        Shortcut: find a button by platform + action name.
+        e.g. find_button_for_action('instagram', 'share', screenshot)
+        """
+        match = self._vision_buttons.find_for_platform_action(platform, action, screenshot_bgr)
+        if match is None:
+            return None
+        return self._targeting.compute_click_target(match.bbox)

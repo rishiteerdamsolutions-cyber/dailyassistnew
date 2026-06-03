@@ -35,9 +35,9 @@ SERVER_PID=$!
 # Wait 2 seconds for server to boot
 sleep 2
 
-# Open the sandbox in the default browser
-echo "[INFO] Opening Sandbox UI..."
-open sandbox.html
+# Open the sandbox in Safari to keep Chrome free for the Agent (prevents infinite mirrors)
+echo "[INFO] Opening Companion App UI in Safari..."
+open -a Safari web/companion.html
 
 echo "[INFO] System is running! Press Ctrl+C to stop the server."
 wait $SERVER_PID

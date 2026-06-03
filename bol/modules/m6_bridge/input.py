@@ -32,9 +32,38 @@ class NativeInput:
         pyautogui.PAUSE = 0  # We handle delays ourselves
 
     def move_cursor(self, x: float, y: float, duration_s: float = 0.0) -> None:
-        """Move cursor to absolute position with hardware jitter."""
+        """Move cursor to absolute position with hardware jitter and Bezier curve."""
         self._apply_jitter_delay()
-        pyautogui.moveTo(int(x), int(y), duration=duration_s)
+        
+        import random
+        cx, cy = pyautogui.position()
+        tx, ty = int(x), int(y)
+        
+        dist = ((tx - cx)**2 + (ty - cy)**2)**0.5
+        if dist < 5:
+            pyautogui.moveTo(tx, ty)
+            return
+            
+        offset = max(10, int(dist * 0.2))
+        x1 = cx + random.randint(-offset, offset)
+        y1 = cy + random.randint(-offset, offset)
+        x2 = tx + random.randint(-offset, offset)
+        y2 = ty + random.randint(-offset, offset)
+        
+        num_points = random.randint(15, 30)
+        points = []
+        for i in range(num_points + 1):
+            t = i / num_points
+            px = (1-t)**3 * cx + 3*(1-t)**2 * t * x1 + 3*(1-t)*t**2 * x2 + t**3 * tx
+            py = (1-t)**3 * cy + 3*(1-t)**2 * t * y1 + 3*(1-t)*t**2 * y2 + t**3 * ty
+            points.append((int(px), int(py)))
+            
+        duration = duration_s if duration_s > 0 else random.uniform(0.5, 1.0)
+        sleep_time = duration / len(points)
+        
+        for px, py in points:
+            pyautogui.moveTo(px, py, _pause=False)
+            time.sleep(sleep_time)
 
     def click(self, x: int, y: int, button: str = "left") -> None:
         """Click at position with hardware jitter."""

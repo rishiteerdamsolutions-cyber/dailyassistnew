@@ -75,9 +75,9 @@ class TargetingEngine:
         Magnitude: 15-40% of half_width/half_height.
         Direction: random quadrant selection.
         """
-        # Offset percentage: 15% to 40%
-        pct_x = 15 + secrets.randbelow(26)  # 15 to 40
-        pct_y = 15 + secrets.randbelow(26)
+        # Offset percentage: 3% to 12% (small offset for precision on web buttons)
+        pct_x = 3 + secrets.randbelow(10)  # 3 to 12
+        pct_y = 3 + secrets.randbelow(10)
 
         # Calculate pixel offset
         mag_x = max(int(half_width * pct_x / 100), 1)

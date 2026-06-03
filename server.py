@@ -7,11 +7,12 @@ if sys.platform == 'win32':
         pass
 
 import os
-from fastapi import FastAPI
+import time
+from pathlib import Path
+from fastapi import FastAPI, UploadFile, Form, File, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-import time
 
 class PhysicalClickRequest(BaseModel):
     x: float
@@ -37,22 +38,103 @@ from bol.modules.m7_lifecycle.void import VoidEngine
 from datetime import date
 
 from fastapi.middleware.cors import CORSMiddleware
+from aha.storage_vault import bootstrap_storage_vault
 
-app = FastAPI(title="BOL Framework Interface")
+import logging
+logger = logging.getLogger(__name__)
 
+app = FastAPI(title="AHA — Artificial Human Assistant")
+
+@app.on_event("startup")
+async def startup_event():
+    try:
+        # Full layout ensures all AI Pro and core plan folders are created
+        res = bootstrap_storage_vault(layout="full")
+        logger.info(f"Storage Vault bootstrapped: {res}")
+    except Exception as e:
+        logger.error(f"Failed to bootstrap storage vault: {e}")
+
+# License & BYOK API routes
+from aha.api_routes import router as aha_router
+app.include_router(aha_router)
+
+# ── Firebase Auth endpoint ────────────────────────────────────────────────────
+class FirebaseSigninRequest(BaseModel):
+    id_token: str
+
+@app.post("/api/auth/firebase_signin")
+async def firebase_signin(req: FirebaseSigninRequest):
+    """Verify a Firebase ID token and upsert the user in Supabase."""
+    try:
+        from aha.firebase_auth import verify_firebase_token
+        from aha.supabase_client import upsert_user
+        claims = verify_firebase_token(req.id_token)
+        uid   = claims["uid"]
+        email = claims.get("email", "")
+        name  = claims.get("name") or claims.get("display_name", "")
+        upsert_user(uid, email, name)
+        return {"status": "ok", "uid": uid, "email": email}
+    except Exception as e:
+        # Non-fatal: app still works offline
+        return {"status": "error", "message": str(e)}
+
+# Session-token + license enforcement on sensitive routes.
+from aha.security import security_middleware
+app.middleware("http")(security_middleware)
+
+# CORS: restrict to the local companion origin. The session token lives in a
+# request header (not a cookie), so credentials are unnecessary; allowing "*"
+# with credentials is invalid and unsafe.
+_ALLOWED_ORIGINS = [
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "X-AHA-Token"],
 )
 
 # Create web directory if it doesn't exist
 os.makedirs("web", exist_ok=True)
+os.makedirs("downloads", exist_ok=True)
 
 # Mount the web directory for static files (CSS, JS)
 app.mount("/static", StaticFiles(directory="web"), name="static")
+app.mount("/downloads", StaticFiles(directory="downloads"), name="downloads")
+
+
+def _inject_aha_session(html: str) -> str:
+    from aha.security import get_session_token
+
+    token = get_session_token()
+    inject = (
+        "<script>(function(){"
+        f"window.AHA_TOKEN={token!r};"
+        "var _f=window.fetch.bind(window);"
+        "window.fetch=function(input,init){init=init||{};try{"
+        "var u=(typeof input==='string')?input:((input&&input.url)||'');"
+        "if(u.indexOf('127.0.0.1:8000')!==-1||u.indexOf('localhost:8000')!==-1||u.charAt(0)==='/'){"
+        "var h=new Headers(init.headers||{});h.set('X-AHA-Token',window.AHA_TOKEN);init.headers=h;}"
+        "}catch(e){}return _f(input,init);};})();</script>"
+    )
+    if "</head>" in html:
+        return html.replace("</head>", inject + "</head>", 1)
+    return inject + html
+
+
+def _html_page(filename: str):
+    from fastapi.responses import HTMLResponse
+
+    path = Path("web") / filename
+    try:
+        html = path.read_text(encoding="utf-8")
+    except OSError:
+        return FileResponse(str(path))
+    return HTMLResponse(content=_inject_aha_session(html))
+
 
 @app.get("/")
 def serve_index():
@@ -60,7 +142,26 @@ def serve_index():
 
 @app.get("/companion")
 def serve_companion():
-    return FileResponse("web/companion.html")
+    return _html_page("companion.html")
+
+@app.get("/subscribe")
+def serve_subscribe():
+    return _html_page("subscribe.html")
+
+@app.get("/download")
+def serve_download():
+    return FileResponse("web/download.html")
+
+@app.get("/INSTALL.md")
+def serve_install_md():
+    path = Path("INSTALL.md")
+    if path.is_file():
+        return FileResponse(path, media_type="text/markdown")
+    raise HTTPException(status_code=404)
+
+@app.get("/legal.html")
+def serve_legal():
+    return FileResponse("web/legal.html")
 
 @app.get("/api/timing")
 def get_timing():
@@ -80,9 +181,221 @@ def get_timing():
         "pool_size": len(values),
         "min_val": min(values),
         "max_val": max(values),
-        "gen_time_ms": gen_time,
         "sample": values[:20]
     })
+
+# ── VAULT API ────────────────────────────────────────────────────────────────
+from aha.storage_vault import vault_root, atomic_write_bytes, atomic_write_text
+from aha.vault_paths import safe_slot_name
+
+def get_slots_dir():
+    base = vault_root() / "Slots"
+    base.mkdir(parents=True, exist_ok=True)
+    return base
+
+
+_ALLOWED_IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+_ALLOWED_VIDEO_EXT = {".mp4", ".mov", ".webm"}
+
+
+def _safe_slot(slot: str) -> str:
+    try:
+        return safe_slot_name(slot)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid slot name.")
+
+@app.get("/api/vault/slots")
+def list_vault_slots():
+    slots_dir = get_slots_dir()
+    slots = []
+    for entry in slots_dir.iterdir():
+        if entry.is_dir():
+            slots.append(entry.name)
+    return JSONResponse(content={"slots": sorted(slots)})
+
+@app.post("/api/vault/slots")
+async def create_vault_slot(slot_name: str = Form(...)):
+    # Sanitize slot name
+    safe_name = "".join([c for c in slot_name if c.isalnum() or c in (" ", "-", "_")]).strip()
+    if not safe_name:
+        raise HTTPException(status_code=400, detail="Invalid slot name")
+        
+    slot_path = get_slots_dir() / safe_name
+    slot_path.mkdir(parents=True, exist_ok=True)
+    
+    import datetime
+    current_year = datetime.datetime.now().year
+    
+    # Generate multi-year structure in advance (current year + next 5 years)
+    for year in range(current_year, current_year + 6):
+        for month in range(1, 13):
+            month_path = slot_path / str(year) / str(month)
+            month_path.mkdir(parents=True, exist_ok=True)
+            (month_path / "Texts").mkdir(exist_ok=True)
+            (month_path / "Images").mkdir(exist_ok=True)
+            (month_path / "Videos").mkdir(exist_ok=True)
+    
+    return JSONResponse(content={"success": True, "slot": safe_name})
+
+@app.get("/api/vault/slot/{slot}/{year}/{month}")
+def get_vault_slot_days(slot: str, year: int, month: int):
+    slot = _safe_slot(slot)
+    slot_dir = get_slots_dir() / slot
+    if not slot_dir.exists():
+        raise HTTPException(status_code=404, detail="Slot not found")
+        
+    target_dir = slot_dir / str(year) / str(month)
+        
+    days = []
+    # Calculate actual number of days in that month
+    import calendar
+    _, num_days = calendar.monthrange(year, month)
+    for day in range(1, num_days + 1):
+        has_text = False
+        has_image = False
+        has_video = False
+        
+        try:
+            txt_path = target_dir / "Texts" / f"{day}.txt"
+            if txt_path.exists() and txt_path.stat().st_size > 0:
+                has_text = True
+                
+            # Check for any image extension
+            for ext in [".png", ".jpg", ".jpeg", ".webp", ".gif"]:
+                img_path = target_dir / "Images" / f"{day}{ext}"
+                if img_path.exists() and img_path.stat().st_size > 0:
+                    has_image = True
+                    break
+                    
+            # Check for video extensions
+            for ext in [".mp4", ".mov", ".webm"]:
+                vid_path = target_dir / "Videos" / f"{day}{ext}"
+                if vid_path.exists() and vid_path.stat().st_size > 0:
+                    has_video = True
+                    break
+        except Exception:
+            pass
+            
+        days.append({
+            "day": day,
+            "has_text": has_text,
+            "has_image": has_image,
+            "has_video": has_video
+        })
+        
+    return JSONResponse(content={"slot": slot, "days": days})
+
+@app.post("/api/vault/upload/{slot}/{year}/{month}/{day}")
+async def upload_vault_content(
+    slot: str,
+    year: int,
+    month: int,
+    day: int,
+    text: str = Form(None),
+    image: UploadFile = File(None),
+    video: UploadFile = File(None)
+):
+    slot = _safe_slot(slot)
+    slot_dir = get_slots_dir() / slot / str(year) / str(month)
+
+    if not (get_slots_dir() / slot).exists():
+        raise HTTPException(status_code=404, detail="Slot not found")
+
+    saved = []
+
+    if text is not None:
+        txt_path = slot_dir / "Texts" / f"{day}.txt"
+        atomic_write_text(txt_path, text)
+        saved.append("text")
+
+    if image is not None:
+        raw_ext = os.path.splitext(image.filename or "")[1].lower() or ".png"
+        if raw_ext not in _ALLOWED_IMAGE_EXT:
+            raise HTTPException(status_code=400, detail=f"Image type '{raw_ext}' not allowed.")
+        img_dir = slot_dir / "Images"
+        img_dir.mkdir(parents=True, exist_ok=True)
+        for p in img_dir.glob(f"{day}.*"):
+            p.unlink()
+        img_path = img_dir / f"{day}{raw_ext}"
+        atomic_write_bytes(img_path, await image.read())
+        saved.append("image")
+
+    if video is not None:
+        raw_ext = os.path.splitext(video.filename or "")[1].lower() or ".mp4"
+        if raw_ext not in _ALLOWED_VIDEO_EXT:
+            raise HTTPException(status_code=400, detail=f"Video type '{raw_ext}' not allowed.")
+        vid_dir = slot_dir / "Videos"
+        vid_dir.mkdir(parents=True, exist_ok=True)
+        for p in vid_dir.glob(f"{day}.*"):
+            p.unlink()
+        vid_path = vid_dir / f"{day}{raw_ext}"
+        atomic_write_bytes(vid_path, await video.read())
+        saved.append("video")
+        
+    return JSONResponse(content={"success": True, "saved": saved})
+
+@app.get("/api/vault/content/{slot}/{year}/{month}/{day}")
+def get_vault_content(slot: str, year: int, month: int, day: int):
+    slot = _safe_slot(slot)
+    slot_dir = get_slots_dir() / slot / str(year) / str(month)
+    if not slot_dir.exists():
+        return JSONResponse(content={"text": "", "has_image": False, "has_video": False, "image_url": None, "video_url": None})
+        
+    text_content = ""
+    txt_path = slot_dir / "Texts" / f"{day}.txt"
+    if txt_path.exists():
+        try:
+            text_content = txt_path.read_text(encoding="utf-8")
+        except Exception:
+            pass
+            
+    has_image = False
+    image_url = None
+    for ext in [".png", ".jpg", ".jpeg", ".webp", ".gif"]:
+        img_path = slot_dir / "Images" / f"{day}{ext}"
+        if img_path.exists():
+            has_image = True
+            image_url = f"/api/vault/media/{slot}/{year}/{month}/{day}/image"
+            break
+            
+    has_video = False
+    video_url = None
+    for ext in [".mp4", ".mov", ".webm"]:
+        vid_path = slot_dir / "Videos" / f"{day}{ext}"
+        if vid_path.exists():
+            has_video = True
+            video_url = f"/api/vault/media/{slot}/{year}/{month}/{day}/video"
+            break
+            
+    return JSONResponse(content={
+        "text": text_content,
+        "has_image": has_image,
+        "image_url": image_url,
+        "has_video": has_video,
+        "video_url": video_url
+    })
+
+@app.get("/api/vault/media/{slot}/{year}/{month}/{day}/{media_type}")
+def get_vault_media(slot: str, year: int, month: int, day: int, media_type: str):
+    from fastapi.responses import FileResponse
+    slot = _safe_slot(slot)
+    if media_type not in ("image", "video"):
+        raise HTTPException(status_code=400, detail="Invalid media type.")
+    slot_dir = get_slots_dir() / slot / str(year) / str(month)
+    
+    if media_type == "image":
+        for ext in [".png", ".jpg", ".jpeg", ".webp", ".gif"]:
+            p = slot_dir / "Images" / f"{day}{ext}"
+            if p.exists():
+                return FileResponse(p)
+                
+    elif media_type == "video":
+        for ext in [".mp4", ".mov", ".webm"]:
+            p = slot_dir / "Videos" / f"{day}{ext}"
+            if p.exists():
+                return FileResponse(p)
+                
+    raise HTTPException(status_code=404, detail="Media not found")
 
 @app.get("/api/kinematic")
 def get_kinematic():
@@ -573,27 +886,17 @@ def evaluate_lifecycle(req: EvaluateLifecycleRequest):
 
 # --- Autonomous Companion Endpoints ---
 
-from bol.config import get_config
-from bol.modules.m8_orchestrator.agent import AutonomousCompanion
-
-# Global singleton for the agent session
-_agent_instance = None
-
-def get_agent():
-    global _agent_instance
-    if _agent_instance is None:
-        config = get_config()
-        _agent_instance = AutonomousCompanion(config)
-    return _agent_instance
+from aha.agent_runtime import get_agent, agent_step, agent_clear_session
 
 class AgentChatRequest(BaseModel):
     text: str
+    is_native_app: bool = False
 
 @app.post("/api/agent/chat")
 def agent_chat(req: AgentChatRequest):
     try:
         agent = get_agent()
-        result = agent.step(user_message=req.text)
+        result = agent_step(agent, user_message=req.text, is_native_app=req.is_native_app)
         return result
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -602,7 +905,197 @@ def agent_chat(req: AgentChatRequest):
 def agent_resume(req: AgentChatRequest):
     try:
         agent = get_agent()
-        result = agent.step(user_message="User has completed the manual step. Please resume workflow.")
+        result = agent_step(
+            agent,
+            user_message="User has completed the manual step. Please resume workflow.",
+            is_native_app=req.is_native_app,
+        )
         return result
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@app.post("/api/agent/clear")
+def agent_clear():
+    try:
+        agent = get_agent()
+        agent_clear_session(agent)
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+# --- Remote Chrome Physical Automation Endpoints ---
+
+class BrowserClickRequest(BaseModel):
+    x_pct: float
+    y_pct: float
+
+class BrowserTypeRequest(BaseModel):
+    text: str
+
+@app.post("/api/browser/click")
+def browser_click(req: BrowserClickRequest):
+    try:
+        import random
+        config = get_config()
+        # Compute absolute screen coordinates targeting the Chrome window region
+        target_x = int(config.browser_window_x + req.x_pct * config.browser_window_width)
+        target_y = int(config.browser_window_y + req.y_pct * config.browser_window_height)
+        
+        # Click physically using Bezier coordinates movement and AccessibilityBridge
+        bridge = AccessibilityBridge()
+        current_pos = bridge.get_cursor_position()
+        final_point = Point2D(x=target_x, y=target_y)
+        dist = current_pos.distance_to(final_point)
+        if dist > 2.0:
+            cp = BezierEngine.generate_control_points(current_pos, final_point)
+            traj = BezierEngine.sample_trajectory(cp, num_steps=30)
+            dur = BezierEngine.calculate_duration_ms(dist)
+            bridge.execute_movement(traj, dur)
+            time.sleep(random.uniform(0.05, 0.15))
+            
+        click_event = ClickEvent(
+            target_x=int(final_point.x),
+            target_y=int(final_point.y),
+            button=MouseButton.LEFT,
+            pre_click_delay_ms=random.uniform(100, 200)
+        )
+        bridge.execute_click(click_event)
+        
+        # Refresh the screen capture region and return update
+        agent = get_agent()
+        agent._capture_and_encode()
+        img_data = agent._draw_and_encode_base64()
+        
+        return {"status": "success", "image_data": img_data}
+    except Exception as e:
+        logger.error(f"Error in manual browser click: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/browser/type")
+def browser_type(req: BrowserTypeRequest):
+    try:
+        bridge = AccessibilityBridge()
+        ling_engine = LinguisticEngine(personality=ALL_PERSONALITIES[0])
+        payload = ling_engine.prepare_payload(req.text)
+        seq = ling_engine.generate_keystroke_sequence(payload)
+        bridge.execute_keystroke_sequence(seq.events)
+        
+        agent = get_agent()
+        agent._capture_and_encode()
+        img_data = agent._draw_and_encode_base64()
+        
+        return {"status": "success", "image_data": img_data}
+    except Exception as e:
+        logger.error(f"Error in manual browser type: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/browser/screenshot")
+def browser_screenshot():
+    try:
+        agent = get_agent()
+        agent._capture_and_encode()
+        img_data = agent._draw_and_encode_base64()
+        return {"status": "success", "image_data": img_data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+# --- Workflow Runner (OTA JSON DSL) Endpoints ---
+
+from bol.modules.m8_orchestrator.workflow_runner import WorkflowRunner
+
+class WorkflowExecuteRequest(BaseModel):
+    workflow_id: str
+    media_path: str = ""
+    caption: str = ""
+
+@app.post("/api/workflows/execute")
+def execute_workflow(req: WorkflowExecuteRequest):
+    """
+    Executes a deterministic social media workflow fetched via OTA JSON.
+    """
+    try:
+        config = get_config()
+        runner = WorkflowRunner(config)
+        
+        # Build context variables for the JSON interpreter
+        context = {
+            "$FILE_PATH": req.media_path,
+            "$CAPTION": req.caption
+        }
+        
+        success = runner.run_workflow(req.workflow_id, context)
+        
+        if success:
+            return {"status": "success", "message": f"Workflow {req.workflow_id} completed successfully."}
+        else:
+            return {"status": "error", "message": f"Workflow {req.workflow_id} failed or not found."}
+            
+    except Exception as e:
+        logger.error(f"Error executing workflow {req.workflow_id}: {str(e)}")
+        return {"status": "error", "message": str(e)}
+# --- Content Generation & Scheduling Endpoints ---
+
+from bol.modules.m9_generator.engine import ContentGenerator
+from bol.modules.m10_scheduler.routine import RoutineScheduler
+import threading
+
+# Global scheduler instance
+_routine_scheduler = None
+
+class GenerateContentRequest(BaseModel):
+    api_key: str
+    topic: str
+    plan: str = "ai"
+
+@app.post("/api/content/generate")
+def generate_content(req: GenerateContentRequest):
+    try:
+        generator = ContentGenerator(api_key=req.api_key)
+        
+        # We run this in a background thread because Gemini takes a few seconds to generate 30 posts
+        def _bg_generate():
+            try:
+                paths = generator.generate_30_days(topic=req.topic, layer_key=req.plan)
+                logger.info(f"Background generation complete. Created {len(paths)} files.")
+            except Exception as e:
+                logger.error(f"Background generation failed: {e}")
+                
+        threading.Thread(target=_bg_generate, daemon=True).start()
+        
+        return {"status": "success", "message": f"Generation started for topic '{req.topic}'. 30 text files will appear in the vault shortly."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+class ScheduleRoutineRequest(BaseModel):
+    time: str # e.g. "09:00"
+
+@app.post("/api/routine/schedule")
+def schedule_routine(req: ScheduleRoutineRequest):
+    global _routine_scheduler
+    try:
+        if _routine_scheduler:
+            _routine_scheduler.stop()
+            
+        _routine_scheduler = RoutineScheduler(target_time=req.time)
+        _routine_scheduler.start()
+        
+        return {"status": "success", "message": f"Daily Routine scheduled successfully for {req.time}."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+class ConfigUpdate(BaseModel):
+    x: int
+    y: int
+    width: int
+    height: int
+
+@app.post("/api/config/set_browser_region")
+def set_browser_region(req: ConfigUpdate):
+    config = get_config()
+    config.browser_window_x = req.x
+    config.browser_window_y = req.y
+    config.browser_window_width = req.width
+    config.browser_window_height = req.height
+    return {"status": "success"}

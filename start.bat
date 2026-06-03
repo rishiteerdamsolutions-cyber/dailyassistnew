@@ -1,14 +1,18 @@
 @echo off
+setlocal enabledelayedexpansion
 echo ==========================================
-echo Starting Biological Agent Companion App...
+echo   AHA - Artificial Human Assistant
 echo ==========================================
+echo.
 
 cd /d "%~dp0"
 
-REM Check if Python is installed
+REM Check Python 3.9+
 python --version >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Python is not installed or not in your PATH. Please install Python 3.
+    echo [ERROR] Python is not installed or not in your PATH.
+    echo         Download Python from https://www.python.org/downloads/
+    echo         Make sure to check "Add Python to PATH" during install.
     pause
     exit /b 1
 )
@@ -17,26 +21,30 @@ REM Create virtual environment if it doesn't exist
 if not exist ".venv" (
     echo [INFO] Creating virtual environment...
     python -m venv .venv
+    if %ERRORLEVEL% NEQ 0 (
+        echo [ERROR] Could not create virtual environment.
+        pause
+        exit /b 1
+    )
 )
 
 REM Activate virtual environment
 call .venv\Scripts\activate.bat
 
-REM Install requirements
-echo [INFO] Installing dependencies...
-pip install -r requirements.txt
-pip install -e .
+REM Install/update dependencies
+echo [INFO] Installing dependencies (first run may take a minute)...
+pip install --quiet -r requirements.txt
+pip install --quiet -e .
+pip install --quiet pywebview
 
-REM Start the server in the background
-echo [INFO] Starting Backend Server...
-start /B uvicorn server:app --port 8000
+echo.
+echo [INFO] Starting AHA companion...
+echo [INFO] A window will open shortly. Keep this terminal open.
+echo.
 
-REM Wait 2 seconds for server to boot
-timeout /t 2 /nobreak >nul
+REM Launch the companion app (pywebview opens its own window)
+python app_webview.py
 
-REM Open the sandbox in the default browser
-echo [INFO] Opening Sandbox UI...
-start sandbox.html
-
-echo [INFO] System is running! Keep this window open. Close it to stop the server.
-cmd /k
+echo.
+echo [INFO] AHA has been closed.
+pause

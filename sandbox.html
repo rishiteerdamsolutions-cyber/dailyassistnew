@@ -100,57 +100,72 @@
     
     <div id="button-field"></div>
     
-    <div class="policy-panel" style="position: absolute; top: 70px; right: 20px; width: 350px; background: white; border: 2px solid #0a66c2; border-radius: 8px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 300;">
-        <div style="font-weight: bold; margin-bottom: 10px; color: #0a66c2;">Policy Engine (Personalities)</div>
-        <select id="policy-select" style="width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc;">
-            <option value="">Loading Personalities...</option>
-        </select>
-        <textarea id="policy-text" rows="3" style="width: 100%; padding: 8px; box-sizing: border-box; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Paste a paragraph here to simulate typing..."></textarea>
-        <button id="policy-submit" style="width: 100%; padding: 8px; background: #0a66c2; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Simulate Personality Math</button>
-        
-        <div id="policy-results" style="margin-top: 15px; font-size: 0.9rem; display: none; background: #f3f2ef; padding: 10px; border-radius: 4px;">
-            <div style="font-weight: bold; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-bottom: 5px;">Mathematical Profile</div>
-            <div><span style="color: #666;">Start Speed:</span> <span id="res-start" style="font-weight:bold;"></span> WPM</div>
-            <div><span style="color: #666;">End Speed:</span> <span id="res-end" style="font-weight:bold;"></span> WPM</div>
-            <div><span style="color: #666;">Stamina Depletion:</span> <span id="res-drop" style="font-weight:bold; color: #E63946;"></span> WPM</div>
-            <div><span style="color: #666;">Errors Generated:</span> <span id="res-typos" style="font-weight:bold; color: #E63946;"></span></div>
-            <div><span style="color: #666;">Total Time Taken:</span> <span id="res-time" style="font-weight:bold;"></span> sec</div>
+    <div class="policy-panel" style="position: absolute; top: 70px; right: 20px; width: 350px; background: white; border: 2px solid #0a66c2; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 300;">
+        <div style="font-weight: bold; background: #0a66c2; color: white; padding: 10px; cursor: pointer; display: flex; justify-content: space-between;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'; this.children[1].innerText = this.nextElementSibling.style.display === 'none' ? '[+]' : '[-]';">
+            <span>Policy Engine (Personalities)</span>
+            <span style="font-family: monospace;">[-]</span>
         </div>
-        
-        <div style="margin-top: 15px; font-weight: bold; color: #333;">Physical Execution:</div>
-        <div id="policy-physical-output" style="width: 100%; height: 100px; padding: 10px; box-sizing: border-box; border: 1px solid #0a66c2; border-radius: 4px; background: #fafafa; overflow-y: auto; white-space: pre-wrap; font-family: monospace; font-size: 14px;"></div>
-    </div>
-    
-    <div class="lifecycle-panel" style="position: absolute; top: 70px; left: 20px; width: 350px; background: white; border: 2px solid #0a66c2; border-radius: 8px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 300;">
-        <div style="font-weight: bold; margin-bottom: 10px; color: #0a66c2;">Lifecycle Engine (Biological Schedule)</div>
-        
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f3f2ef; border-radius: 4px;">
-            <label style="font-weight: bold; flex: 1;">Biological Mode (24/7):</label>
-            <input type="checkbox" id="lifecycle-toggle" style="width: 20px; height: 20px; cursor: pointer;">
-        </div>
-        
-        <div style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">Time Travel (Spoofing):</div>
-        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <input type="date" id="lifecycle-date" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px;" title="Spoof Date">
-            <input type="number" id="lifecycle-hour" min="0" max="23" placeholder="Hour (0-23)" style="width: 80px; padding: 6px; border: 1px solid #ccc; border-radius: 4px;" title="Spoof Hour (e.g. 3 for 3 AM)">
-        </div>
-        
-        <button id="lifecycle-submit" style="width: 100%; padding: 8px; background: #0a66c2; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Evaluate Next Execution</button>
-        
-        <div id="lifecycle-results" style="margin-top: 15px; font-size: 0.9rem; display: none; background: #222; color: #0f0; padding: 10px; border-radius: 4px; font-family: monospace;">
+        <div style="padding: 15px; display: none;">
+            <select id="policy-select" style="width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc;">
+                <option value="">Loading Personalities...</option>
+            </select>
+            <textarea id="policy-text" rows="3" style="width: 100%; padding: 8px; box-sizing: border-box; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Paste a paragraph here to simulate typing..."></textarea>
+            <button id="policy-submit" style="width: 100%; padding: 8px; background: #0a66c2; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Simulate Personality Math</button>
+            
+            <div id="policy-results" style="margin-top: 15px; font-size: 0.9rem; display: none; background: #f3f2ef; padding: 10px; border-radius: 4px;">
+                <div style="font-weight: bold; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-bottom: 5px;">Mathematical Profile</div>
+                <div><span style="color: #666;">Start Speed:</span> <span id="res-start" style="font-weight:bold;"></span> WPM</div>
+                <div><span style="color: #666;">End Speed:</span> <span id="res-end" style="font-weight:bold;"></span> WPM</div>
+                <div><span style="color: #666;">Stamina Depletion:</span> <span id="res-drop" style="font-weight:bold; color: #E63946;"></span> WPM</div>
+                <div><span style="color: #666;">Errors Generated:</span> <span id="res-typos" style="font-weight:bold; color: #E63946;"></span></div>
+                <div><span style="color: #666;">Total Time Taken:</span> <span id="res-time" style="font-weight:bold;"></span> sec</div>
+            </div>
+            
+            <div style="margin-top: 15px; font-weight: bold; color: #333;">Physical Execution:</div>
+            <div id="policy-physical-output" style="width: 100%; height: 100px; padding: 10px; box-sizing: border-box; border: 1px solid #0a66c2; border-radius: 4px; background: #fafafa; overflow-y: auto; white-space: pre-wrap; font-family: monospace; font-size: 14px;"></div>
         </div>
     </div>
     
-    <div class="visual-panel" id="visual-panel" style="position: fixed; bottom: 0; left: 0; width: 100%; height: 280px; background: white; border-top: 2px solid #ccc; z-index: 200; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);">
-        <div style="font-weight: bold; margin-bottom: 10px; color: #0a66c2;">Visual Agent (OCR) Scanner & Orchestrator</div>
-        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-            <input type="text" id="visual-input" placeholder="e.g. Button 4" style="padding: 8px; width: 250px; border: 1px solid #ccc; border-radius: 4px;">
-            <button id="visual-submit" style="padding: 8px 16px; background: #0a66c2; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Capture & Scan Screen</button>
-            <button id="visual-click-submit" style="padding: 8px 16px; background: #E63946; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Find & Click (Full Autonomous)</button>
+    <div class="lifecycle-panel" style="position: absolute; top: 70px; left: 20px; width: 350px; background: white; border: 2px solid #0a66c2; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 300;">
+        <div style="font-weight: bold; background: #0a66c2; color: white; padding: 10px; cursor: pointer; display: flex; justify-content: space-between;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'; this.children[1].innerText = this.nextElementSibling.style.display === 'none' ? '[+]' : '[-]';">
+            <span>Lifecycle Engine (Biological)</span>
+            <span style="font-family: monospace;">[-]</span>
         </div>
-        <div style="flex: 1; overflow: auto; background: #222; text-align: center; border-radius: 4px;">
-            <img id="visual-result" style="max-height: 100%; display: none; margin: 0 auto;">
-            <div id="visual-loading" style="display: none; color: white; margin-top: 20px;">Executing Vision Engine...</div>
+        <div style="padding: 15px; display: none;">
+            
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f3f2ef; border-radius: 4px;">
+                <label style="font-weight: bold; flex: 1;">Biological Mode (24/7):</label>
+                <input type="checkbox" id="lifecycle-toggle" style="width: 20px; height: 20px; cursor: pointer;">
+            </div>
+            
+            <div style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">Time Travel (Spoofing):</div>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <input type="date" id="lifecycle-date" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px;" title="Spoof Date">
+                <input type="number" id="lifecycle-hour" min="0" max="23" placeholder="Hour (0-23)" style="width: 80px; padding: 6px; border: 1px solid #ccc; border-radius: 4px;" title="Spoof Hour (e.g. 3 for 3 AM)">
+            </div>
+            
+            <button id="lifecycle-submit" style="width: 100%; padding: 8px; background: #0a66c2; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Evaluate Next Execution</button>
+            
+            <div id="lifecycle-results" style="margin-top: 15px; font-size: 0.9rem; display: none; background: #222; color: #0f0; padding: 10px; border-radius: 4px; font-family: monospace;">
+            </div>
+        </div>
+    </div>
+    
+    <div class="visual-panel" id="visual-panel" style="position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 2px solid #ccc; z-index: 200; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);">
+        <div style="font-weight: bold; background: #333; color: white; padding: 10px; cursor: pointer; display: flex; justify-content: space-between;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'flex' : 'none'; this.children[1].innerText = this.nextElementSibling.style.display === 'none' ? '[+]' : '[-]';">
+            <span>Visual Agent (OCR) Scanner</span>
+            <span style="font-family: monospace;">[-]</span>
+        </div>
+        <div style="padding: 15px; display: none; flex-direction: column; height: 230px; box-sizing: border-box;">
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="text" id="visual-input" placeholder="e.g. Facebook" style="padding: 8px; width: 250px; border: 1px solid #ccc; border-radius: 4px;">
+                <button id="visual-submit" style="padding: 8px 16px; background: #0a66c2; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Capture & Scan Screen</button>
+                <button id="visual-click-submit" style="padding: 8px 16px; background: #E63946; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Find & Click (Full Autonomous)</button>
+            </div>
+            <div style="flex: 1; overflow: auto; background: #222; text-align: center; border-radius: 4px;">
+                <img id="visual-result" style="max-height: 100%; display: none; margin: 0 auto;">
+                <div id="visual-loading" style="display: none; color: white; margin-top: 20px;">Executing Vision Engine...</div>
+            </div>
         </div>
     </div>
 
@@ -159,11 +174,24 @@
         const numButtons = 20;
         const buttons = [];
 
+        const platforms = [
+            { bg: '#1877f2', color: 'white', name: 'Facebook' },
+            { bg: '#0a66c2', color: 'white', name: 'LinkedIn' },
+            { bg: '#0f1419', color: 'white', name: 'X' },
+            { bg: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)', color: 'white', name: 'Instagram' }
+        ];
+
         // Generate 20 random buttons
         for (let i = 1; i <= numButtons; i++) {
             const btn = document.createElement('button');
             btn.className = 'target-btn';
-            btn.textContent = `Button ${i}`;
+            
+            const platform = platforms[Math.floor(Math.random() * platforms.length)];
+            btn.style.background = platform.bg;
+            btn.style.color = platform.color;
+            btn.style.borderColor = 'transparent';
+            
+            btn.textContent = `Post (${platform.name} ${i})`;
             btn.id = `btn-${i}`;
             
             // Random position (avoiding header and edges)
@@ -175,8 +203,10 @@
             
             // Add click listener to turn green
             btn.addEventListener('click', function() {
-                this.classList.add('clicked');
-                setTimeout(() => this.classList.remove('clicked'), 2000);
+                this.style.background = '#4CAF50';
+                setTimeout(() => {
+                    this.style.background = platform.bg;
+                }, 2000);
             });
             
             field.appendChild(btn);
