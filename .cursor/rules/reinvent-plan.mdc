@@ -1,0 +1,21 @@
+---
+description: REINVENT_PLAN phases — announce Cursor model after each phase
+alwaysApply: true
+---
+
+# Reinvent Plan — phase workflow
+
+Canonical doc: `REINVENT_PLAN.md`
+
+When the user is implementing **REINVENT_PLAN** phases:
+
+1. Use the **Cursor model** listed for the **current** phase in that file.
+2. **When a phase is completed** (or the user asks what's next), explicitly tell them which **Cursor model to choose for the next phase** — do not skip this.
+
+Quick map:
+- Phase 0 → Composer or Codex
+- Phase 1 → Codex or Composer
+- Phase 2 → Sonnet or Opus (thinking)
+- Phase 3 → Sonnet or Opus
+- Phase 4 → Composer + pytest
+- Phase 5 → Composer or Sonnet

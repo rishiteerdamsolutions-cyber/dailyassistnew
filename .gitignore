@@ -34,3 +34,12 @@ firebase-credentials.json
 dist/
 build/
 *.egg-info/
+
+# Local dev / vision experiments (do not ship)
+vision_debug_crops/
+vision_test_result.png
+test_ai_vision.py
+test_gemini.py
+
+# Duplicate scan copies — canonical code is aha/
+storage files/
