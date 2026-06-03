@@ -31,7 +31,10 @@ jobs:
             libsm6 \
             libxext6 \
             libxrender1 \
-            libgomp1
+            libgomp1 \
+            xvfb \
+            scrot \
+            python3-tk
 
       - name: Install Python dependencies
         run: |
@@ -42,11 +45,16 @@ jobs:
           pip install --force-reinstall opencv-python-headless
 
       - name: Verify imports
+        env:
+          DISPLAY: ":99"
         run: |
           set -euxo pipefail
-          python -c "import cv2; from bol.config import BOLConfig; from aha.billing import PLANS; print('imports ok')"
+          # pyautogui (imported transitively by m9_social) needs an X display on Linux.
+          xvfb-run -a python -c "import cv2, pyautogui; from bol.config import BOLConfig; from aha.billing import PLANS; print('imports ok')"
 
       - name: Run tests
+        env:
+          DISPLAY: ":99"
         run: |
           set -euxo pipefail
-          python -m pytest tests/ -q --tb=short
+          xvfb-run -a python -m pytest tests/ -q --tb=short
