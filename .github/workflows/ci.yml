@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main, master]
 
+env:
+  # Silence Node 20 deprecation warning on checkout/setup-python (see GitHub changelog).
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -21,16 +25,23 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             tesseract-ocr \
-            libgl1 \
             libglib2.0-0 \
-            libsm6 \
-            libxext6 \
-            libxrender1
+            libgomp1
 
       - name: Install Python dependencies
         run: |
+          set -euxo pipefail
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
+          # Replace GUI OpenCV wheel (needs libGL on Linux) with headless build for CI.
+          pip install --force-reinstall opencv-python-headless
+
+      - name: Verify imports
+        run: |
+          set -euxo pipefail
+          python -c "import cv2; from bol.config import BOLConfig; from aha.billing import PLANS; print('imports ok')"
 
       - name: Run tests
-        run: python -m pytest tests/ -q --tb=short
+        run: |
+          set -euxo pipefail
+          python -m pytest tests/ -q --tb=short
