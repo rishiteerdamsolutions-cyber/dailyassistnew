@@ -43,3 +43,4 @@ test_gemini.py
 
 # Duplicate scan copies — canonical code is aha/
 storage files/
+.vercel

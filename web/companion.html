@@ -1466,16 +1466,18 @@
             setTimeout(showPermissionsGuide, 800);
         }
 
-        // Check license on load
+        // Check license on load (local file; cloud sync runs after Firebase sign-in)
         async function checkLicense() {
             try {
                 const res = await fetch('http://127.0.0.1:8000/api/license/status');
                 const data = await res.json();
                 if (!data.valid) {
-                    licenseGate.style.display = 'flex';
+                    authGate.style.display = 'flex';
+                    if (data.reason === 'expired') {
+                        showSubscriptionRequired(data);
+                    }
                 }
             } catch (err) {
-                // Server not ready yet or no license module — skip gate
                 console.warn('License check skipped:', err.message);
             }
         }
@@ -1672,6 +1674,19 @@
             }
         }
 
+        function showSubscriptionRequired(data) {
+            authGate.style.display = 'flex';
+            licenseSection.style.display = 'block';
+            if (data?.reason === 'expired') {
+                licenseError.textContent = 'Your subscription has ended. Renew at dailyassist.xyz/subscribe to continue using AHA.';
+            } else if (data?.reason === 'no_subscription') {
+                licenseError.textContent = 'No active subscription. Subscribe first, then sign in again.';
+            } else {
+                licenseError.textContent = 'A valid paid subscription is required.';
+            }
+            licenseError.style.display = 'block';
+        }
+
         async function syncCloudLicense(user) {
             try {
                 const idToken = await user.getIdToken(true);
@@ -1683,29 +1698,36 @@
                 const data = await res.json();
                 if (data.valid) {
                     authGate.style.display = 'none';
+                    licenseError.style.display = 'none';
                     return true;
                 }
+                showSubscriptionRequired(data);
+                return false;
             } catch (e) {
                 console.warn('License sync failed:', e.message);
             }
-            return false;
-        }
-
-        // ── Check license status after sign-in ───────────────────────
-        async function checkLicenseAfterAuth(user) {
-            if (await syncCloudLicense(user)) return;
+            // Offline / Supabase unreachable: use local cache (still enforces expires_at)
             try {
                 const res = await fetch('http://127.0.0.1:8000/api/license/status');
                 const data = await res.json();
                 if (data.valid) {
                     authGate.style.display = 'none';
-                } else {
-                    licenseSection.style.display = 'block';
+                    return true;
                 }
-            } catch (e) {
-                authGate.style.display = 'none';
-            }
+                if (data.reason === 'expired') showSubscriptionRequired(data);
+            } catch (_) {}
+            return false;
         }
+
+        async function checkLicenseAfterAuth(user) {
+            await syncCloudLicense(user);
+        }
+
+        // Re-check subscription every hour while app is open
+        setInterval(() => {
+            const u = auth.currentUser;
+            if (u) syncCloudLicense(u);
+        }, 60 * 60 * 1000);
 
         // ── Auth state listener ──────────────────────────────────────
         onAuthStateChanged(auth, async (user) => {

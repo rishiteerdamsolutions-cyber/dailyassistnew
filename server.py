@@ -103,7 +103,7 @@ os.makedirs("downloads", exist_ok=True)
 
 # Mount the web directory for static files (CSS, JS)
 app.mount("/static", StaticFiles(directory="web"), name="static")
-app.mount("/downloads", StaticFiles(directory="downloads"), name="downloads")
+# Installers only via /api/download/{mac|win} — requires paid subscription (see aha/download_auth.py)
 
 
 def _inject_aha_session(html: str) -> str:

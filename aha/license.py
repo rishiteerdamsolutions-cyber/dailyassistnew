@@ -19,8 +19,9 @@ AHA_DIR = Path.home() / ".aha"
 LICENSE_FILE = AHA_DIR / "license.json"
 CONFIG_FILE = AHA_DIR / "config.json"
 
-OFFLINE_GRACE_HOURS = 48
-RECHECK_HOURS = 6
+# Re-check cloud subscription often; short offline grace only for network outages.
+OFFLINE_GRACE_HOURS = 12
+RECHECK_HOURS = 1
 
 # ===========================================================================
 # 1. License Management
@@ -56,40 +57,41 @@ def save_license(data: dict) -> None:
         print(f"[aha] Warning: could not write license file: {exc}")
 
 
+def _local_license_expired(data: dict) -> bool:
+    from aha.subscription import is_expired
+
+    return is_expired(data.get("expires"))
+
+
 def _validate_license_cloud(license_key: str) -> Optional[dict]:
     """Check Supabase for a paid license row."""
     try:
-        from aha.supabase_client import get_supabase_admin
+        from aha.supabase_client import deactivate_license, get_supabase_admin
+        from aha.subscription import license_row_is_active
 
         client = get_supabase_admin()
         result = (
             client.table("aha_licenses")
             .select("plan, expires_at, is_active")
             .eq("license_key", license_key)
-            .eq("is_active", True)
             .limit(1)
             .execute()
         )
         if not result.data:
             return None
         row = result.data[0]
-        expires = row.get("expires_at")
-        if expires:
-            try:
-                exp_dt = datetime.fromisoformat(str(expires).replace("Z", "+00:00"))
-                if exp_dt < datetime.now(timezone.utc):
-                    return {
-                        "valid": False,
-                        "plan": row.get("plan"),
-                        "expires": expires,
-                        "reason": "expired",
-                    }
-            except (ValueError, TypeError):
-                pass
+        if not license_row_is_active(row):
+            deactivate_license(license_key)
+            return {
+                "valid": False,
+                "plan": row.get("plan"),
+                "expires": row.get("expires_at"),
+                "reason": "expired",
+            }
         return {
             "valid": True,
             "plan": row.get("plan") or "core",
-            "expires": expires,
+            "expires": row.get("expires_at"),
             "reason": None,
         }
     except Exception:
@@ -139,11 +141,12 @@ def validate_license(license_key: str) -> dict:
 
     now_iso = datetime.now(timezone.utc).isoformat()
 
+    from aha.subscription import allow_dev_license_keys
+
     cloud = _validate_license_cloud(license_key)
     if cloud is not None:
         result = cloud
-    elif license_key.startswith("AHA-") and len(license_key) == 18:
-        # Dev / legacy local acceptance
+    elif allow_dev_license_keys() and license_key.startswith("AHA-") and len(license_key) == 18:
         result = {
             "valid": True,
             "plan": "core",
@@ -184,6 +187,17 @@ def check_license_status() -> dict:
     if not data or "license_key" not in data:
         return {"valid": False, "reason": "no_license"}
 
+    if _local_license_expired(data):
+        save_license(
+            {
+                **data,
+                "valid": False,
+                "reason": "expired",
+                "last_validated": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+        return {"valid": False, "reason": "expired", "expires": data.get("expires")}
+
     last_validated_str = data.get("last_validated")
     if last_validated_str:
         try:
@@ -192,22 +206,26 @@ def check_license_status() -> dict:
                 datetime.now(timezone.utc) - last_ts
             ).total_seconds() / 3600.0
 
-            # Still fresh – return cached result.
+            # Still fresh – return cached result (must still be marked valid).
             if age_hours < RECHECK_HOURS:
+                if not data.get("valid"):
+                    return {
+                        "valid": False,
+                        "reason": data.get("reason", "no_license"),
+                        "expires": data.get("expires"),
+                    }
                 return {
-                    "valid": data.get("valid", False),
+                    "valid": True,
                     "plan": data.get("plan"),
                     "expires": data.get("expires"),
                     "reason": data.get("reason"),
                 }
 
-            # Stale – attempt re-validation.
+            # Stale – re-validate against Supabase (enforces expiry).
             try:
                 return validate_license(data["license_key"])
             except Exception:
-                # Re-validation failed (e.g. network error in a future
-                # remote-check implementation).  Allow offline grace.
-                if age_hours < OFFLINE_GRACE_HOURS and data.get("valid"):
+                if age_hours < OFFLINE_GRACE_HOURS and data.get("valid") and not _local_license_expired(data):
                     return {
                         "valid": True,
                         "plan": data.get("plan"),

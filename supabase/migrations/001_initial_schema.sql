@@ -2,11 +2,6 @@
 -- Run this in Supabase Dashboard → SQL Editor
 
 -- ─────────────────────────────────────────────────────────────
--- Enable UUID extension
--- ─────────────────────────────────────────────────────────────
-create extension if not exists "uuid-ossp";
-
--- ─────────────────────────────────────────────────────────────
 -- aha_users
 -- Mirrors Firebase Auth user; uid = Firebase UID (string)
 -- ─────────────────────────────────────────────────────────────
@@ -36,7 +31,7 @@ create policy "users_update_own" on aha_users
 -- One row per license key activation
 -- ─────────────────────────────────────────────────────────────
 create table if not exists aha_licenses (
-    id             uuid primary key default uuid_generate_v4(),
+    id             uuid primary key default gen_random_uuid(),
     uid            text not null references aha_users(uid) on delete cascade,
     license_key    text not null unique,
     plan           text not null default 'core',
@@ -58,7 +53,7 @@ create policy "licenses_insert_own" on aha_licenses
 -- Lightweight calendar metadata — actual files in Supabase Storage
 -- ─────────────────────────────────────────────────────────────
 create table if not exists aha_vault_meta (
-    id             uuid primary key default uuid_generate_v4(),
+    id             uuid primary key default gen_random_uuid(),
     uid            text not null references aha_users(uid) on delete cascade,
     slot           text not null,
     year           smallint not null,
@@ -94,7 +89,7 @@ create index if not exists idx_vault_meta_uid_slot
 -- User-created content slot names
 -- ─────────────────────────────────────────────────────────────
 create table if not exists aha_slots (
-    id             uuid primary key default uuid_generate_v4(),
+    id             uuid primary key default gen_random_uuid(),
     uid            text not null references aha_users(uid) on delete cascade,
     slot_name      text not null,
     created_at     timestamptz not null default now(),

@@ -1,0 +1,19 @@
+.venv
+.env
+.env.*
+*adminsdk*.json
+rzp-key*.csv
+VISIONBUTTONS
+vision_debug_crops
+vision_test_result.png
+storage files
+downloads
+server.py
+app.py
+app_webview.py
+bol/
+tests
+test_*.py
+.cursor
+*.egg-info
+assist-daily-firebase-adminsdk*.json

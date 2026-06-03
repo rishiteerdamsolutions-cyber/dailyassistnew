@@ -2,9 +2,9 @@
 Supabase client — single shared instance for the FastAPI process.
 
 Environment variables (set in .env):
-    SUPABASE_URL          https://wuvapuamgkrtoyeumsjd.supabase.co
-    SUPABASE_ANON_KEY     sb_publishable_...  (safe to bundle with app)
-    SUPABASE_SERVICE_KEY  eyJ...              (server-side only, never expose to client)
+    SUPABASE_URL          https://xzgxzwueztsjwtortays.supabase.co
+    SUPABASE_ANON_KEY     eyJ...anon (Dashboard → API)
+    SUPABASE_SERVICE_KEY  eyJ...service_role (server only, never expose to client)
 """
 
 from __future__ import annotations
@@ -14,11 +14,9 @@ from functools import lru_cache
 
 # ── Supabase project settings ────────────────────────────────────────────────
 SUPABASE_URL = os.environ.get(
-    "SUPABASE_URL", "https://wuvapuamgkrtoyeumsjd.supabase.co"
+    "SUPABASE_URL", "https://xzgxzwueztsjwtortays.supabase.co"
 )
-SUPABASE_ANON_KEY = os.environ.get(
-    "SUPABASE_ANON_KEY", "sb_publishable_Xc27yow5Gy9bhh81o8pEBw_mMWAuZCt"
-)
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
 
@@ -69,8 +67,10 @@ def upsert_user(uid: str, email: str, display_name: str | None = None) -> dict:
 # ── Helper: license check via Supabase ──────────────────────────────────────
 
 def get_active_license(uid: str) -> dict | None:
-    """Return the user's active license row, or None."""
+    """Return the user's paid license row only if not expired."""
     try:
+        from aha.subscription import license_row_is_active
+
         client = get_supabase_admin()
         result = (
             client.table("aha_licenses")
@@ -81,9 +81,28 @@ def get_active_license(uid: str) -> dict | None:
             .limit(1)
             .execute()
         )
-        return result.data[0] if result.data else None
+        if not result.data:
+            return None
+        row = result.data[0]
+        if not license_row_is_active(row):
+            deactivate_license(row.get("license_key", ""))
+            return None
+        return row
     except Exception:
         return None
+
+
+def deactivate_license(license_key: str) -> None:
+    """Mark a license inactive (e.g. after expiry)."""
+    if not license_key:
+        return
+    try:
+        client = get_supabase_admin()
+        client.table("aha_licenses").update({"is_active": False}).eq(
+            "license_key", license_key
+        ).execute()
+    except Exception:
+        pass
 
 
 def activate_cloud_license(uid: str, license_key: str, plan: str = "core") -> dict:

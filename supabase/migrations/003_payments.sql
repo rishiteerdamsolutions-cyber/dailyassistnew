@@ -2,7 +2,7 @@
 -- Run after 001_initial_schema.sql
 
 create table if not exists aha_payments (
-    id                  uuid primary key default uuid_generate_v4(),
+    id                  uuid primary key default gen_random_uuid(),
     uid                 text not null references aha_users(uid) on delete cascade,
     razorpay_order_id   text not null unique,
     razorpay_payment_id text unique,

@@ -1,0 +1,6 @@
+fastapi>=0.100.0
+pydantic>=2.5
+firebase-admin>=6.0
+supabase>=2.0
+razorpay>=1.4.0
+python-multipart>=0.0.9

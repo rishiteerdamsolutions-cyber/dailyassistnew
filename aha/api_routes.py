@@ -8,6 +8,7 @@ Usage in the main server::
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from aha.firebase_auth import get_current_user
@@ -142,6 +143,30 @@ async def billing_verify_payment(
         return {"status": "ok", **result}
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/download/eligibility")
+async def download_eligibility(user: dict = Depends(get_current_user)) -> dict:
+    from aha.download_auth import eligibility_for_uid
+
+    return await eligibility_for_uid(user["uid"])
+
+
+@router.get("/download/{platform}")
+async def download_package(platform: str, user: dict = Depends(get_current_user)):
+    from aha.download_auth import resolve_download
+
+    resolved = await resolve_download(user["uid"], platform)
+    if not resolved.get("ok"):
+        raise HTTPException(
+            status_code=403 if resolved.get("reason") != "package_missing" else 404,
+            detail=resolved.get("message") or resolved.get("reason", "download_denied"),
+        )
+    return FileResponse(
+        resolved["path"],
+        filename=resolved["filename"],
+        media_type="application/zip",
+    )
 
 
 @router.post("/billing/webhook")
