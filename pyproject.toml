@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "bol"
 version = "0.1.0"
 description = "Behavioral Operating Layer — AI-Mediated Human-Computer Interaction Framework"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {text = "Proprietary"}
 
 dependencies = [
