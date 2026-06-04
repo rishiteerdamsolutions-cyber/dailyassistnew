@@ -18,6 +18,18 @@
 
 4. Start AHA: `start_companion.command` (Mac) or `start.bat` (Windows)
 
+## Vercel: Firebase credential (common error)
+
+If you see `No such file or directory: '-----BEGIN PRIVATE KEY-----'`:
+
+1. You pasted **only the private key** into an env var. That is wrong.
+2. In Firebase Console → **Project settings** → **Service accounts** → **Generate new private key** (downloads `.json`).
+3. In Vercel, set **`FIREBASE_SERVICE_ACCOUNT_JSON`** to the **entire file** as one line (minify JSON; keep `\n` inside `private_key` as `\n`).
+4. **Remove** or clear **`FIREBASE_SERVICE_ACCOUNT_PATH`** on Vercel (local path does not exist there).
+5. Redeploy. Check `https://www.dailyassist.xyz/api/billing/ready` → `firebase_configured: true`.
+
+**Security:** If the private key was exposed, revoke that key in Firebase and generate a new JSON.
+
 ## Admin & test coupons
 
 - **Admin dashboard:** http://127.0.0.1:8000/admin — customer analytics, coupon list, create codes
