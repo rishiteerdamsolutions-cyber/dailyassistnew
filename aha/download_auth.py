@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from aha.subscription import license_row_is_active
@@ -11,6 +12,24 @@ ALLOWED_PACKAGES = {
     "mac": "AHA-mac.zip",
     "win": "AHA-win.zip",
 }
+
+# Vercel excludes downloads/ — host zips on Supabase/GitHub and set these URLs.
+_DOWNLOAD_URL_ENV = {
+    "mac": "AHA_DOWNLOAD_MAC_URL",
+    "win": "AHA_DOWNLOAD_WIN_URL",
+}
+
+
+def download_url(platform: str) -> str | None:
+    key = _DOWNLOAD_URL_ENV.get(platform)
+    if not key:
+        return None
+    url = os.environ.get(key, "").strip()
+    return url or None
+
+
+def package_available(platform: str) -> bool:
+    return package_path(platform) is not None or bool(download_url(platform))
 
 
 async def eligibility_for_uid(uid: str) -> dict:
@@ -44,11 +63,26 @@ async def resolve_download(uid: str, platform: str) -> dict:
     if not elig.get("allowed"):
         return {"ok": False, **elig}
 
+    filename = ALLOWED_PACKAGES.get(platform, "AHA.zip")
     path = package_path(platform)
-    if not path:
+    if path:
         return {
-            "ok": False,
-            "reason": "package_missing",
-            "message": f"Installer not uploaded yet. Add {ALLOWED_PACKAGES.get(platform)} to the downloads/ folder.",
+            "ok": True,
+            "kind": "file",
+            "path": str(path),
+            "filename": filename,
         }
-    return {"ok": True, "path": str(path), "filename": path.name}
+
+    url = download_url(platform)
+    if url:
+        return {"ok": True, "kind": "url", "url": url, "filename": filename}
+
+    return {
+        "ok": False,
+        "reason": "package_missing",
+        "message": (
+            f"Installer not available yet. Build {filename} (scripts/build_release_zip.sh), "
+            f"upload to cloud storage, and set {_DOWNLOAD_URL_ENV.get(platform)} on Vercel — "
+            f"or place the file in downloads/ for local server.py."
+        ),
+    }

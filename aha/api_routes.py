@@ -120,6 +120,8 @@ async def billing_ready() -> dict:
     from aha.firebase_auth import firebase_env_diagnostics
     from aha.supabase_client import SUPABASE_SERVICE_KEY, SUPABASE_URL
 
+    from aha.download_auth import package_available
+
     fb = firebase_env_diagnostics()
 
     return {
@@ -127,6 +129,10 @@ async def billing_ready() -> dict:
         "supabase_configured": bool(SUPABASE_URL and SUPABASE_SERVICE_KEY),
         "firebase_configured": bool(fb.get("json_valid")),
         "firebase": fb,
+        "downloads": {
+            "mac": package_available("mac"),
+            "win": package_available("win"),
+        },
     }
 
 
@@ -181,6 +187,8 @@ async def download_eligibility(user: dict = Depends(get_current_user)) -> dict:
 
 @router.get("/download/{platform}")
 async def download_package(platform: str, user: dict = Depends(get_current_user)):
+    from fastapi.responses import RedirectResponse
+
     from aha.download_auth import resolve_download
 
     resolved = await resolve_download(user["uid"], platform)
@@ -189,6 +197,8 @@ async def download_package(platform: str, user: dict = Depends(get_current_user)
             status_code=403 if resolved.get("reason") != "package_missing" else 404,
             detail=resolved.get("message") or resolved.get("reason", "download_denied"),
         )
+    if resolved.get("kind") == "url":
+        return RedirectResponse(url=resolved["url"], status_code=302)
     return FileResponse(
         resolved["path"],
         filename=resolved["filename"],
