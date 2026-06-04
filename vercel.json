@@ -9,6 +9,8 @@
   },
   "redirects": [
     { "source": "/companion", "destination": "/download", "permanent": false },
+    { "source": "/demo", "destination": "/", "permanent": false },
+    { "source": "/static/:path*", "destination": "/", "permanent": false },
     { "source": "/legal", "destination": "/legal.html", "permanent": true }
   ],
   "rewrites": [
