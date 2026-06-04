@@ -36,11 +36,31 @@ PLANS: dict[str, dict[str, Any]] = {
 
 
 def razorpay_key_id() -> str:
-    return os.environ.get("RAZORPAY_KEY_ID", "").strip()
+    return os.environ.get("RAZORPAY_KEY_ID", "").strip().strip('"').strip("'")
+
+
+def razorpay_key_secret() -> str:
+    return os.environ.get("RAZORPAY_KEY_SECRET", "").strip().strip('"').strip("'")
 
 
 def razorpay_configured() -> bool:
-    return bool(razorpay_key_id() and os.environ.get("RAZORPAY_KEY_SECRET", "").strip())
+    return bool(razorpay_key_id() and razorpay_key_secret())
+
+
+def razorpay_env_diagnostics() -> dict:
+    """Safe Razorpay deploy check — never returns secrets."""
+    key = razorpay_key_id()
+    mode = "unknown"
+    if key.startswith("rzp_test_"):
+        mode = "test"
+    elif key.startswith("rzp_live_"):
+        mode = "live"
+    return {
+        "configured": razorpay_configured(),
+        "mode": mode,
+        "key_id_suffix": key[-6:] if len(key) >= 6 else "",
+        "secret_length": len(razorpay_key_secret()),
+    }
 
 
 def _client():
@@ -50,9 +70,7 @@ def _client():
         )
     import razorpay
 
-    return razorpay.Client(
-        auth=(razorpay_key_id(), os.environ["RAZORPAY_KEY_SECRET"].strip())
-    )
+    return razorpay.Client(auth=(razorpay_key_id(), razorpay_key_secret()))
 
 
 def public_billing_config() -> dict:

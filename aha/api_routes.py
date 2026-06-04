@@ -116,7 +116,7 @@ async def billing_config() -> dict:
 @router.get("/billing/ready")
 async def billing_ready() -> dict:
     """Diagnostics for deploy — which server env vars are present (no secrets)."""
-    from aha.billing import razorpay_configured
+    from aha.billing import razorpay_configured, razorpay_env_diagnostics
     from aha.firebase_auth import firebase_env_diagnostics
     from aha.supabase_client import SUPABASE_SERVICE_KEY, SUPABASE_URL
 
@@ -126,6 +126,7 @@ async def billing_ready() -> dict:
 
     return {
         "razorpay_configured": razorpay_configured(),
+        "razorpay": razorpay_env_diagnostics(),
         "supabase_configured": bool(SUPABASE_URL and SUPABASE_SERVICE_KEY),
         "firebase_configured": bool(fb.get("json_valid")),
         "firebase": fb,

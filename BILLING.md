@@ -1,5 +1,18 @@
 # Razorpay subscriptions (Mac + Windows)
 
+## Razorpay “Authentication failed”
+
+Razorpay returns this when **Key ID** and **Key Secret** do not match or are wrong.
+
+1. [Razorpay Dashboard](https://dashboard.razorpay.com) → **Account & Settings** → **API Keys**
+2. Use **Test mode** toggle (top) for development — copy **Key Id** (`rzp_test_…`) and **Key Secret** (shown once when generated).
+3. In **Vercel**, set both `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` for **Production** (no quotes, no spaces, no line breaks).
+4. **Both must be test** (`rzp_test_` + test secret) **or both live** (`rzp_live_` + live secret) — never mix.
+5. If you regenerated the secret, update Vercel and **redeploy**.
+6. Check `https://www.dailyassist.xyz/api/billing/ready` → `razorpay.mode` should be `test` or `live`, `secret_length` usually 24–32+.
+
+Until keys work, use **COUPON100** on `/subscribe` for free test checkout (no Razorpay).
+
 ## Setup
 
 1. Add test keys to `.env` (from Razorpay dashboard or your `rzp-key-2.csv` — **never commit the CSV**):
