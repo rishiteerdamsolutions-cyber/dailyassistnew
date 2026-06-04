@@ -11,9 +11,26 @@
     { "source": "/companion", "destination": "/download", "permanent": false },
     { "source": "/demo", "destination": "/", "permanent": false },
     { "source": "/static/:path*", "destination": "/", "permanent": false },
-    { "source": "/legal", "destination": "/legal.html", "permanent": true }
+    { "source": "/legal.html", "destination": "/legal", "permanent": true },
+    { "source": "/pricing.html", "destination": "/pricing", "permanent": true },
+    { "source": "/subscribe.html", "destination": "/subscribe", "permanent": true },
+    { "source": "/download.html", "destination": "/download", "permanent": true },
+    { "source": "/how-it-works.html", "destination": "/how-it-works", "permanent": true },
+    { "source": "/faq.html", "destination": "/faq", "permanent": true },
+    { "source": "/about.html", "destination": "/about", "permanent": true },
+    { "source": "/contact.html", "destination": "/contact", "permanent": true }
   ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" }
-  ]
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/pricing", "destination": "/pricing/index.html" },
+    { "source": "/subscribe", "destination": "/subscribe/index.html" },
+    { "source": "/download", "destination": "/download/index.html" },
+    { "source": "/how-it-works", "destination": "/how-it-works/index.html" },
+    { "source": "/faq", "destination": "/faq/index.html" },
+    { "source": "/about", "destination": "/about/index.html" },
+    { "source": "/contact", "destination": "/contact/index.html" },
+    { "source": "/legal", "destination": "/legal/index.html" }
+  ],
+  "cleanUrls": true,
+  "trailingSlash": false
 }

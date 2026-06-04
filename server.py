@@ -125,10 +125,24 @@ def _inject_aha_session(html: str) -> str:
     return inject + html
 
 
+def _resolve_marketing(filename: str) -> Path:
+    """Marketing pages: public/ (Vercel CDN) first, then web/ for local dev."""
+    candidates = [filename]
+    if filename.endswith(".html") and "/" not in filename:
+        stem = filename[:-5]
+        candidates.insert(0, f"{stem}/index.html")
+    for base in ("public", "web"):
+        for name in candidates:
+            path = Path(base) / name
+            if path.is_file():
+                return path
+    raise HTTPException(status_code=404, detail="Not found")
+
+
 def _html_page(filename: str):
     from fastapi.responses import HTMLResponse
 
-    path = Path("web") / filename
+    path = _resolve_marketing(filename)
     try:
         html = path.read_text(encoding="utf-8")
     except OSError:
@@ -138,7 +152,7 @@ def _html_page(filename: str):
 
 @app.get("/")
 def serve_index():
-    return FileResponse("web/index.html")
+    return FileResponse(_resolve_marketing("index.html"))
 
 
 @app.get("/demo")
@@ -157,7 +171,7 @@ def serve_subscribe():
 
 @app.get("/download")
 def serve_download():
-    return FileResponse("web/download.html")
+    return FileResponse(_resolve_marketing("download.html"))
 
 @app.get("/INSTALL.md")
 def serve_install_md():
@@ -168,7 +182,50 @@ def serve_install_md():
 
 @app.get("/legal.html")
 def serve_legal():
-    return FileResponse("web/legal.html")
+    return FileResponse(_resolve_marketing("legal.html"))
+
+
+@app.get("/legal")
+def serve_legal_clean():
+    return FileResponse(_resolve_marketing("legal/index.html"))
+
+
+@app.get("/marketing.css")
+def serve_marketing_css():
+    return FileResponse(_resolve_marketing("marketing.css"), media_type="text/css")
+
+
+@app.get("/marketing-tailwind-config.js")
+def serve_marketing_tailwind_config():
+    return FileResponse(
+        _resolve_marketing("marketing-tailwind-config.js"),
+        media_type="application/javascript",
+    )
+
+
+@app.get("/pricing")
+def serve_pricing():
+    return FileResponse(_resolve_marketing("pricing.html"))
+
+
+@app.get("/how-it-works")
+def serve_how_it_works():
+    return FileResponse(_resolve_marketing("how-it-works.html"))
+
+
+@app.get("/faq")
+def serve_faq():
+    return FileResponse(_resolve_marketing("faq.html"))
+
+
+@app.get("/about")
+def serve_about():
+    return FileResponse(_resolve_marketing("about.html"))
+
+
+@app.get("/contact")
+def serve_contact():
+    return FileResponse(_resolve_marketing("contact.html"))
 
 @app.get("/api/timing")
 def get_timing():

@@ -1,102 +1,195 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="scroll-smooth" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AHA — Daily computer assistance</title>
-    <meta name="description" content="AHA is daily assistance on your Mac or Windows. Ask in chat and get help on your screen. Subscribe at dailyassist.xyz.">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root { --bg: #0b1220; --card: #1e293b; --text: #f8fafc; --muted: #94a3b8; --accent: #3b82f6; --accent-hover: #2563eb; --border: rgba(255,255,255,0.1); }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; }
-        .nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; max-width: 1100px; margin: 0 auto; }
-        .logo { font-weight: 700; font-size: 1.25rem; color: var(--text); text-decoration: none; }
-        .nav-links { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-        .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.95rem; }
-        .nav-links a:hover { color: var(--text); }
-        .btn { display: inline-block; padding: 12px 24px; border-radius: 10px; font-weight: 600; font-size: 1rem; text-decoration: none; cursor: pointer; border: none; text-align: center; }
-        .btn-primary { background: var(--accent); color: #fff; }
-        .btn-primary:hover { background: var(--accent-hover); }
-        .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
-        .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
-        .hero { max-width: 1100px; margin: 0 auto; padding: 48px 24px 64px; text-align: center; }
-        .hero h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 700; line-height: 1.15; margin-bottom: 16px; letter-spacing: -0.02em; }
-        .hero .lead { font-size: 1.15rem; color: var(--muted); max-width: 560px; margin: 0 auto 32px; }
-        .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 48px; }
-        .features { max-width: 1100px; margin: 0 auto; padding: 0 24px 64px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
-        .feature { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; text-align: left; }
-        .feature h3 { font-size: 1.1rem; margin-bottom: 8px; }
-        .feature p { color: var(--muted); font-size: 0.95rem; }
-        .steps { max-width: 640px; margin: 0 auto 64px; padding: 0 24px; }
-        .steps h2 { text-align: center; font-size: 1.5rem; margin-bottom: 24px; }
-        .step { display: flex; gap: 16px; margin-bottom: 20px; align-items: flex-start; }
-        .step-num { flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; }
-        .step p { color: var(--muted); }
-        footer { text-align: center; padding: 32px 24px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85rem; }
-        footer a { color: #60a5fa; text-decoration: none; margin: 0 6px; }
-    </style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AHA — Daily computer assistance for Mac and Windows</title>
+  <meta name="description" content="AHA is desktop-only daily assistance for Mac and Windows. Ask in chat on your computer and get help on your screen. Not for mobile. Subscribe at dailyassist.xyz."/>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script src="/marketing-tailwind-config.js"></script>
+  <link rel="stylesheet" href="/marketing.css"/>
 </head>
-<body>
-    <header class="nav">
-        <a href="/" class="logo">AHA</a>
-        <nav class="nav-links">
-            <a href="/subscribe">Pricing</a>
-            <a href="/download">Download</a>
-            <a href="/legal.html">Legal</a>
-            <a href="/subscribe" class="btn btn-primary">Get started</a>
-        </nav>
-    </header>
+<body class="selection:bg-primary-fixed selection:text-on-primary-fixed">
+<header class="bg-surface/90 backdrop-blur-md sticky top-0 z-50 shadow-sm h-20 border-b border-border-subtle/50">
+  <nav class="flex justify-between items-center w-full px-5 md:px-margin-desktop max-w-max-width mx-auto h-full">
+    <a href="/" class="font-headline-md text-headline-md font-bold text-deep-navy">AHA</a>
+    <div class="hidden md:flex items-center gap-10">
+      <a class="text-slate-gray font-body-md text-body-md hover:text-action-blue transition-colors" href="/pricing">Pricing</a>
+      <a class="text-slate-gray font-body-md text-body-md hover:text-action-blue transition-colors" href="/download">Download</a>
+      <a class="text-slate-gray font-body-md text-body-md hover:text-action-blue transition-colors" href="/how-it-works">How it works</a>
+      <a class="text-slate-gray font-body-md text-body-md hover:text-action-blue transition-colors" href="/faq">FAQ</a>
+    </div>
+    <a href="/subscribe" class="bg-primary-container text-white px-6 py-3 rounded-lg font-label-md text-label-md hover:bg-primary transition-all active:scale-95">Subscribe</a>
+  </nav>
+</header>
 
-    <section class="hero">
-        <h1>Daily assistance on your computer</h1>
-        <p class="lead">
-            AHA helps on your Mac or Windows when you ask. Chat in plain language and get help on your screen —
-            in the apps and websites you already use.
-        </p>
-        <div class="hero-cta">
-            <a href="/subscribe" class="btn btn-primary">Subscribe</a>
-            <a href="/download" class="btn btn-outline">Download app</a>
+<main>
+  <section class="relative pt-16 pb-24 md:pt-24 md:pb-32 overflow-hidden px-margin-mobile md:px-margin-desktop">
+    <div class="max-w-max-width mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      <div class="z-10">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container mb-6">
+          <span class="material-symbols-outlined text-[18px]">desktop_windows</span>
+          <span class="font-label-sm text-label-sm tracking-widest uppercase">Desktop only · Mac &amp; Windows</span>
         </div>
-    </section>
+        <h1 class="font-headline-xl text-headline-xl text-deep-navy mb-6 max-w-xl">Daily computer assistance for Mac and Windows.</h1>
+        <p class="font-body-lg text-body-lg text-slate-gray mb-10 max-w-lg">Ask AHA for help in chat on your <strong class="text-deep-navy font-medium">desktop</strong> (Mac or Windows). It assists on your screen — in the programs and websites you already use there. Not available on phones or tablets.</p>
+        <div class="flex flex-wrap gap-4">
+          <a href="/subscribe" class="bg-action-blue text-white px-8 py-4 rounded-lg font-label-md text-label-md shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all">Subscribe</a>
+          <a href="/pricing" class="border border-border-subtle bg-white text-deep-navy px-8 py-4 rounded-lg font-label-md text-label-md hover:bg-surface-container-low transition-all">View pricing</a>
+        </div>
+        <p class="mt-4 font-label-sm text-label-sm text-slate-gray opacity-80">Desktop download after you subscribe — <a href="/download" class="text-action-blue hover:underline">Mac or Windows installer</a></p>
+      </div>
+      <div class="relative">
+        <div class="relative rounded-xl overflow-hidden shadow-card bg-white border border-border-subtle">
+          <img alt="Laptop with AHA chat assistant on screen" class="w-full h-auto object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZWzzWPOLg2rTI1DB-KSwM9iMJTTaMtl0VcvI9uK9RM6w8dvPvFFG2esAwuuupnNZUyJuVURHWqNP9xMwtj9fpIHn-uSGBzIum97wO-PVVPEel821c370RDNIoJnoIay035mDh610gFw_FyuaKwWhfRMnaRRPNWj74Fib0aDkYImSmq0wleVe0XfCQPb5CR6D6i-0bSiI1Rho3SrwkPt7hDK12EEoyrU-aaNSPD6dM705K6dafTXBXIcJYUb8hPrakUaguisQoH5M"/>
+          <div class="absolute bottom-6 right-6 w-64 glass-card rounded-xl p-4 shadow-card border border-white/60 max-w-[calc(100%-2rem)]">
+            <div class="flex items-center gap-2 mb-3">
+              <div class="w-2 h-2 rounded-full bg-success-green"></div>
+              <span class="font-label-sm text-label-sm text-deep-navy">AHA Assistant</span>
+            </div>
+            <div class="space-y-3">
+              <div class="bg-deep-navy text-white text-xs p-2 rounded-lg rounded-tr-none ml-4">How do I export this sheet as PDF?</div>
+              <div class="bg-surface-container-high text-deep-navy text-xs p-2 rounded-lg rounded-tl-none mr-2 flex items-start gap-2">
+                <span class="material-symbols-outlined text-[14px] text-action-blue mt-0.5 shrink-0">info</span>
+                <span>I see the File menu — click Export, then choose PDF.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    <section class="features">
-        <div class="feature">
-            <h3>Ask in plain language</h3>
-            <p>Tell the assistant what you need. It works on your machine like a person using mouse, keyboard, and screen.</p>
+  <section class="py-20 md:py-24 bg-surface-container-low" id="pricing">
+    <div class="max-w-max-width mx-auto px-margin-mobile md:px-margin-desktop text-center">
+      <h2 class="font-headline-lg text-headline-lg text-deep-navy mb-4">Simple pricing</h2>
+      <p class="font-body-md text-body-md text-slate-gray mb-12 max-w-2xl mx-auto">One subscription for the AHA <strong class="text-deep-navy font-medium">desktop</strong> assistant on Mac and Windows. Pay monthly or save with yearly billing. No mobile version.</p>
+      <div class="grid md:grid-cols-2 gap-gutter max-w-4xl mx-auto">
+        <div class="bg-white p-10 rounded-xl shadow-card border border-border-subtle text-left flex flex-col">
+          <h3 class="font-headline-md text-headline-md text-deep-navy mb-2">Monthly</h3>
+          <div class="flex items-baseline gap-1 mb-6">
+            <span class="text-4xl font-bold text-deep-navy" id="price-monthly">₹999</span>
+            <span class="text-slate-gray font-body-md text-body-md">/ month</span>
+          </div>
+          <p class="font-body-sm text-body-sm text-slate-gray mb-8">Full access to daily assistance when you ask — billed every 30 days.</p>
+          <ul class="space-y-4 mb-10 flex-grow">
+            <li class="flex items-center gap-3 font-body-sm text-body-sm"><span class="material-symbols-outlined text-action-blue">check_circle</span>Help on your screen when you ask</li>
+            <li class="flex items-center gap-3 font-body-sm text-body-sm"><span class="material-symbols-outlined text-action-blue">check_circle</span>Desktop software for Mac &amp; Windows</li>
+            <li class="flex items-center gap-3 font-body-sm text-body-sm"><span class="material-symbols-outlined text-action-blue">check_circle</span>Same account on this site and the desktop app</li>
+          </ul>
+          <a href="/subscribe" class="w-full py-4 rounded-lg font-label-md text-label-md border border-action-blue text-action-blue hover:bg-action-blue/5 transition-colors text-center">Subscribe monthly</a>
         </div>
-        <div class="feature">
-            <h3>Mac &amp; Windows</h3>
-            <p>One subscription. Install on your computer, sign in, and use the same account on either device.</p>
+        <div class="bg-white p-10 rounded-xl shadow-card-hover border-t-2 border-t-action-blue border-x border-b border-border-subtle text-left flex flex-col">
+          <h3 class="font-headline-md text-headline-md text-deep-navy mb-2">Yearly</h3>
+          <div class="flex items-baseline gap-1 mb-6">
+            <span class="text-4xl font-bold text-deep-navy" id="price-yearly">₹9,999</span>
+            <span class="text-slate-gray font-body-md text-body-md">/ year</span>
+          </div>
+          <p class="font-body-sm text-body-sm text-slate-gray mb-8">Everything in monthly — one payment for 365 days of access.</p>
+          <ul class="space-y-4 mb-10 flex-grow">
+            <li class="flex items-center gap-3 font-body-sm text-body-sm"><span class="material-symbols-outlined text-action-blue">check_circle</span>Same assistance on Mac &amp; Windows</li>
+            <li class="flex items-center gap-3 font-body-sm text-body-sm"><span class="material-symbols-outlined text-action-blue">check_circle</span>Best value for regular daily use</li>
+            <li class="flex items-center gap-3 font-body-sm text-body-sm"><span class="material-symbols-outlined text-action-blue">check_circle</span>Optional AI key in desktop settings</li>
+          </ul>
+          <a href="/subscribe" class="w-full py-4 rounded-lg font-label-md text-label-md bg-action-blue text-white hover:bg-primary transition-all text-center">Subscribe yearly</a>
         </div>
-        <div class="feature">
-            <h3>Runs on your computer</h3>
-            <p>You stay in control. Optional settings let you connect your own AI provider for some tasks — entirely your choice.</p>
-        </div>
-    </section>
+      </div>
+      <p class="mt-8 font-body-sm text-body-sm text-slate-gray max-w-xl mx-auto">Optional: connect your own AI provider in the desktop app settings for some tasks — your cost, your choice. Not required to subscribe.</p>
+    </div>
+  </section>
 
-    <section class="steps">
-        <h2>How it works</h2>
-        <div class="step">
-            <span class="step-num">1</span>
-            <div><strong>Subscribe</strong><p>Pay securely on this site, then create or sign in to your account.</p></div>
+  <section class="py-20 md:py-24 px-margin-mobile md:px-margin-desktop">
+    <div class="max-w-max-width mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+        <div class="md:col-span-2 bg-white rounded-xl p-8 border border-border-subtle shadow-card">
+          <h4 class="font-headline-md text-headline-md text-deep-navy mb-2">Runs on your computer</h4>
+          <p class="font-body-md text-body-md text-slate-gray">On your Mac or Windows PC, AHA works in the desktop programs and sites you already use. You stay in control of what gets done.</p>
         </div>
-        <div class="step">
-            <span class="step-num">2</span>
-            <div><strong>Download</strong><p>Get the Mac or Windows installer while your subscription is active.</p></div>
+        <div class="bg-deep-navy text-white rounded-xl p-8 flex flex-col items-center justify-center text-center shadow-card">
+          <span class="material-symbols-outlined text-[48px] text-primary-fixed mb-4">chat</span>
+          <h4 class="font-headline-md text-headline-md mb-2">Ask in plain language</h4>
+          <p class="font-body-sm text-body-sm opacity-85">Tell the assistant what you need. It helps on your screen like a person using mouse, keyboard, and display.</p>
         </div>
-        <div class="step">
-            <span class="step-num">3</span>
-            <div><strong>Install &amp; ask</strong><p>Open AHA, sign in, and ask for help with whatever you are doing on screen.</p></div>
+        <div class="bg-surface-container rounded-xl p-8 flex flex-col justify-between border border-border-subtle">
+          <div>
+            <div class="flex gap-2 mb-4">
+              <span class="bg-white px-2 py-1 rounded font-label-sm text-label-sm text-deep-navy border border-border-subtle">MAC</span>
+              <span class="bg-white px-2 py-1 rounded font-label-sm text-label-sm text-deep-navy border border-border-subtle">WINDOWS</span>
+            </div>
+            <h4 class="font-headline-md text-headline-md text-deep-navy mb-2">One subscription</h4>
+          </div>
+          <p class="font-body-sm text-body-sm text-slate-gray">Install on your desktop computer, sign in, and use the same account on Mac or Windows — not on mobile devices.</p>
         </div>
-    </section>
+        <div class="md:col-span-2 bg-action-blue rounded-xl p-8 text-white relative overflow-hidden shadow-card">
+          <div class="relative z-10">
+            <h4 class="font-headline-md text-headline-md mb-2">You stay in control</h4>
+            <p class="font-body-md text-body-md opacity-90 max-w-lg">AHA assists when you ask. Screen context is used to help with the task at hand — not to run your accounts or post on your behalf.</p>
+          </div>
+          <div class="absolute -right-16 -bottom-16 opacity-10 pointer-events-none">
+            <span class="material-symbols-outlined text-[200px]" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    <footer>
-        <a href="mailto:support@dailyassist.xyz">support@dailyassist.xyz</a>
-        <span>&middot;</span>
-        <a href="/legal.html">Terms</a>
-        <a href="/legal.html#privacy">Privacy</a>
-        <a href="/legal.html#refund">Refunds</a>
-    </footer>
+  <section class="py-16 md:py-20 bg-surface-container-low px-margin-mobile md:px-margin-desktop">
+    <div class="max-w-max-width mx-auto text-center">
+      <h2 class="font-headline-lg text-headline-lg text-deep-navy mb-8">How it works</h2>
+      <ol class="grid md:grid-cols-4 gap-8 text-left max-w-4xl mx-auto">
+        <li><span class="inline-flex w-8 h-8 items-center justify-center rounded-full bg-action-blue text-white font-label-md text-label-md mb-3">1</span><p class="font-body-md text-body-md text-deep-navy font-medium mb-1">Subscribe</p><p class="font-body-sm text-body-sm text-slate-gray">Pay on this site with Razorpay.</p></li>
+        <li><span class="inline-flex w-8 h-8 items-center justify-center rounded-full bg-action-blue text-white font-label-md text-label-md mb-3">2</span><p class="font-body-md text-body-md text-deep-navy font-medium mb-1">Download</p><p class="font-body-sm text-body-sm text-slate-gray">Get Mac or Windows while subscribed.</p></li>
+        <li><span class="inline-flex w-8 h-8 items-center justify-center rounded-full bg-action-blue text-white font-label-md text-label-md mb-3">3</span><p class="font-body-md text-body-md text-deep-navy font-medium mb-1">Install on desktop</p><p class="font-body-sm text-body-sm text-slate-gray">Mac or Windows only — sign in with the same account.</p></li>
+        <li><span class="inline-flex w-8 h-8 items-center justify-center rounded-full bg-action-blue text-white font-label-md text-label-md mb-3">4</span><p class="font-body-md text-body-md text-deep-navy font-medium mb-1">Ask in AHA</p><p class="font-body-sm text-body-sm text-slate-gray">Chat on your desktop; get help on screen.</p></li>
+      </ol>
+      <a href="/how-it-works" class="inline-block mt-10 text-action-blue font-label-md text-label-md hover:underline">See all steps →</a>
+    </div>
+  </section>
+</main>
+
+<footer class="bg-surface-container w-full border-t border-border-subtle">
+  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-gutter px-margin-mobile md:px-margin-desktop py-16 md:py-20 max-w-max-width mx-auto">
+    <div class="col-span-2">
+      <div class="font-headline-md text-headline-md font-bold text-deep-navy mb-4">AHA</div>
+      <p class="font-body-sm text-body-sm text-slate-gray max-w-xs">Daily assistance on your computer — ask, get help on your screen. dailyassist.xyz</p>
+    </div>
+    <div class="flex flex-col gap-3">
+      <span class="font-label-md text-label-md text-deep-navy font-semibold">Product</span>
+      <a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue" href="/pricing">Pricing</a>
+      <a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue" href="/download">Download</a>
+      <a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue" href="/how-it-works">How it works</a>
+      <a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue" href="/subscribe">Subscribe</a>
+    </div>
+    <div class="flex flex-col gap-3">
+      <span class="font-label-md text-label-md text-deep-navy font-semibold">Company</span>
+      <a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue" href="/about">About</a>
+      <a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue" href="/contact">Contact</a>
+      <a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue" href="/faq">FAQ</a>
+    </div>
+    <div class="flex flex-col gap-3">
+      <span class="font-label-md text-label-md text-deep-navy font-semibold">Legal</span>
+      <a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue" href="/legal#terms">Terms</a>
+      <a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue" href="/legal#privacy">Privacy</a>
+      <a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue" href="/legal#refund">Refunds</a>
+      <a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue" href="/legal#delivery">Delivery</a>
+    </div>
+    <div class="flex flex-col gap-3">
+      <span class="font-label-md text-label-md text-deep-navy font-semibold">Support</span>
+      <a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue" href="mailto:support@dailyassist.xyz">support@dailyassist.xyz</a>
+    </div>
+  </div>
+  <div class="max-w-max-width mx-auto px-margin-mobile md:px-margin-desktop py-8 border-t border-border-subtle text-center">
+    <p class="font-body-sm text-body-sm text-slate-gray">© 2026 dailyassist.xyz. All rights reserved.</p>
+  </div>
+</footer>
+<script>
+  fetch("/api/billing/config").then(r => r.json()).then(cfg => {
+    const p = cfg.plans || {};
+    if (p.core_monthly?.amount_display) document.getElementById("price-monthly").textContent = p.core_monthly.amount_display;
+    if (p.core_yearly?.amount_display) document.getElementById("price-yearly").textContent = p.core_yearly.amount_display;
+  }).catch(() => {});
+</script>
 </body>
 </html>

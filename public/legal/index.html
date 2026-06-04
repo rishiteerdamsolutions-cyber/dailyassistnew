@@ -6,40 +6,43 @@
     <title>Legal Policies — AHA | dailyassist.xyz</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/marketing-tailwind-config.js"></script>
+    <link rel="stylesheet" href="/marketing.css"/>
     <style>
         body {
-            background-color: #0f172a;
-            color: #f8fafc;
+            background-color: #f7f9fb;
+            color: #191c1e;
             font-family: 'Inter', sans-serif;
             line-height: 1.6;
-            padding: 40px;
+            padding: 0;
         }
         .container {
             max-width: 800px;
             margin: 0 auto;
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #ffffff;
+            border: 1px solid #E2E8F0;
             border-radius: 16px;
             padding: 40px;
+            box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
         }
-        h1, h2, h3 { color: #3b82f6; }
+        h1, h2, h3 { color: #0041c8; }
         h1 {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid #E2E8F0;
             padding-bottom: 10px;
             margin-bottom: 30px;
         }
         h2 {
             margin-top: 40px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid #E2E8F0;
             padding-bottom: 5px;
             font-size: 1.5rem;
         }
-        p { margin-bottom: 15px; color: #cbd5e1; }
-        ul { margin-bottom: 15px; color: #cbd5e1; padding-left: 20px; }
+        p { margin-bottom: 15px; color: #475569; }
+        ul { margin-bottom: 15px; color: #475569; padding-left: 20px; }
         li { margin-bottom: 8px; }
-        a { color: #60a5fa; text-decoration: none; }
+        a { color: #0055FF; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .nav-links {
             margin-bottom: 30px;
@@ -48,27 +51,36 @@
             flex-wrap: wrap;
         }
         .nav-links a {
-            background: rgba(59, 130, 246, 0.2);
+            background: #f2f4f6;
             padding: 8px 15px;
-            border-radius: 6px;
-            border: 1px solid rgba(59, 130, 246, 0.4);
+            border-radius: 8px;
+            border: 1px solid #E2E8F0;
             font-size: 0.9em;
+            color: #0F172A;
         }
         .site-footer {
             margin-top: 40px;
             padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid #E2E8F0;
             text-align: center;
             font-size: 0.9rem;
-            color: #94a3b8;
+            color: #475569;
         }
+        .legal-wrap { padding: 24px 20px 48px; }
     </style>
 </head>
 <body>
+<header class="bg-surface/90 sticky top-0 z-50 h-16 border-b border-border-subtle/50" style="background:#f7f9fb;border-color:#E2E8F0;">
+  <nav class="flex justify-between items-center max-w-[1200px] mx-auto px-5 md:px-20 h-full">
+    <a href="/" class="font-bold text-deep-navy" style="color:#0F172A;">AHA</a>
+    <a href="/subscribe" class="text-white px-5 py-2.5 rounded-lg text-sm font-medium" style="background:#0055ff;">Subscribe</a>
+  </nav>
+</header>
+<div class="legal-wrap">
     <div class="container">
-        <a href="/" style="display: inline-block; margin-bottom: 20px;">&larr; Home</a>
+        <a href="/" style="display: inline-block; margin-bottom: 20px;color:#0055FF;">&larr; Home</a>
         <h1>Legal &amp; Policies</h1>
-        <p>AHA (Artificial Human Assistant) is operated at <a href="https://dailyassist.xyz">dailyassist.xyz</a>. AHA is a <strong>desktop assistant</strong> that helps you use your computer when you ask.</p>
+        <p>AHA (Artificial Human Assistant) is operated at <a href="https://dailyassist.xyz">dailyassist.xyz</a>. AHA is a <strong>desktop-only assistant</strong> for Mac and Windows computers. It helps you use your computer when you ask. It is not offered for phones, tablets, or other mobile devices.</p>
 
         <div class="nav-links">
             <a href="#terms">Terms of Service</a>
@@ -104,7 +116,7 @@
                 <li><strong>Account data:</strong> If you sign in, we use Firebase Authentication (email, Google sign-in) and may store your user profile in Supabase (user id, email, license status). This is used to activate your license.</li>
                 <li><strong>Payment data:</strong> Payments are processed by our payment partners (e.g. Razorpay, PayU, Cashfree). We do not store full card numbers or UPI PINs on our servers.</li>
                 <li><strong>Local data on your computer:</strong> AHA stores settings under <code>~/.aha/</code> (or the Windows equivalent), local working files as needed for your tasks, and optional API keys in local config. Routine assistance does not send your screen content to our servers for AI generation.</li>
-                <li><strong>Screen and vision:</strong> When you ask AHA to help with a task that uses vision, the app may capture screenshots of your display (or browser region) and, if you configured one, send them to <em>your</em> chosen AI provider using <em>your</em> API key. We do not use your API keys on our servers. You can revoke Screen Recording and Accessibility permissions in your OS settings at any time.</li>
+                <li><strong>Screen and vision:</strong> When you ask AHA to help with a task that uses vision, the desktop app may capture screenshots of your display (or browser region) and, if you configured one, send them to <em>your</em> chosen AI provider using <em>your</em> API key. We do not use your API keys on our servers. You can revoke Screen Recording and Accessibility permissions in your OS settings at any time.</li>
                 <li><strong>Optional cloud sync:</strong> If enabled, some metadata or files may sync to Supabase Storage under your account, protected by row-level security.</li>
                 <li><strong>Cookies (website):</strong> dailyassist.xyz may use cookies for sign-in sessions and analytics. You can disable cookies in your browser.</li>
                 <li><strong>We do not sell</strong> your personal information to data brokers.</li>
@@ -135,7 +147,7 @@
             <h2>Delivery Policy</h2>
             <p>AHA is delivered digitally — no physical shipping.</p>
             <ul>
-                <li><strong>Download:</strong> After purchase, download the app package from <a href="https://dailyassist.xyz">dailyassist.xyz</a> or receive a link by email.</li>
+                <li><strong>Download:</strong> After purchase, download the Mac or Windows desktop app package from <a href="https://dailyassist.xyz">dailyassist.xyz</a> or receive a link by email. No mobile app is provided.</li>
                 <li><strong>License:</strong> Your license key is issued by email or shown in your account dashboard.</li>
                 <li><strong>Support:</strong> If you do not receive access within 24 hours, contact <a href="mailto:support@dailyassist.xyz">support@dailyassist.xyz</a>.</li>
             </ul>
@@ -150,11 +162,17 @@
         </section>
 
         <footer class="site-footer">
-            <a href="https://dailyassist.xyz">dailyassist.xyz</a> &middot;
-            <a href="/legal.html#terms">Terms</a> &middot;
-            <a href="/legal.html#privacy">Privacy</a> &middot;
-            <a href="mailto:support@dailyassist.xyz">support@dailyassist.xyz</a>
+            <p>
+                <a href="/">Home</a> · <a href="/pricing">Pricing</a> · <a href="/subscribe">Subscribe</a> ·
+                <a href="/download">Download</a> · <a href="/about">About</a> · <a href="/contact">Contact</a>
+            </p>
+            <p style="margin-top:8px;">
+                <a href="/legal#terms">Terms</a> · <a href="/legal#privacy">Privacy</a> ·
+                <a href="/legal#refund">Refunds</a> · <a href="/legal#delivery">Delivery</a>
+            </p>
+            <p style="margin-top:8px;"><a href="mailto:support@dailyassist.xyz">support@dailyassist.xyz</a> · © dailyassist.xyz</p>
         </footer>
     </div>
+</div>
 </body>
 </html>

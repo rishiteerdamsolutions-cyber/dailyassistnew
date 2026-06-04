@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subscribe — AHA | dailyassist.xyz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="/marketing-tailwind-config.js"></script>
+  <link rel="stylesheet" href="/marketing.css"/>
+  <style>
+    .plan-option { border: 1px solid #E2E8F0; border-radius: 0.5rem; padding: 14px; cursor: pointer; background: #fff; }
+    .plan-option.selected { border-color: #0055FF; background: rgba(0, 85, 255, 0.06); box-shadow: 0 0 0 1px #0055FF; }
+    #auth-section, #pay-section { display: none; }
+    .err { color: #ba1a1a; font-size: 0.9rem; margin-top: 8px; display: none; }
+    .ok { color: #10B981; font-size: 0.9rem; margin-top: 8px; display: none; }
+  </style>
+</head>
+<body>
+<header class="bg-surface/90 backdrop-blur-md sticky top-0 z-50 h-16 border-b border-border-subtle/50">
+  <nav class="flex justify-between items-center max-w-max-width mx-auto px-5 md:px-margin-desktop h-full">
+    <a href="/" class="font-bold text-deep-navy">AHA</a>
+    <a href="/pricing" class="text-slate-gray text-sm hover:text-action-blue">Pricing</a>
+  </nav>
+</header>
+
+<div class="max-w-lg mx-auto px-5 py-12 md:py-16">
+  <h1 class="text-2xl md:text-3xl font-bold text-deep-navy mb-2 font-headline-lg">Subscribe to AHA</h1>
+  <p class="text-slate-gray font-body-md mb-8">Pay with Razorpay, then install AHA on your <strong class="text-deep-navy">desktop</strong> (<strong class="text-deep-navy">Mac</strong> or <strong class="text-deep-navy">Windows</strong> only — not mobile) with the same account. By paying you agree to our <a href="/legal#terms" class="text-action-blue">Terms</a> and <a href="/legal#privacy" class="text-action-blue">Privacy Policy</a>.</p>
+
+  <div class="bg-white rounded-xl border border-border-subtle shadow-card p-6 mb-5" id="auth-section">
+    <h2 class="text-lg font-semibold text-deep-navy mb-4">1. Sign in</h2>
+    <label class="block text-sm text-slate-gray mb-1">Email</label>
+    <input type="email" id="auth-email" placeholder="you@example.com" class="w-full mb-3 px-3 py-2.5 rounded-lg border border-border-subtle bg-white text-deep-navy focus:border-action-blue focus:ring-2 focus:ring-action-blue/20 outline-none">
+    <label class="block text-sm text-slate-gray mb-1">Password</label>
+    <input type="password" id="auth-password" placeholder="Password" class="w-full mb-4 px-3 py-2.5 rounded-lg border border-border-subtle bg-white text-deep-navy focus:border-action-blue focus:ring-2 focus:ring-action-blue/20 outline-none">
+    <button type="button" id="btn-signin" class="w-full py-3 rounded-lg bg-action-blue text-white font-medium hover:bg-primary transition-colors">Sign in</button>
+    <button type="button" id="btn-signup" class="w-full py-3 rounded-lg border border-border-subtle text-deep-navy font-medium mt-2 hover:bg-surface-container-low">Create account</button>
+    <button type="button" id="btn-google" class="w-full py-3 rounded-lg border border-border-subtle text-deep-navy font-medium mt-2 hover:bg-surface-container-low">Continue with Google</button>
+    <div class="err" id="auth-err"></div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-border-subtle shadow-card p-6 mb-5" id="pay-section">
+    <h2 class="text-lg font-semibold text-deep-navy mb-2">2. Choose a plan</h2>
+    <p id="signed-in-as" class="text-slate-gray text-sm mb-4"></p>
+    <div class="grid gap-3 mb-4" id="plan-grid"></div>
+    <button type="button" id="btn-pay" class="w-full py-3.5 rounded-lg bg-action-blue text-white font-medium hover:bg-primary transition-colors">Pay with Razorpay</button>
+    <div class="err" id="pay-err"></div>
+    <div class="ok" id="pay-ok"></div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-border-subtle p-6 mb-5 hidden" id="billing-unconfigured">
+    <p class="text-slate-gray text-sm">Razorpay is not configured. Set <code class="font-mono text-xs bg-surface-container-low px-1 rounded">RAZORPAY_KEY_ID</code> and <code class="font-mono text-xs bg-surface-container-low px-1 rounded">RAZORPAY_KEY_SECRET</code> in <code class="font-mono text-xs">.env</code>.</p>
+  </div>
+
+  <footer class="text-center text-sm text-slate-gray">
+    <a href="/legal#refund" class="text-action-blue">Refunds</a> · <a href="mailto:support@dailyassist.xyz" class="text-action-blue">support@dailyassist.xyz</a>
+  </footer>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA_6P1QftvmS3_KM0v5kkCUOo7KP1eHPKw",
+    authDomain: "assist-daily.firebaseapp.com",
+    projectId: "assist-daily",
+    storageBucket: "assist-daily.firebasestorage.app",
+    messagingSenderId: "204177096003",
+    appId: "1:204177096003:web:03e82d5c4d5c8e489183f6",
+    measurementId: "G-PTDQSEND0N"
+  };
+  const auth = getAuth(initializeApp(firebaseConfig));
+  const google = new GoogleAuthProvider();
+
+  let billingConfig = null;
+  let selectedPlanId = 'core_monthly';
+  let currentUser = null;
+
+  const authSection = document.getElementById('auth-section');
+  const paySection = document.getElementById('pay-section');
+  const planGrid = document.getElementById('plan-grid');
+  const signedInAs = document.getElementById('signed-in-as');
+
+  function showErr(el, msg) { el.textContent = msg; el.style.display = 'block'; }
+  function hideErr(el) { el.style.display = 'none'; }
+
+  async function apiBearer(path, options = {}) {
+    if (!currentUser) throw new Error('Not signed in');
+    const token = await currentUser.getIdToken();
+    const headers = new Headers(options.headers || {});
+    headers.set('Authorization', 'Bearer ' + token);
+    headers.set('Content-Type', 'application/json');
+    return fetch(path, { ...options, headers });
+  }
+
+  async function loadBillingConfig() {
+    const res = await fetch('/api/billing/config');
+    billingConfig = await res.json();
+    if (!billingConfig.razorpay_configured) {
+      document.getElementById('billing-unconfigured').classList.remove('hidden');
+      paySection.style.display = 'none';
+      return;
+    }
+    planGrid.innerHTML = '';
+    for (const [id, plan] of Object.entries(billingConfig.plans || {})) {
+      const div = document.createElement('div');
+      div.className = 'plan-option' + (id === selectedPlanId ? ' selected' : '');
+      div.dataset.planId = id;
+      div.innerHTML = `<strong class="text-deep-navy">${plan.label}</strong><br><span class="text-slate-gray text-sm">${plan.amount_display} · ${plan.currency}</span>`;
+      div.addEventListener('click', () => {
+        selectedPlanId = id;
+        document.querySelectorAll('.plan-option').forEach(p => p.classList.remove('selected'));
+        div.classList.add('selected');
+      });
+      planGrid.appendChild(div);
+    }
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+    if (user) {
+      authSection.style.display = 'none';
+      paySection.style.display = 'block';
+      signedInAs.textContent = 'Signed in as ' + (user.email || user.uid);
+      await fetch('/api/auth/firebase_signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_token: await user.getIdToken() })
+      }).catch(() => {});
+    } else {
+      authSection.style.display = 'block';
+      paySection.style.display = 'none';
+    }
+  });
+
+  const emailEl = document.getElementById('auth-email');
+  const passEl = document.getElementById('auth-password');
+
+  document.getElementById('btn-signin').onclick = async () => {
+    hideErr(document.getElementById('auth-err'));
+    try { await signInWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value); }
+    catch (e) { showErr(document.getElementById('auth-err'), e.message); }
+  };
+  document.getElementById('btn-signup').onclick = async () => {
+    hideErr(document.getElementById('auth-err'));
+    try { await createUserWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value); }
+    catch (e) { showErr(document.getElementById('auth-err'), e.message); }
+  };
+  document.getElementById('btn-google').onclick = async () => {
+    hideErr(document.getElementById('auth-err'));
+    try { await signInWithPopup(auth, google); }
+    catch (e) { showErr(document.getElementById('auth-err'), e.message); }
+  };
+
+  document.getElementById('btn-pay').onclick = async () => {
+    const payErr = document.getElementById('pay-err');
+    const payOk = document.getElementById('pay-ok');
+    hideErr(payErr);
+    payOk.style.display = 'none';
+    const btn = document.getElementById('btn-pay');
+    btn.disabled = true;
+    btn.textContent = 'Creating order…';
+    try {
+      const res = await apiBearer('/api/billing/create_order', {
+        method: 'POST',
+        body: JSON.stringify({ plan_id: selectedPlanId })
+      });
+      const order = await res.json();
+      if (!res.ok) throw new Error(order.detail || 'Could not create order');
+
+      const rzp = new Razorpay({
+        key: order.key_id,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'AHA — dailyassist.xyz',
+        description: order.plan_label,
+        order_id: order.order_id,
+        prefill: { email: currentUser.email || '' },
+        handler: async function (response) {
+          btn.textContent = 'Verifying payment…';
+          const v = await apiBearer('/api/billing/verify', {
+            method: 'POST',
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            })
+          });
+          const data = await v.json();
+          if (!v.ok) throw new Error(data.detail || 'Verification failed');
+          payOk.textContent = 'Payment successful! Redirecting to download…';
+          payOk.style.display = 'block';
+          setTimeout(() => { window.location.href = '/download?paid=1'; }, 2000);
+        },
+        theme: { color: '#0055FF' }
+      });
+      rzp.on('payment.failed', function (r) {
+        showErr(payErr, r.error?.description || 'Payment failed');
+      });
+      rzp.open();
+    } catch (e) {
+      showErr(payErr, e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Pay with Razorpay';
+    }
+  };
+
+  loadBillingConfig();
+</script>
+</body>
+</html>

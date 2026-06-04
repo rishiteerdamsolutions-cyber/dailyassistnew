@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download AHA — dailyassist.xyz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="/marketing-tailwind-config.js"></script>
+  <link rel="stylesheet" href="/marketing.css"/>
+  <style>
+    #auth-card, #pay-card { display: block; }
+    .err { color: #ba1a1a; }
+    .ok { color: #10B981; }
+  </style>
+</head>
+<body>
+<header class="bg-surface/90 backdrop-blur-md sticky top-0 z-50 h-16 border-b border-border-subtle/50">
+  <nav class="flex justify-between items-center max-w-max-width mx-auto px-5 md:px-margin-desktop h-full">
+    <a href="/" class="font-bold text-deep-navy">AHA</a>
+    <a href="/subscribe" class="bg-primary-container text-white px-5 py-2.5 rounded-lg text-sm font-medium">Subscribe</a>
+  </nav>
+</header>
+
+<div class="max-w-lg mx-auto px-5 py-12 md:py-16">
+  <h1 class="text-2xl md:text-3xl font-bold text-deep-navy mb-2">Download AHA</h1>
+  <p class="text-slate-gray mb-8"><strong class="text-deep-navy">Desktop only.</strong> Mac and Windows installers are available after a successful subscription. Sign in with the same account you used at checkout. AHA does not install on phones or tablets.</p>
+
+  <div class="bg-white rounded-xl border border-border-subtle shadow-card p-6 mb-5" id="auth-card">
+    <h2 class="text-lg font-semibold text-deep-navy mb-4">Sign in</h2>
+    <input type="email" id="email" placeholder="Email" class="w-full mb-3 px-3 py-2.5 rounded-lg border border-border-subtle focus:border-action-blue focus:ring-2 focus:ring-action-blue/20 outline-none">
+    <input type="password" id="password" placeholder="Password" class="w-full mb-4 px-3 py-2.5 rounded-lg border border-border-subtle focus:border-action-blue focus:ring-2 focus:ring-action-blue/20 outline-none">
+    <button type="button" id="btn-signin" class="w-full py-3 rounded-lg bg-action-blue text-white font-medium">Sign in</button>
+    <button type="button" id="btn-signup" class="w-full py-3 rounded-lg border border-border-subtle text-deep-navy font-medium mt-2">Create account</button>
+    <p class="err text-sm mt-2 hidden" id="auth-err"></p>
+  </div>
+
+  <div class="bg-white rounded-xl border border-border-subtle shadow-card p-6 mb-5 hidden" id="pay-card">
+    <p class="text-slate-gray mb-2" id="sub-status">Checking subscription…</p>
+    <p class="err text-sm mb-2 hidden" id="sub-err"></p>
+    <a href="/subscribe" id="subscribe-link" class="text-action-blue text-sm hidden">Subscribe to unlock download</a>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 hidden" id="dl-grid">
+    <div class="bg-white rounded-xl border border-border-subtle p-6 text-center shadow-card">
+      <h2 class="font-semibold text-deep-navy mb-4">macOS</h2>
+      <button type="button" id="dl-mac" class="w-full py-3 rounded-lg bg-action-blue text-white font-medium hover:bg-primary">Download for Mac</button>
+    </div>
+    <div class="bg-white rounded-xl border border-border-subtle p-6 text-center shadow-card">
+      <h2 class="font-semibold text-deep-navy mb-4">Windows</h2>
+      <button type="button" id="dl-win" class="w-full py-3 rounded-lg bg-action-blue text-white font-medium hover:bg-primary">Download for Windows</button>
+    </div>
+  </div>
+
+  <p class="text-slate-gray text-sm mt-8">After install on your computer, sign in inside the AHA desktop app with the same account. It re-checks your subscription periodically.</p>
+</div>
+
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+  const auth = getAuth(initializeApp({
+    apiKey: "AIzaSyA_6P1QftvmS3_KM0v5kkCUOo7KP1eHPKw",
+    authDomain: "assist-daily.firebaseapp.com",
+    projectId: "assist-daily",
+    storageBucket: "assist-daily.firebasestorage.app",
+    messagingSenderId: "204177096003",
+    appId: "1:204177096003:web:03e82d5c4d5c8e489183f6"
+  }));
+
+  const authCard = document.getElementById('auth-card');
+  const payCard = document.getElementById('pay-card');
+  const dlGrid = document.getElementById('dl-grid');
+  const subStatus = document.getElementById('sub-status');
+  const subErr = document.getElementById('sub-err');
+  const subscribeLink = document.getElementById('subscribe-link');
+
+  async function apiBearer(path) {
+    const token = await auth.currentUser.getIdToken();
+    return fetch(path, { headers: { Authorization: 'Bearer ' + token } });
+  }
+
+  async function checkEligibility() {
+    subErr.classList.add('hidden');
+    subscribeLink.classList.add('hidden');
+    try {
+      const res = await apiBearer('/api/download/eligibility');
+      const data = await res.json();
+      if (data.allowed) {
+        subStatus.textContent = 'Active subscription until ' + (data.expires_at || '—');
+        subStatus.className = 'ok text-sm mb-4';
+        dlGrid.classList.remove('hidden');
+        return;
+      }
+      subStatus.textContent = 'No active subscription';
+      subStatus.className = 'text-slate-gray text-sm mb-2';
+      subErr.textContent = data.message || 'Please subscribe first.';
+      subErr.classList.remove('hidden');
+      subscribeLink.classList.remove('hidden');
+      dlGrid.classList.add('hidden');
+    } catch (e) {
+      subErr.textContent = e.message;
+      subErr.classList.remove('hidden');
+    }
+  }
+
+  async function downloadPlatform(platform) {
+    const res = await apiBearer('/api/download/' + platform);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || 'Download not available');
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = platform === 'mac' ? 'AHA-mac.zip' : 'AHA-win.zip';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById('dl-mac').onclick = () => downloadPlatform('mac');
+  document.getElementById('dl-win').onclick = () => downloadPlatform('win');
+
+  document.getElementById('btn-signin').onclick = async () => {
+    try {
+      await signInWithEmailAndPassword(auth, document.getElementById('email').value.trim(), document.getElementById('password').value);
+    } catch (e) {
+      const el = document.getElementById('auth-err');
+      el.textContent = e.message;
+      el.classList.remove('hidden');
+    }
+  };
+  document.getElementById('btn-signup').onclick = async () => {
+    try {
+      await createUserWithEmailAndPassword(auth, document.getElementById('email').value.trim(), document.getElementById('password').value);
+    } catch (e) {
+      const el = document.getElementById('auth-err');
+      el.textContent = e.message;
+      el.classList.remove('hidden');
+    }
+  };
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      authCard.classList.add('hidden');
+      payCard.classList.remove('hidden');
+      await fetch('/api/auth/firebase_signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_token: await user.getIdToken() })
+      }).catch(() => {});
+      await checkEligibility();
+    } else {
+      authCard.classList.remove('hidden');
+      payCard.classList.add('hidden');
+      dlGrid.classList.add('hidden');
+    }
+  });
+</script>
+</body>
+</html>

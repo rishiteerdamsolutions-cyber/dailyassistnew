@@ -1,0 +1,19 @@
+body {
+  background-color: #f7f9fb;
+  color: #191c1e;
+  font-family: Inter, system-ui, sans-serif;
+}
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.6);
+}
+@media (max-width: 768px) {
+  .text-headline-xl {
+    font-size: 28px;
+    line-height: 36px;
+  }
+}
