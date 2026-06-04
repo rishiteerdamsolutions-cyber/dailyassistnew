@@ -55,8 +55,10 @@ async def startup_event():
         logger.error(f"Failed to bootstrap storage vault: {e}")
 
 # License & BYOK API routes
+from aha.admin_routes import router as admin_router
 from aha.api_routes import router as aha_router
 app.include_router(aha_router)
+app.include_router(admin_router)
 
 # ── Firebase Auth endpoint ────────────────────────────────────────────────────
 class FirebaseSigninRequest(BaseModel):
@@ -168,6 +170,11 @@ def serve_companion():
 @app.get("/subscribe")
 def serve_subscribe():
     return _html_page("subscribe.html")
+
+
+@app.get("/admin")
+def serve_admin():
+    return _html_page("admin/index.html")
 
 @app.get("/download")
 def serve_download():

@@ -29,14 +29,10 @@
   <p class="text-slate-gray font-body-md mb-8">Pay with Razorpay, then install AHA on your <strong class="text-deep-navy">desktop</strong> (<strong class="text-deep-navy">Mac</strong> or <strong class="text-deep-navy">Windows</strong> only — not mobile) with the same account. By paying you agree to our <a href="/legal#terms" class="text-action-blue">Terms</a> and <a href="/legal#privacy" class="text-action-blue">Privacy Policy</a>.</p>
 
   <div class="bg-white rounded-xl border border-border-subtle shadow-card p-6 mb-5" id="auth-section">
-    <h2 class="text-lg font-semibold text-deep-navy mb-4">1. Sign in</h2>
-    <label class="block text-sm text-slate-gray mb-1">Email</label>
-    <input type="email" id="auth-email" placeholder="you@example.com" class="w-full mb-3 px-3 py-2.5 rounded-lg border border-border-subtle bg-white text-deep-navy focus:border-action-blue focus:ring-2 focus:ring-action-blue/20 outline-none">
-    <label class="block text-sm text-slate-gray mb-1">Password</label>
-    <input type="password" id="auth-password" placeholder="Password" class="w-full mb-4 px-3 py-2.5 rounded-lg border border-border-subtle bg-white text-deep-navy focus:border-action-blue focus:ring-2 focus:ring-action-blue/20 outline-none">
-    <button type="button" id="btn-signin" class="w-full py-3 rounded-lg bg-action-blue text-white font-medium hover:bg-primary transition-colors">Sign in</button>
-    <button type="button" id="btn-signup" class="w-full py-3 rounded-lg border border-border-subtle text-deep-navy font-medium mt-2 hover:bg-surface-container-low">Create account</button>
-    <button type="button" id="btn-google" class="w-full py-3 rounded-lg border border-border-subtle text-deep-navy font-medium mt-2 hover:bg-surface-container-low">Continue with Google</button>
+    <button type="button" id="btn-google" class="w-full py-3.5 rounded-lg border border-border-subtle bg-white text-deep-navy font-medium hover:bg-surface-container-low flex items-center justify-center gap-3 shadow-sm">
+      <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.654 32.657 29.083 36 24 36c-5.523 0-10-4.477-10-10s4.477-10 10-10c2.837 0 5.402 1.193 7.274 3.102l5.657-5.657C34.047 10.658 29.268 8 24 8 12.955 8 4 16.955 4 28s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 16.108 18.961 13 24 13c2.837 0 5.402 1.193 7.274 3.102l5.657-5.657C34.047 10.658 29.268 8 24 8c-7.682 0-14.348 4.337-17.694 10.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.197l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
+      Continue with Google
+    </button>
     <div class="err" id="auth-err"></div>
   </div>
 
@@ -44,6 +40,9 @@
     <h2 class="text-lg font-semibold text-deep-navy mb-2">2. Choose a plan</h2>
     <p id="signed-in-as" class="text-slate-gray text-sm mb-4"></p>
     <div class="grid gap-3 mb-4" id="plan-grid"></div>
+    <label class="block text-sm text-slate-gray mb-1">Coupon code (testing)</label>
+    <input type="text" id="coupon-code" placeholder="COUPON100" class="w-full mb-3 px-3 py-2.5 rounded-lg border border-border-subtle bg-white text-deep-navy uppercase">
+    <button type="button" id="btn-coupon" class="w-full py-3 rounded-lg border border-action-blue text-action-blue font-medium mb-3 hover:bg-action-blue/5">Redeem 100% coupon — no payment</button>
     <button type="button" id="btn-pay" class="w-full py-3.5 rounded-lg bg-action-blue text-white font-medium hover:bg-primary transition-colors">Pay with Razorpay</button>
     <div class="err" id="pay-err"></div>
     <div class="ok" id="pay-ok"></div>
@@ -61,7 +60,7 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyA_6P1QftvmS3_KM0v5kkCUOo7KP1eHPKw",
@@ -74,6 +73,7 @@
   };
   const auth = getAuth(initializeApp(firebaseConfig));
   const google = new GoogleAuthProvider();
+  google.setCustomParameters({ prompt: 'select_account' });
 
   let billingConfig = null;
   let selectedPlanId = 'core_monthly';
@@ -87,6 +87,18 @@
   function showErr(el, msg) { el.textContent = msg; el.style.display = 'block'; }
   function hideErr(el) { el.style.display = 'none'; }
 
+  async function parseApiJson(res) {
+    const text = await res.text();
+    if (!text) return {};
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new Error(
+        text.slice(0, 200) || ('Request failed (' + res.status + '). Check Vercel env: RAZORPAY_*, FIREBASE_SERVICE_ACCOUNT_JSON, SUPABASE_SERVICE_KEY.')
+      );
+    }
+  }
+
   async function apiBearer(path, options = {}) {
     if (!currentUser) throw new Error('Not signed in');
     const token = await currentUser.getIdToken();
@@ -98,7 +110,7 @@
 
   async function loadBillingConfig() {
     const res = await fetch('/api/billing/config');
-    billingConfig = await res.json();
+    billingConfig = await parseApiJson(res);
     if (!billingConfig.razorpay_configured) {
       document.getElementById('billing-unconfigured').classList.remove('hidden');
       paySection.style.display = 'none';
@@ -136,23 +148,36 @@
     }
   });
 
-  const emailEl = document.getElementById('auth-email');
-  const passEl = document.getElementById('auth-password');
-
-  document.getElementById('btn-signin').onclick = async () => {
-    hideErr(document.getElementById('auth-err'));
-    try { await signInWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value); }
-    catch (e) { showErr(document.getElementById('auth-err'), e.message); }
-  };
-  document.getElementById('btn-signup').onclick = async () => {
-    hideErr(document.getElementById('auth-err'));
-    try { await createUserWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value); }
-    catch (e) { showErr(document.getElementById('auth-err'), e.message); }
-  };
   document.getElementById('btn-google').onclick = async () => {
     hideErr(document.getElementById('auth-err'));
     try { await signInWithPopup(auth, google); }
     catch (e) { showErr(document.getElementById('auth-err'), e.message); }
+  };
+
+  document.getElementById('btn-coupon').onclick = async () => {
+    const payErr = document.getElementById('pay-err');
+    const payOk = document.getElementById('pay-ok');
+    hideErr(payErr);
+    payOk.style.display = 'none';
+    const code = document.getElementById('coupon-code').value.trim();
+    if (!code) { showErr(payErr, 'Enter a coupon code (e.g. COUPON100)'); return; }
+    const btn = document.getElementById('btn-coupon');
+    btn.disabled = true;
+    try {
+      const res = await apiBearer('/api/billing/redeem_coupon', {
+        method: 'POST',
+        body: JSON.stringify({ coupon_code: code, plan_id: selectedPlanId })
+      });
+      const data = await parseApiJson(res);
+      if (!res.ok) throw new Error(data.detail || 'Coupon failed');
+      payOk.textContent = 'Coupon applied! License: ' + (data.license_key || '') + ' — redirecting…';
+      payOk.style.display = 'block';
+      setTimeout(() => { window.location.href = '/download?paid=1'; }, 2000);
+    } catch (e) {
+      showErr(payErr, e.message);
+    } finally {
+      btn.disabled = false;
+    }
   };
 
   document.getElementById('btn-pay').onclick = async () => {
@@ -168,7 +193,7 @@
         method: 'POST',
         body: JSON.stringify({ plan_id: selectedPlanId })
       });
-      const order = await res.json();
+      const order = await parseApiJson(res);
       if (!res.ok) throw new Error(order.detail || 'Could not create order');
 
       const rzp = new Razorpay({
@@ -189,7 +214,7 @@
               razorpay_signature: response.razorpay_signature
             })
           });
-          const data = await v.json();
+          const data = await parseApiJson(v);
           if (!v.ok) throw new Error(data.detail || 'Verification failed');
           payOk.textContent = 'Payment successful! Redirecting to download…';
           payOk.style.display = 'block';

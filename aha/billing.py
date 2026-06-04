@@ -83,7 +83,10 @@ def create_order(uid: str, email: str, plan_id: str) -> dict:
         raise ValueError(f"Unknown plan: {plan_id}")
 
     plan = PLANS[plan_id]
-    upsert_user(uid, email)
+    try:
+        upsert_user(uid, email)
+    except Exception:
+        pass  # checkout can proceed if Supabase is briefly unavailable
 
     client = _client()
     receipt = f"aha_{uid[:8]}_{secrets.token_hex(4)}"

@@ -8,12 +8,15 @@ from __future__ import annotations
 
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 _origins = [
     "https://dailyassist.xyz",
     "https://www.dailyassist.xyz",
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
     "https://dailyassist.vercel.app",
 ]
 _vercel = os.environ.get("VERCEL_URL", "").strip()
@@ -21,6 +24,16 @@ if _vercel:
     _origins.append(f"https://{_vercel}")
 
 app = FastAPI(title="AHA API — dailyassist.xyz")
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception(_request: Request, exc: Exception) -> JSONResponse:
+    """Always return JSON — avoids 'Unexpected token I' when the client parses HTML errors."""
+    if isinstance(exc, HTTPException):
+        detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+        return JSONResponse(status_code=exc.status_code, content={"detail": detail})
+    return JSONResponse(status_code=500, content={"detail": str(exc)})
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,9 +43,11 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
+from aha.admin_routes import router as admin_router
 from aha.api_routes import router as aha_router
 
 app.include_router(aha_router)
+app.include_router(admin_router)
 
 
 from pydantic import BaseModel

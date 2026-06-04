@@ -51,6 +51,11 @@ class VerifyPaymentBody(BaseModel):
     razorpay_signature: str
 
 
+class RedeemCouponBody(BaseModel):
+    coupon_code: str = Field(..., description="Promo code, e.g. COUPON100")
+    plan_id: str = Field(default="core_monthly")
+
+
 class SetApiKeyRequest(BaseModel):
     provider: str = Field(..., description="Provider name (e.g. 'google', 'openai')")
     api_key: str = Field(..., description="Raw API key value")
@@ -108,6 +113,26 @@ async def billing_config() -> dict:
     return public_billing_config()
 
 
+@router.get("/billing/ready")
+async def billing_ready() -> dict:
+    """Diagnostics for deploy — which server env vars are present (no secrets)."""
+    import os
+    from pathlib import Path
+
+    from aha.billing import razorpay_configured
+    from aha.supabase_client import SUPABASE_SERVICE_KEY, SUPABASE_URL
+
+    sa_json = bool(os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "").strip())
+    sa_path = os.environ.get("FIREBASE_SERVICE_ACCOUNT_PATH", "").strip()
+    sa_file = bool(sa_path and Path(sa_path).is_file())
+
+    return {
+        "razorpay_configured": razorpay_configured(),
+        "supabase_configured": bool(SUPABASE_URL and SUPABASE_SERVICE_KEY),
+        "firebase_configured": sa_json or sa_file,
+    }
+
+
 @router.post("/billing/create_order")
 async def billing_create_order(
     body: CreateOrderBody,
@@ -125,6 +150,11 @@ async def billing_create_order(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Could not create Razorpay order: {exc}",
+        ) from exc
 
 
 @router.post("/billing/verify")
@@ -167,6 +197,42 @@ async def download_package(platform: str, user: dict = Depends(get_current_user)
         filename=resolved["filename"],
         media_type="application/zip",
     )
+
+
+@router.post("/billing/validate_coupon")
+async def billing_validate_coupon(
+    body: RedeemCouponBody,
+    user: dict = Depends(get_current_user),
+) -> dict:
+    """Check coupon discount before checkout (no redemption)."""
+    from aha.coupons import validate_coupon
+
+    try:
+        return validate_coupon(body.coupon_code, body.plan_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/billing/redeem_coupon")
+async def billing_redeem_coupon(
+    body: RedeemCouponBody,
+    user: dict = Depends(get_current_user),
+) -> dict:
+    """Redeem a 100% coupon (e.g. COUPON100) — no Razorpay payment."""
+    from aha.coupons import redeem_coupon
+
+    try:
+        result = redeem_coupon(
+            user["uid"],
+            user.get("email", ""),
+            body.plan_id,
+            body.coupon_code,
+        )
+        return {"status": "ok", **result}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @router.post("/billing/webhook")

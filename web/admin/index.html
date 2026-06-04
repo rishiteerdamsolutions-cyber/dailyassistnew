@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — AHA | dailyassist.xyz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="/marketing-tailwind-config.js"></script>
+  <link rel="stylesheet" href="/marketing.css"/>
+  <style>
+    .stat-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 12px; padding: 1rem 1.25rem; }
+    .tbl { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .tbl th, .tbl td { padding: 10px 12px; border-bottom: 1px solid #E2E8F0; text-align: left; }
+    .tbl th { color: #64748B; font-weight: 600; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; }
+    .badge-ok { background: #d1fae5; color: #065f46; }
+    .badge-off { background: #fee2e2; color: #991b1b; }
+    #dashboard, #denied { display: none; }
+  </style>
+</head>
+<body class="min-h-screen">
+<header class="bg-surface/90 backdrop-blur-md sticky top-0 z-50 h-16 border-b border-border-subtle/50">
+  <nav class="flex justify-between items-center max-w-6xl mx-auto px-5 h-full">
+    <a href="/" class="font-bold text-deep-navy">AHA Admin</a>
+    <span id="admin-email" class="text-slate-gray text-sm"></span>
+  </nav>
+</header>
+
+<div class="max-w-6xl mx-auto px-5 py-10">
+  <div id="auth-section" class="max-w-md mx-auto bg-white rounded-xl border border-border-subtle shadow-card p-6">
+    <h1 class="text-2xl font-bold text-deep-navy mb-2">Admin sign in</h1>
+    <p class="text-slate-gray text-sm mb-6">Sign in with Google. Your Gmail must be listed in <code class="text-xs bg-surface-container-low px-1 rounded">AHA_ADMIN_EMAILS</code> on the server.</p>
+    <button type="button" id="btn-google" class="w-full py-3.5 rounded-lg border border-border-subtle bg-white text-deep-navy font-medium hover:bg-surface-container-low flex items-center justify-center gap-3 shadow-sm">
+      <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.654 32.657 29.083 36 24 36c-5.523 0-10-4.477-10-10s4.477-10 10-10c2.837 0 5.402 1.193 7.274 3.102l5.657-5.657C34.047 10.658 29.268 8 24 8 12.955 8 4 16.955 4 28s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 16.108 18.961 13 24 13c2.837 0 5.402 1.193 7.274 3.102l5.657-5.657C34.047 10.658 29.268 8 24 8c-7.682 0-14.348 4.337-17.694 10.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.197l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
+      Sign in with Google
+    </button>
+    <p id="auth-err" class="text-red-600 text-sm mt-3 hidden"></p>
+  </div>
+
+  <div id="denied" class="max-w-lg mx-auto text-center">
+    <p class="text-red-600 font-medium">Access denied</p>
+    <p class="text-slate-gray text-sm mt-2">Your account is not in <code>AHA_ADMIN_EMAILS</code> on the server.</p>
+  </div>
+
+  <div id="dashboard">
+    <h1 class="text-2xl font-bold text-deep-navy mb-1">Customer analytics</h1>
+    <p class="text-slate-gray text-sm mb-8" id="generated-at"></p>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="stats-grid"></div>
+
+    <div class="grid md:grid-cols-2 gap-6 mb-10">
+      <div class="stat-card">
+        <h2 class="font-semibold text-deep-navy mb-3">Plans breakdown</h2>
+        <ul id="plans-list" class="text-sm text-slate-gray space-y-1"></ul>
+      </div>
+      <div class="stat-card">
+        <h2 class="font-semibold text-deep-navy mb-3">Signups</h2>
+        <p class="text-sm"><span class="text-slate-gray">Last 7 days:</span> <strong id="signups-7">—</strong></p>
+        <p class="text-sm mt-1"><span class="text-slate-gray">Last 30 days:</span> <strong id="signups-30">—</strong></p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-border-subtle shadow-card p-6 mb-10 overflow-x-auto">
+      <h2 class="text-lg font-semibold text-deep-navy mb-4">Customers</h2>
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Plan</th>
+            <th>License</th>
+            <th>Joined</th>
+            <th>Last paid</th>
+          </tr>
+        </thead>
+        <tbody id="customers-body"></tbody>
+      </table>
+    </div>
+
+    <div class="bg-white rounded-xl border border-border-subtle shadow-card p-6 mb-6">
+      <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+        <h2 class="text-lg font-semibold text-deep-navy">Coupon codes</h2>
+        <p class="text-sm text-slate-gray">Test checkout: <strong class="text-deep-navy">COUPON100</strong> = 100% off (no Razorpay)</p>
+      </div>
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Discount</th>
+            <th>Uses</th>
+            <th>Status</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody id="coupons-body"></tbody>
+      </table>
+    </div>
+
+    <div class="stat-card max-w-xl">
+      <h2 class="font-semibold text-deep-navy mb-3">Create coupon</h2>
+      <div class="grid gap-3 text-sm">
+        <input id="new-code" placeholder="CODE" class="px-3 py-2 rounded-lg border border-border-subtle uppercase">
+        <input id="new-discount" type="number" min="1" max="100" value="100" placeholder="Discount %" class="px-3 py-2 rounded-lg border border-border-subtle">
+        <input id="new-max" type="number" placeholder="Max uses (optional)" class="px-3 py-2 rounded-lg border border-border-subtle">
+        <input id="new-note" placeholder="Note" class="px-3 py-2 rounded-lg border border-border-subtle">
+        <button type="button" id="btn-create-coupon" class="py-2.5 rounded-lg bg-action-blue text-white font-medium">Save coupon</button>
+        <p id="coupon-msg" class="text-sm hidden"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA_6P1QftvmS3_KM0v5kkCUOo7KP1eHPKw",
+    authDomain: "assist-daily.firebaseapp.com",
+    projectId: "assist-daily",
+    storageBucket: "assist-daily.firebasestorage.app",
+    messagingSenderId: "204177096003",
+    appId: "1:204177096003:web:03e82d5c4d5c8e489183f6",
+  };
+  const auth = getAuth(initializeApp(firebaseConfig));
+  const google = new GoogleAuthProvider();
+  google.setCustomParameters({ prompt: 'select_account' });
+  let currentUser = null;
+
+  async function api(path, options = {}) {
+    const token = await currentUser.getIdToken();
+    const headers = new Headers(options.headers || {});
+    headers.set('Authorization', 'Bearer ' + token);
+    headers.set('Content-Type', 'application/json');
+    return fetch(path, { ...options, headers });
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    try { return new Date(iso).toLocaleString(); } catch { return iso; }
+  }
+
+  function renderStats(a) {
+    const t = a.totals || {};
+    const cards = [
+      ['Total users', t.users],
+      ['Active licenses', t.active_licenses],
+      ['Paid orders', t.paid_orders],
+      ['Revenue', t.revenue_display],
+      ['Coupon checkouts', t.coupon_checkouts],
+      ['Pending orders', t.pending_orders],
+    ];
+    document.getElementById('stats-grid').innerHTML = cards.map(([label, val]) =>
+      `<div class="stat-card"><p class="text-slate-gray text-xs uppercase tracking-wide">${label}</p><p class="text-2xl font-bold text-deep-navy mt-1">${val ?? '—'}</p></div>`
+    ).join('');
+    document.getElementById('signups-7').textContent = a.signups?.last_7_days ?? 0;
+    document.getElementById('signups-30').textContent = a.signups?.last_30_days ?? 0;
+    document.getElementById('plans-list').innerHTML = Object.entries(a.plans || {}).map(([p, n]) =>
+      `<li><strong>${p}</strong>: ${n}</li>`
+    ).join('') || '<li>No users yet</li>';
+    document.getElementById('generated-at').textContent = 'Updated ' + fmtDate(a.generated_at);
+  }
+
+  function renderCustomers(data) {
+    const body = document.getElementById('customers-body');
+    body.innerHTML = (data.customers || []).map(c => `
+      <tr>
+        <td>${c.email || c.uid}</td>
+        <td>${c.plan || 'free'}</td>
+        <td>${c.license_active ? '<span class="badge badge-ok">active</span>' : '<span class="badge badge-off">none</span>'}</td>
+        <td>${fmtDate(c.created_at)}</td>
+        <td>${c.last_payment_at ? fmtDate(c.last_payment_at) : '—'}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="5">No customers</td></tr>';
+  }
+
+  function renderCoupons(data) {
+    const body = document.getElementById('coupons-body');
+    body.innerHTML = (data.coupons || []).map(c => `
+      <tr>
+        <td><code>${c.code}</code></td>
+        <td>${c.discount_percent}%</td>
+        <td>${c.uses_count}${c.max_uses != null ? ' / ' + c.max_uses : ''}</td>
+        <td>${c.is_active ? '<span class="badge badge-ok">active</span>' : '<span class="badge badge-off">off</span>'}</td>
+        <td class="text-slate-gray">${c.note || ''}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="5">Run migration 005_coupons.sql in Supabase</td></tr>';
+  }
+
+  async function loadDashboard() {
+    const res = await api('/api/admin/analytics');
+    if (res.status === 403) {
+      document.getElementById('dashboard').style.display = 'none';
+      document.getElementById('denied').style.display = 'block';
+      return;
+    }
+    if (!res.ok) throw new Error('Could not load analytics');
+    document.getElementById('denied').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    renderStats(await res.json());
+
+    const cust = await api('/api/admin/customers?limit=200');
+    if (cust.ok) renderCustomers(await cust.json());
+
+    const coupons = await api('/api/admin/coupons');
+    if (coupons.ok) renderCoupons(await coupons.json());
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+    const authSec = document.getElementById('auth-section');
+    if (!user) {
+      authSec.style.display = 'block';
+      document.getElementById('dashboard').style.display = 'none';
+      document.getElementById('denied').style.display = 'none';
+      document.getElementById('admin-email').textContent = '';
+      return;
+    }
+    authSec.style.display = 'none';
+    document.getElementById('admin-email').innerHTML =
+      (user.email || '') + ' · <button type="button" class="text-action-blue underline" id="btn-logout">Sign out</button>';
+    document.getElementById('btn-logout').onclick = () => signOut(auth);
+    try { await loadDashboard(); } catch (e) {
+      document.getElementById('denied').style.display = 'block';
+      document.getElementById('denied').querySelector('p').textContent = e.message;
+    }
+  });
+
+  document.getElementById('btn-google').onclick = async () => {
+    const err = document.getElementById('auth-err');
+    err.classList.add('hidden');
+    try {
+      await signInWithPopup(auth, google);
+    } catch (e) {
+      err.textContent = e.message;
+      err.classList.remove('hidden');
+    }
+  };
+
+  document.getElementById('btn-create-coupon').onclick = async () => {
+    const msg = document.getElementById('coupon-msg');
+    const maxVal = document.getElementById('new-max').value;
+    const body = {
+      code: document.getElementById('new-code').value.trim(),
+      discount_percent: parseInt(document.getElementById('new-discount').value, 10),
+      note: document.getElementById('new-note').value.trim(),
+      max_uses: maxVal ? parseInt(maxVal, 10) : null,
+    };
+    const res = await api('/api/admin/coupons', { method: 'POST', body: JSON.stringify(body) });
+    const data = await res.json();
+    msg.classList.remove('hidden');
+    msg.className = 'text-sm ' + (res.ok ? 'text-green-600' : 'text-red-600');
+    msg.textContent = res.ok ? 'Coupon saved: ' + body.code : (data.detail || 'Failed');
+    if (res.ok) {
+      const coupons = await api('/api/admin/coupons');
+      if (coupons.ok) renderCoupons(await coupons.json());
+    }
+  };
+</script>
+</body>
+</html>

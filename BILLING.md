@@ -12,9 +12,16 @@
 
    `100` paise = ₹1 for test checkouts.
 
-2. Run Supabase migration: `supabase/migrations/003_payments.sql`
+2. Run Supabase migrations: `003_payments.sql`, then `005_coupons.sql` (seeds **COUPON100** = 100% off)
 
-3. Start AHA: `start_companion.command` (Mac) or `start.bat` (Windows)
+3. Set admin email in `.env`: `AHA_ADMIN_EMAILS=you@example.com`
+
+4. Start AHA: `start_companion.command` (Mac) or `start.bat` (Windows)
+
+## Admin & test coupons
+
+- **Admin dashboard:** http://127.0.0.1:8000/admin — customer analytics, coupon list, create codes
+- **Test checkout:** on `/subscribe`, sign in, enter `COUPON100`, click **Redeem 100% coupon** (no Razorpay)
 
 ## User flow
 
