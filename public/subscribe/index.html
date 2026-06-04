@@ -11,7 +11,6 @@
   <style>
     .plan-option { border: 1px solid #E2E8F0; border-radius: 0.5rem; padding: 14px; cursor: pointer; background: #fff; }
     .plan-option.selected { border-color: #0055FF; background: rgba(0, 85, 255, 0.06); box-shadow: 0 0 0 1px #0055FF; }
-    #auth-section, #pay-section { display: none; }
     .err { color: #ba1a1a; font-size: 0.9rem; margin-top: 8px; display: none; }
     .ok { color: #10B981; font-size: 0.9rem; margin-top: 8px; display: none; }
   </style>
@@ -36,7 +35,7 @@
     <div class="err" id="auth-err"></div>
   </div>
 
-  <div class="bg-white rounded-xl border border-border-subtle shadow-card p-6 mb-5" id="pay-section">
+  <div class="bg-white rounded-xl border border-border-subtle shadow-card p-6 mb-5 hidden" id="pay-section">
     <h2 class="text-lg font-semibold text-deep-navy mb-2">2. Choose a plan</h2>
     <p id="signed-in-as" class="text-slate-gray text-sm mb-4"></p>
     <div class="grid gap-3 mb-4" id="plan-grid"></div>
@@ -59,21 +58,15 @@
 
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-  import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import {
+    formatAuthError,
+    initGoogleAuth,
+    notifyBackendSignIn,
+    signInWithGoogle,
+    watchAuth,
+  } from '/js/aha-google-auth.js';
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyA_6P1QftvmS3_KM0v5kkCUOo7KP1eHPKw",
-    authDomain: "assist-daily.firebaseapp.com",
-    projectId: "assist-daily",
-    storageBucket: "assist-daily.firebasestorage.app",
-    messagingSenderId: "204177096003",
-    appId: "1:204177096003:web:03e82d5c4d5c8e489183f6",
-    measurementId: "G-PTDQSEND0N"
-  };
-  const auth = getAuth(initializeApp(firebaseConfig));
-  const google = new GoogleAuthProvider();
-  google.setCustomParameters({ prompt: 'select_account' });
+  const { auth, google } = await initGoogleAuth();
 
   let billingConfig = null;
   let selectedPlanId = 'core_monthly';
@@ -113,9 +106,9 @@
     billingConfig = await parseApiJson(res);
     if (!billingConfig.razorpay_configured) {
       document.getElementById('billing-unconfigured').classList.remove('hidden');
-      paySection.style.display = 'none';
       return;
     }
+    document.getElementById('billing-unconfigured').classList.add('hidden');
     planGrid.innerHTML = '';
     for (const [id, plan] of Object.entries(billingConfig.plans || {})) {
       const div = document.createElement('div');
@@ -131,27 +124,34 @@
     }
   }
 
-  onAuthStateChanged(auth, async (user) => {
+  function setSignedIn(user) {
     currentUser = user;
     if (user) {
-      authSection.style.display = 'none';
-      paySection.style.display = 'block';
+      authSection.classList.add('hidden');
+      paySection.classList.remove('hidden');
       signedInAs.textContent = 'Signed in as ' + (user.email || user.uid);
-      await fetch('/api/auth/firebase_signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_token: await user.getIdToken() })
-      }).catch(() => {});
+      notifyBackendSignIn(user);
+      loadBillingConfig();
     } else {
-      authSection.style.display = 'block';
-      paySection.style.display = 'none';
+      authSection.classList.remove('hidden');
+      paySection.classList.add('hidden');
     }
-  });
+  }
+
+  watchAuth(auth, (user) => setSignedIn(user));
 
   document.getElementById('btn-google').onclick = async () => {
-    hideErr(document.getElementById('auth-err'));
-    try { await signInWithPopup(auth, google); }
-    catch (e) { showErr(document.getElementById('auth-err'), e.message); }
+    const errEl = document.getElementById('auth-err');
+    hideErr(errEl);
+    const btn = document.getElementById('btn-google');
+    btn.disabled = true;
+    try {
+      await signInWithGoogle(auth, google);
+    } catch (e) {
+      showErr(errEl, formatAuthError(e));
+    } finally {
+      btn.disabled = false;
+    }
   };
 
   document.getElementById('btn-coupon').onclick = async () => {
@@ -234,7 +234,6 @@
     }
   };
 
-  loadBillingConfig();
 </script>
 </body>
 </html>

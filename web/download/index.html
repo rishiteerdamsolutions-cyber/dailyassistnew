@@ -27,11 +27,9 @@
   <p class="text-slate-gray mb-8"><strong class="text-deep-navy">Desktop only.</strong> Mac and Windows installers are available after a successful subscription. Sign in with the same account you used at checkout. AHA does not install on phones or tablets.</p>
 
   <div class="bg-white rounded-xl border border-border-subtle shadow-card p-6 mb-5" id="auth-card">
-    <h2 class="text-lg font-semibold text-deep-navy mb-2">Sign in with Google</h2>
-    <p class="text-slate-gray text-sm mb-5">Use the same Gmail or Google account you used when you subscribed.</p>
     <button type="button" id="btn-google" class="w-full py-3.5 rounded-lg border border-border-subtle bg-white text-deep-navy font-medium hover:bg-surface-container-low flex items-center justify-center gap-3 shadow-sm">
       <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.654 32.657 29.083 36 24 36c-5.523 0-10-4.477-10-10s4.477-10 10-10c2.837 0 5.402 1.193 7.274 3.102l5.657-5.657C34.047 10.658 29.268 8 24 8 12.955 8 4 16.955 4 28s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 16.108 18.961 13 24 13c2.837 0 5.402 1.193 7.274 3.102l5.657-5.657C34.047 10.658 29.268 8 24 8c-7.682 0-14.348 4.337-17.694 10.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.197l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
-      Sign in with Google
+      Continue with Google
     </button>
     <p class="err text-sm mt-2 hidden" id="auth-err"></p>
   </div>
@@ -57,20 +55,15 @@
 </div>
 
 <script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-  import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import {
+    formatAuthError,
+    initGoogleAuth,
+    notifyBackendSignIn,
+    signInWithGoogle,
+    watchAuth,
+  } from '/js/aha-google-auth.js';
 
-  const google = new GoogleAuthProvider();
-  google.setCustomParameters({ prompt: 'select_account' });
-
-  const auth = getAuth(initializeApp({
-    apiKey: "AIzaSyA_6P1QftvmS3_KM0v5kkCUOo7KP1eHPKw",
-    authDomain: "assist-daily.firebaseapp.com",
-    projectId: "assist-daily",
-    storageBucket: "assist-daily.firebasestorage.app",
-    messagingSenderId: "204177096003",
-    appId: "1:204177096003:web:03e82d5c4d5c8e489183f6"
-  }));
+  const { auth, google } = await initGoogleAuth();
 
   const authCard = document.getElementById('auth-card');
   const payCard = document.getElementById('pay-card');
@@ -110,6 +103,10 @@
 
   async function downloadPlatform(platform) {
     const res = await apiBearer('/api/download/' + platform);
+    if (res.redirected) {
+      window.location.href = res.url;
+      return;
+    }
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       alert(err.detail || 'Download not available');
@@ -130,23 +127,23 @@
   document.getElementById('btn-google').onclick = async () => {
     const el = document.getElementById('auth-err');
     el.classList.add('hidden');
+    const btn = document.getElementById('btn-google');
+    btn.disabled = true;
     try {
-      await signInWithPopup(auth, google);
+      await signInWithGoogle(auth, google);
     } catch (e) {
-      el.textContent = e.message;
+      el.textContent = formatAuthError(e);
       el.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
     }
   };
 
-  onAuthStateChanged(auth, async (user) => {
+  watchAuth(auth, async (user) => {
     if (user) {
       authCard.classList.add('hidden');
       payCard.classList.remove('hidden');
-      await fetch('/api/auth/firebase_signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_token: await user.getIdToken() })
-      }).catch(() => {});
+      notifyBackendSignIn(user);
       await checkEligibility();
     } else {
       authCard.classList.remove('hidden');
