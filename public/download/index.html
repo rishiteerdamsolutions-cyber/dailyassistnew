@@ -9,7 +9,6 @@
   <script src="/marketing-tailwind-config.js"></script>
   <link rel="stylesheet" href="/marketing.css"/>
   <style>
-    #auth-card, #pay-card { display: block; }
     .err { color: #ba1a1a; }
     .ok { color: #10B981; }
   </style>
@@ -26,7 +25,11 @@
   <h1 class="text-2xl md:text-3xl font-bold text-deep-navy mb-2">Download AHA</h1>
   <p class="text-slate-gray mb-8"><strong class="text-deep-navy">Desktop only.</strong> Mac and Windows installers are available after a successful subscription. Sign in with the same account you used at checkout. AHA does not install on phones or tablets.</p>
 
-  <div class="bg-white rounded-xl border border-border-subtle shadow-card p-6 mb-5" id="auth-card">
+  <div class="bg-white rounded-xl border border-border-subtle shadow-card p-6 mb-5 hidden" id="auth-loading">
+    <p class="text-slate-gray text-sm">Checking sign-in…</p>
+  </div>
+
+  <div class="bg-white rounded-xl border border-border-subtle shadow-card p-6 mb-5 hidden" id="auth-card">
     <button type="button" id="btn-google" class="w-full py-3.5 rounded-lg border border-border-subtle bg-white text-deep-navy font-medium hover:bg-surface-container-low flex items-center justify-center gap-3 shadow-sm">
       <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.654 32.657 29.083 36 24 36c-5.523 0-10-4.477-10-10s4.477-10 10-10c2.837 0 5.402 1.193 7.274 3.102l5.657-5.657C34.047 10.658 29.268 8 24 8 12.955 8 4 16.955 4 28s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 16.108 18.961 13 24 13c2.837 0 5.402 1.193 7.274 3.102l5.657-5.657C34.047 10.658 29.268 8 24 8c-7.682 0-14.348 4.337-17.694 10.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.197l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
       Continue with Google
@@ -65,6 +68,7 @@
 
   const { auth, google } = await initGoogleAuth();
 
+  const authLoading = document.getElementById('auth-loading');
   const authCard = document.getElementById('auth-card');
   const payCard = document.getElementById('pay-card');
   const dlGrid = document.getElementById('dl-grid');
@@ -139,18 +143,22 @@
     }
   };
 
-  watchAuth(auth, async (user) => {
+  function setUi(user) {
+    authLoading.classList.add('hidden');
     if (user) {
       authCard.classList.add('hidden');
       payCard.classList.remove('hidden');
       notifyBackendSignIn(user);
-      await checkEligibility();
+      checkEligibility();
     } else {
       authCard.classList.remove('hidden');
       payCard.classList.add('hidden');
       dlGrid.classList.add('hidden');
     }
-  });
+  }
+
+  authLoading.classList.remove('hidden');
+  watchAuth(auth, (user) => setUi(user));
 </script>
 </body>
 </html>

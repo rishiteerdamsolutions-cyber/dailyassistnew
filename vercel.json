@@ -8,6 +8,12 @@
     }
   },
   "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "dailyassist.xyz" }],
+      "destination": "https://www.dailyassist.xyz/:path*",
+      "permanent": true
+    },
     { "source": "/companion", "destination": "/download", "permanent": false },
     { "source": "/demo", "destination": "/", "permanent": false },
     { "source": "/static/:path*", "destination": "/", "permanent": false },
