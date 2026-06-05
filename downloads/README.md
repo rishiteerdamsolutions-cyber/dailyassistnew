@@ -1,41 +1,42 @@
-# Release packages
+# Customer downloads (retail — **no source code**)
 
-| File | Platform |
+| File | Contents |
 |------|----------|
-| `AHA-mac.zip` | macOS |
-| `AHA-win.zip` | Windows |
+| `AHA-mac.zip` | **`AHA.app`** + `INSTALL.md` (compiled binary) |
+| `AHA-win.zip` | **`AHA/`** folder + `INSTALL.md` (compiled binary) |
 
-## Build
+Customers do **not** receive `.py` agent source, `bol/`, or repo files.
+
+## Build (maintainers only)
 
 ```bash
-chmod +x scripts/build_release_zip.sh
-./scripts/build_release_zip.sh mac    # → downloads/AHA-mac.zip
-./scripts/build_release_zip.sh win    # → downloads/AHA-win.zip
-./scripts/build_release_zip.sh all
+chmod +x scripts/build_desktop_release.sh
+
+# macOS (must run on a Mac):
+./scripts/build_desktop_release.sh mac
+
+# Windows (must run on Windows):
+./scripts/build_desktop_release.sh win
 ```
 
-Excludes: `.venv`, `.env`, `*adminsdk*.json`, `.git`, large test assets.
+Requires: Python 3.10+, `pip install -r requirements-build.txt`
 
-## Local dev (`server.py`)
+**Legacy source zip** (do not ship to customers): `scripts/build_release_zip.sh`
 
-Put zips in this folder. Users download from `/download` after Google sign-in + active subscription.
+## Host on production (Vercel)
 
-## Production (Vercel)
-
-`downloads/` is **not** deployed (see `.vercelignore`). Host zips elsewhere and set env vars:
-
-| Variable | Example |
-|----------|---------|
-| `AHA_DOWNLOAD_MAC_URL` | `https://….supabase.co/storage/v1/object/public/aha-releases/AHA-mac.zip` |
-| `AHA_DOWNLOAD_WIN_URL` | same for `AHA-win.zip` |
-
-### Supabase Storage (recommended)
-
-1. Supabase Dashboard → **Storage** → New bucket `aha-releases` → **Public**
+1. Supabase → Storage → public bucket `aha-releases`
 2. Upload `AHA-mac.zip` / `AHA-win.zip`
-3. Copy public URL → paste into Vercel env vars above
-4. Redeploy
+3. Vercel env:
+   - `AHA_DOWNLOAD_MAC_URL`
+   - `AHA_DOWNLOAD_WIN_URL`
+4. Redeploy → verify `/api/billing/ready` → `"downloads": {"mac": true, "win": true}`
 
-Check: `https://www.dailyassist.xyz/api/billing/ready` → `"downloads": {"mac": true, "win": true}`
+## Security (retail build)
 
-Users still need a paid license; `/api/download/mac` redirects to your hosted zip.
+- PyInstaller bundle — bytecode only, not readable source tree
+- `AHA_ALLOW_DEV_LICENSE` **disabled** in retail builds
+- License still enforced via **Firebase + Supabase** (cloud)
+- Optional later: Apple notarization + Windows Authenticode signing
+
+See `DISTRIBUTION.md` and `INSTALL.md`.

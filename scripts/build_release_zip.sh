@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Build AHA-mac.zip / AHA-win.zip for /api/download (local server or upload to cloud).
+# DEPRECATED for customers — ships full source. Use scripts/build_desktop_release.sh instead.
+# Build AHA-mac.zip / AHA-win.zip (source tree — internal/dev only).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

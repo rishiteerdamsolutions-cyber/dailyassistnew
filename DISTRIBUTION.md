@@ -2,56 +2,66 @@
 
 Product site: [dailyassist.xyz](https://dailyassist.xyz)
 
-## Default distribution (current)
+## Default distribution (retail — secure)
 
-AHA ships as a **zip download** from dailyassist.xyz — not through the Mac App Store or Microsoft Store.
+Customers receive a **compiled desktop app** in a zip — **not** Python source.
 
-| Platform | Launcher | First-run security |
-|----------|----------|-------------------|
-| macOS | `start_companion.command` | Gatekeeper &ldquo;unidentified developer&rdquo; — user uses **Open Anyway** (see `INSTALL.md`) |
-| Windows | `start.bat` | SmartScreen — user chooses **Run anyway** (see `INSTALL.md`) |
+| Platform | Customer gets | First-run security |
+|----------|---------------|-------------------|
+| macOS | `AHA.app` + `INSTALL.md` | Gatekeeper “unidentified developer” — **Open Anyway** (`INSTALL.md`) |
+| Windows | `AHA/AHA.exe` + `INSTALL.md` | SmartScreen — **Run anyway** (`INSTALL.md`) |
 
-This path avoids Apple notarization and Microsoft code signing. Users accept one-time OS warnings; see `INSTALL.md` for step-by-step screenshots-style instructions.
+### Build (maintainers)
 
-### Package contents
+```bash
+# macOS (Python 3.10+ required):
+./scripts/build_desktop_release.sh mac
 
-Include in the zip:
+# Windows (on a Windows machine):
+./scripts/build_desktop_release.sh win
+```
 
-- Application source / frozen bundle
-- `start_companion.command` (macOS) and `start.bat` (Windows)
-- `INSTALL.md`
-- `LICENSE` or link to `web/legal.html`
-- `.env.example` (no secrets)
+Output: `downloads/AHA-mac.zip` or `downloads/AHA-win.zip`.  
+`scripts/verify_retail_zip.sh` runs automatically — it **rejects** zips that still contain `bol/`, `server.py`, etc.
 
-Exclude: `.env`, `*adminsdk*.json`, `.venv` (Windows/Mac installer creates local venv on first run)
+**Do not ship** `scripts/build_release_zip.sh` output to customers (legacy source tree — dev only).
 
----
+### Security layers (today)
 
-## Optional: signed macOS build (enterprise)
+1. **No source in download** — PyInstaller bytecode bundle, not `bol/` / `aha/` files
+2. **Dev license bypass disabled** — `AHA_ALLOW_DEV_LICENSE` cannot work in retail builds (`packaging/aha_retail_hook.py`)
+3. **Cloud license gate** — Firebase sign-in + Supabase `aha_licenses` (Razorpay or coupon)
+4. **Paid download gate** — `/api/download/*` checks active subscription before redirecting to zip URL
+5. **Secrets never in zip** — `.env`, Firebase JSON, Razorpay keys stay on Vercel / maintainer machine only
 
-When you have an **Apple Developer** account and want fewer Gatekeeper warnings:
+### Host on production
 
-1. Build the app bundle (e.g. PyInstaller or py2app wrapping `app_webview.py`).
-2. Sign with Developer ID Application:
-   ```bash
-   codesign --deep --force --verify --verbose \
-     --sign "Developer ID Application: Your Name (TEAMID)" \
-     AHA.app
-   ```
-3. Notarize and staple:
-   ```bash
-   xcrun notarytool submit AHA.zip --apple-id "..." --team-id "..." --password "app-specific-password" --wait
-   xcrun stapler staple AHA.app
-   ```
-4. Distribute the stapled `.app` or `.dmg`.
+1. Supabase Storage → public bucket `aha-releases`
+2. Upload retail zips (after `verify_retail_zip.sh` passes)
+3. Vercel env: `AHA_DOWNLOAD_MAC_URL`, `AHA_DOWNLOAD_WIN_URL`
+4. Redeploy → `GET /api/billing/ready` should show `"downloads": {"mac": true, "win": true}`
 
-Unsigned zip remains valid for early adopters; notarization is optional polish, not a requirement for Tier-1/Tier-2 functionality.
+Also fix on Vercel if not done: valid `FIREBASE_SERVICE_ACCOUNT_JSON`, matching Razorpay test/live keys.
 
 ---
 
-## Optional: Windows code signing
+## Optional: Apple notarization (fewer Mac warnings)
 
-For fewer SmartScreen prompts, sign `start.bat` launcher or the main `.exe` with an Authenticode certificate from a trusted CA, then timestamp:
+When you have an **Apple Developer** account:
+
+```bash
+codesign --deep --force --verify --verbose \
+  --sign "Developer ID Application: Your Name (TEAMID)" \
+  AHA.app
+xcrun notarytool submit AHA.zip --apple-id "..." --team-id "..." --password "app-specific-password" --wait
+xcrun stapler staple AHA.app
+```
+
+Notarization improves trust UX; **license enforcement** remains cloud-side.
+
+---
+
+## Optional: Windows Authenticode
 
 ```powershell
 signtool sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /a AHA.exe
@@ -61,10 +71,10 @@ signtool sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /a AHA.exe
 
 ## Permissions (required for full assistant)
 
-Users must grant OS permissions documented in the companion **first-run guide** and `INSTALL.md`:
+- **macOS:** Accessibility, Screen Recording
+- **Windows:** Allow when prompted; antivirus exclusion if needed
 
-- **macOS:** Accessibility (mouse/keyboard), Screen Recording (vision)
-- **Windows:** Allow the app when prompted; add antivirus exclusion if needed for `pyautogui`
+See companion first-run guide and `INSTALL.md`.
 
 ---
 

@@ -81,7 +81,7 @@ async def resolve_download(uid: str, platform: str) -> dict:
         "ok": False,
         "reason": "package_missing",
         "message": (
-            f"Installer not available yet. Build {filename} (scripts/build_release_zip.sh), "
+            f"Installer not available yet. Build {filename} (scripts/build_desktop_release.sh), "
             f"upload to cloud storage, and set {_DOWNLOAD_URL_ENV.get(platform)} on Vercel — "
             f"or place the file in downloads/ for local server.py."
         ),

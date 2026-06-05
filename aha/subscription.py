@@ -34,6 +34,10 @@ def license_row_is_active(row: dict) -> bool:
 
 
 def allow_dev_license_keys() -> bool:
+    from aha.runtime_paths import is_retail_build
+
+    if is_retail_build():
+        return False
     return os.environ.get("AHA_ALLOW_DEV_LICENSE", "").strip().lower() in (
         "1",
         "true",

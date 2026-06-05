@@ -19,7 +19,13 @@ from bol.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-VISIONBUTTONS_DIR = Path(__file__).parent.parent.parent.parent / "VISIONBUTTONS"
+def _visionbuttons_dir() -> Path:
+    from aha.runtime_paths import resource_path
+
+    return resource_path("VISIONBUTTONS")
+
+
+VISIONBUTTONS_DIR = _visionbuttons_dir()
 
 # Map platform folder names
 PLATFORM_DIRS = {

@@ -1,0 +1,2 @@
+# Desktop retail builds only (maintainers — not shipped to customers)
+pyinstaller>=6.0

@@ -14,7 +14,11 @@ import urllib.error
 import uvicorn
 import webview
 
-from server import app
+from aha.runtime_paths import install_bundle_paths
+
+install_bundle_paths()
+
+from server import app  # noqa: E402
 
 # ── Configuration ────────────────────────────────────────────────────
 HOST = "127.0.0.1"

@@ -35,6 +35,9 @@ dist/
 build/
 *.egg-info/
 
+# Customer zips — build locally, upload to Supabase (never commit)
+downloads/*.zip
+
 # Local dev / vision experiments (do not ship)
 vision_debug_crops/
 vision_test_result.png

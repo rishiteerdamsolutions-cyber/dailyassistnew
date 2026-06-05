@@ -2,17 +2,18 @@
 
 **No app store. No signing required. Works on Mac and Windows.**
 
-AHA runs as a desktop app built on Python + pywebview. Because it is not sold through the App Store or Microsoft Store, your OS will show a one-time security warning. This is normal — follow the steps below to open it anyway.
+AHA runs as a **compiled desktop app** (not source code). Because it is not sold through the App Store or Microsoft Store, your OS may show a one-time security warning. This is normal — follow the steps below to open it anyway.
+
+**You do not need to install Python** — the retail download includes everything to run.
 
 ---
 
 ## Subscribe first (Mac or Windows)
 
-1. Open AHA locally (`start_companion.command` or `start.bat`) or visit **http://127.0.0.1:8000/subscribe** when the app is running.
-2. **Sign in** with your dailyassist.xyz account (Firebase email or Google).
-3. **Pay with Razorpay** (test mode uses ₹1 if `AHA_PLAN_CORE_MONTHLY_PAISE=100` in `.env`).
-4. Go to **http://127.0.0.1:8000/download** and download the zip for your platform.
-5. Install using the steps below; sign in again — your license syncs from the cloud.
+1. Visit **[dailyassist.xyz/subscribe](https://www.dailyassist.xyz/subscribe)** and **Sign in with Google**.
+2. Complete payment with Razorpay, or enter a coupon code if you have one.
+3. Go to **[dailyassist.xyz/download](https://www.dailyassist.xyz/download)** and download the zip for your platform.
+5. Install using the steps below; sign in with Google in the app — your license syncs from the cloud.
 
 You can also enter a license key manually in the app if support sent you one.
 
@@ -22,12 +23,9 @@ You can also enter a license key manually in the app if support sent you one.
 
 | | Minimum |
 |-|---------|
-| Python | 3.10+ (3.12 recommended) |
 | Chrome | Any recent version (for Tier-2 web tasks) |
 | RAM | 4 GB |
 | Storage | 500 MB |
-
-Download Python from **https://www.python.org/downloads/**
 
 ---
 
@@ -35,32 +33,17 @@ Download Python from **https://www.python.org/downloads/**
 
 ### Step 1 — Download & extract
 
-Download the AHA zip from [dailyassist.xyz](https://dailyassist.xyz) and unzip it anywhere (e.g. your Desktop or Documents folder).
+Download **AHA-mac.zip** from [dailyassist.xyz/download](https://www.dailyassist.xyz/download) (after Google sign-in + subscription). Unzip — you get **`AHA.app`**.
 
 ### Step 2 — First launch
 
-Double-click **`start_companion.command`**.
+Double-click **`AHA.app`**.
 
-You will see:
+If macOS says the app is from an unidentified developer: **System Settings → Privacy & Security → Open Anyway**, or right-click **AHA.app** → **Open** → **Open**.
 
-> *"start_companion.command" cannot be opened because it is from an unidentified developer.*
+### Step 3 — Subsequent launches
 
-**Click Cancel** (not "Move to Trash").
-
-### Step 3 — Allow the app
-
-Open **System Settings → Privacy & Security**.  
-Scroll down — you will see:
-
-> *"start_companion.command" was blocked because it is not from an identified developer.*
-
-Click **Open Anyway**, then click **Open** in the dialog that follows.
-
-> On older macOS you can also right-click the file → **Open** → **Open**.
-
-### Step 4 — Subsequent launches
-
-After the first approval, double-clicking `start_companion.command` will open AHA directly — no more warnings.
+Double-click **AHA.app** as usual.
 
 ### Accessibility permission (required for Tier-2 assistant tasks)
 
@@ -84,12 +67,12 @@ If AHA asks for screen recording access, grant it in:
 
 ### Step 1 — Download & extract
 
-Download the AHA zip from [dailyassist.xyz](https://dailyassist.xyz).  
-Right-click the zip → **Extract All** → choose a folder (e.g. `C:\AHA`).
+Download **AHA-win.zip** from [dailyassist.xyz/download](https://www.dailyassist.xyz/download).  
+Right-click the zip → **Extract All** → you get an **`AHA`** folder with **`AHA.exe`** inside.
 
 ### Step 2 — First launch
 
-Double-click **`start.bat`**.
+Double-click **`AHA.exe`** inside the extracted `AHA` folder.
 
 Windows SmartScreen may show:
 
