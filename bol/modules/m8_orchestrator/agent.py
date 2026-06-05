@@ -216,6 +216,40 @@ class AutonomousCompanion:
         self.is_paused = False
         messages_out = []
 
+        # ── TIER-1 LOCAL: OS / DEV / FILES — LLM BLOCKED ─────────────────────
+        # Local tasks (git, .env.local, Bluetooth, projects) run via m9_local +
+        # m9_native only. On failure, return error — LLM does NOT take over.
+        if user_message:
+            from bol.modules.m9_local.parser import detect_local_task
+            from bol.modules.m9_local.executor import run_local_task
+
+            local_task = detect_local_task(user_message)
+            if local_task:
+                messages_out.append(
+                    f"🖥️ [LOCAL] {local_task.description} — deterministic (no LLM)"
+                )
+
+                def _local_progress(step_num, desc, status):
+                    logger.info("[Local %s] Step %d: %s [%s]",
+                                local_task.flow_id, step_num, desc, status)
+
+                result = run_local_task(local_task, _local_progress)
+                ok = bool(result.get("success"))
+                if ok:
+                    messages_out.append(f"✅ {result.get('message', 'Done.')}")
+                else:
+                    messages_out.append(
+                        f"❌ {result.get('error') or result.get('message', 'Local task failed')}"
+                    )
+
+                self._capture_and_encode()
+                return {
+                    "status": "success" if ok else "error",
+                    "messages": messages_out,
+                    "is_done": ok,
+                    "image_data": self._draw_and_encode_base64(),
+                }
+
         # ── SOCIAL MEDIA: FLOW EXECUTOR ONLY — LLM BLOCKED ──────────────────
         # Social media tasks are EXCLUSIVELY handled by the deterministic flow
         # executor in m9_social. The LLM is NEVER used for these tasks.

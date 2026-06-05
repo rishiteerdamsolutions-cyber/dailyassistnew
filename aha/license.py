@@ -181,6 +181,15 @@ def check_license_status() -> dict:
     * Re-validation fails (network, etc.) but within ``OFFLINE_GRACE_HOURS``
       → cached **valid** result (offline grace)
     """
+    from aha.dev_mode import dev_gates_open
+
+    if dev_gates_open():
+        return {
+            "valid": True,
+            "plan": "dev",
+            "expires": None,
+            "reason": "dev_gates",
+        }
 
     data = load_license()
 

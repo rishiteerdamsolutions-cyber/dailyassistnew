@@ -9,6 +9,10 @@ if sys.platform == 'win32':
 import os
 import time
 from pathlib import Path
+
+from aha.env_loader import load_dotenv
+
+load_dotenv()
 from fastapi import FastAPI, UploadFile, Form, File, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles

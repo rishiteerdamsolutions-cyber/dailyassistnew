@@ -12,8 +12,8 @@ alwaysApply: true
 - Product: **AHA** @ dailyassist.xyz — daily computer assistance (like Claude computer use / Operator / Copilot).
 
 ## Tiers
-- **Tier 1:** Social (FB, LinkedIn, IG, X, WhatsApp status) — hardcoded vision flows (`m9_social`), vault/slots/calendar, **no LLM execution**; chat parses intent only.
+- **Tier 1:** Local precision on Mac/Windows — social flows (`m9_social`), dev/OS (`m9_local` + `m9_native`), vault/calendar, **no LLM execution**; chat parses intent only.
 - **Tier 2:** Other tasks — BYOK in companion settings; easy = text context to AI, hard = screenshot to AI; AI picks buttons, agents click (~10× cheaper than full vision loops).
 
 ## Modules (orchestrated by m8)
-m1 timing, m2 kinematic, m3 visual, m4 policy, m5 linguistic, m6 bridge, m7 lifecycle, m8 orchestrator, m9_social/generator/parser, m10 scheduler.
+m1 timing, m2 kinematic, m3 visual, m4 policy, m5 linguistic, m6 bridge, m7 lifecycle, m8 orchestrator, m9_router, m9_local, m9_native, m9_social/generator/parser, m10 scheduler.

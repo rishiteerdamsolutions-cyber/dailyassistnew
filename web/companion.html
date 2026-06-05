@@ -602,8 +602,10 @@
             background: #18181b;
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            width: 480px;
-            max-width: 90%;
+            width: 520px;
+            max-width: 92%;
+            max-height: 88vh;
+            overflow-y: auto;
             padding: 24px;
         }
         .settings-box h3 {
@@ -703,6 +705,42 @@
         }
         .key-status.set { color: var(--success); }
         .key-status.unset { color: var(--text-secondary); }
+        .settings-save-project {
+            flex: 1;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .settings-save-project:disabled { opacity: 0.5; cursor: not-allowed; }
+        .local-projects-panel {
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            max-height: 160px;
+            overflow-y: auto;
+        }
+        .local-project-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .local-project-row:last-child { border-bottom: none; }
+        .local-project-save-hint {
+            font-size: 0.75rem;
+            color: var(--success);
+            margin-top: 6px;
+            min-height: 1em;
+        }
     </style>
 </head>
 <body>
@@ -757,6 +795,33 @@
     <div class="settings-overlay" id="settings-overlay">
         <div class="settings-box">
             <h3>Settings</h3>
+
+            <!-- Local Workspace first — scroll no longer hides this -->
+            <div class="settings-section">
+                <label>Local Workspace — your projects</label>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0 0 10px;">
+                    Save one or more project folders. AHA uses these for git push, <code style="color:#a5b4fc;">.env.local</code>, and open-project commands (no AI key).
+                </p>
+                <div class="local-projects-panel" id="local-projects-list">
+                    <span style="color: var(--text-secondary); font-size: 0.85rem;">Loading projects…</span>
+                </div>
+                <label style="margin-top: 4px;">Add / save a project</label>
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+                    <input type="text" id="local-project-name" placeholder="Short name (e.g. dailyassist)" autocomplete="off">
+                    <input type="text" id="local-project-path" placeholder="Folder path (e.g. ~/Documents/dailyassist)" autocomplete="off">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button type="button" id="local-project-add" class="settings-save-project">Save project</button>
+                        <button type="button" id="local-project-use-this" style="padding: 10px 12px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); border-radius: 6px; color: white; cursor: pointer; font-size: 0.85rem;">Use this repo</button>
+                    </div>
+                    <div class="local-project-save-hint" id="local-project-save-hint"></div>
+                </div>
+                <div class="key-status unset" id="local-ssh-status" style="margin-top: 14px;">SSH: loading…</div>
+                <div class="settings-row" style="margin-top: 8px;">
+                    <button type="button" id="local-ssh-generate">Generate SSH key</button>
+                    <button type="button" id="local-ssh-copy" style="background: transparent; border: 1px solid var(--border-color);">Copy public key</button>
+                </div>
+            </div>
+
             <div class="settings-section">
                 <label>API Provider</label>
                 <select id="settings-provider">
@@ -773,7 +838,7 @@
                 </div>
                 <div class="key-status unset" id="settings-key-status">No key configured</div>
             </div>
-            <div class="settings-section" style="margin-bottom: 0;">
+            <div class="settings-section">
                 <label>License</label>
                 <div class="key-status set" id="settings-license-info">Loading...</div>
             </div>
@@ -815,7 +880,7 @@
                     <button class="btn-resume" id="resume-btn">I'm done with manual steps, Resume AHA!</button>
                 </div>
                 <div class="input-wrapper">
-                    <textarea id="chat-input" class="chat-input" placeholder="e.g. Open MakeMyTrip and book a flight to Delhi..." rows="1"></textarea>
+                    <textarea id="chat-input" class="chat-input" placeholder="e.g. Push dailyassist to git, create .env.local, connect to Noise Buds…" rows="1"></textarea>
                     <button id="send-btn" class="send-btn" title="Send">
                         <svg viewBox="0 0 24 24"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                     </button>
@@ -1035,8 +1100,11 @@
                 }
 
                 if (data.status === 'error') {
-                    const errMsg = data.messages ? data.messages[0] : (data.message || 'Unknown error');
-                    addMessage(`Error: ${errMsg}`, 'system');
+                    if (data.messages && data.messages.length) {
+                        data.messages.forEach(m => addMessage(m, 'agent'));
+                    } else {
+                        addMessage(`Error: ${data.message || 'Unknown error'}`, 'system');
+                    }
                 } else {
                     // Iterate through agent responses
                     if (data.messages) {
@@ -1057,7 +1125,7 @@
                         addMessage("AHA is paused. Complete the manual steps, then click Resume.", 'system');
                         isAgentPaused = true;
                         resumeBtn.style.display = 'block';
-                    } else if (data.is_done) {
+                    } else if (data.is_done === true) {
                         addMessage("AHA has completed the task!", 'system');
                     } else if (data.is_asking) {
                         addMessage("AHA is waiting for your response...", 'system');
@@ -1396,7 +1464,8 @@
         // ==========================================
         // LICENSE & SETTINGS
         // ==========================================
-        const licenseGate = document.getElementById('license-gate');
+        const authGate = document.getElementById('auth-gate');
+        const licenseGate = authGate;
         const licenseKeyInput = document.getElementById('license-key-input');
         const licenseActivateBtn = document.getElementById('license-activate-btn');
         const licenseError = document.getElementById('license-error');
@@ -1466,9 +1535,9 @@
             try {
                 const res = await fetch('http://127.0.0.1:8000/api/license/status');
                 const data = await res.json();
-                if (!data.valid) {
+                if (!data.valid && authGate) {
                     authGate.style.display = 'flex';
-                    if (data.reason === 'expired') {
+                    if (data.reason === 'expired' && typeof showSubscriptionRequired === 'function') {
                         showSubscriptionRequired(data);
                     }
                 }
@@ -1518,6 +1587,7 @@
             settingsOverlay.style.display = 'flex';
             loadKeyStatus();
             loadLicenseInfo();
+            loadLocalWorkspace();
         });
 
         settingsClose.addEventListener('click', () => {
@@ -1601,6 +1671,154 @@
                 loadKeyStatus();
             } catch (err) {
                 alert('Error removing key: ' + err.message);
+            }
+        });
+
+        const localProjectsList = document.getElementById('local-projects-list');
+        const localProjectName = document.getElementById('local-project-name');
+        const localProjectPath = document.getElementById('local-project-path');
+        const localProjectAdd = document.getElementById('local-project-add');
+        const localProjectUseThis = document.getElementById('local-project-use-this');
+        const localProjectSaveHint = document.getElementById('local-project-save-hint');
+        const localSshStatus = document.getElementById('local-ssh-status');
+        const localSshGenerate = document.getElementById('local-ssh-generate');
+        const localSshCopy = document.getElementById('local-ssh-copy');
+        let cachedPublicKey = '';
+
+        const DEFAULT_DAILYASSIST_PATH = '~/Documents/dailyassist';
+
+        if (localProjectUseThis) {
+            localProjectUseThis.addEventListener('click', () => {
+                if (localProjectName && !localProjectName.value.trim()) {
+                    localProjectName.value = 'dailyassist';
+                }
+                if (localProjectPath) {
+                    localProjectPath.value = DEFAULT_DAILYASSIST_PATH;
+                }
+                if (localProjectSaveHint) {
+                    localProjectSaveHint.textContent = 'Path filled — click Save project.';
+                }
+            });
+        }
+
+        async function loadLocalWorkspace() {
+            if (!localProjectsList) return;
+            try {
+                const [projRes, sshRes] = await Promise.all([
+                    fetch('/api/local/projects'),
+                    fetch('/api/local/ssh'),
+                ]);
+                const projData = await projRes.json();
+                const sshData = await sshRes.json();
+                const projects = projData.projects || [];
+                if (!projects.length) {
+                    localProjectsList.innerHTML = '<span style="color: var(--text-secondary); font-size: 0.85rem;">No projects saved yet. Add one below, then click <strong>Save project</strong>.</span>';
+                } else {
+                    localProjectsList.innerHTML = `<div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:6px;">Saved projects (${projects.length}) — add as many as you need:</div>` +
+                    projects.map(p =>
+                        `<div class="local-project-row">
+                            <span><strong>${p.name}</strong><br><span style="color:var(--text-secondary);font-size:0.75rem;word-break:break-all;">${p.path}</span></span>
+                            <button type="button" data-remove-project="${p.name}" style="background:#7f1d1d;padding:6px 10px;font-size:0.75rem;border:none;border-radius:4px;color:white;cursor:pointer;flex-shrink:0;">Remove</button>
+                        </div>`
+                    ).join('');
+                    localProjectsList.querySelectorAll('[data-remove-project]').forEach(btn => {
+                        btn.addEventListener('click', async () => {
+                            const name = btn.getAttribute('data-remove-project');
+                            await fetch('/api/local/projects', {
+                                method: 'DELETE',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({ name }),
+                            });
+                            loadLocalWorkspace();
+                        });
+                    });
+                }
+                cachedPublicKey = sshData.public_key || '';
+                if (sshData.exists && cachedPublicKey) {
+                    localSshStatus.className = 'key-status set';
+                    localSshStatus.textContent = '✓ SSH key ready — paste into GitHub/GitLab';
+                } else {
+                    localSshStatus.className = 'key-status unset';
+                    localSshStatus.textContent = '✗ No SSH key — generate one for git push';
+                }
+            } catch (err) {
+                localProjectsList.textContent = 'Error loading local workspace';
+                localSshStatus.textContent = 'SSH: error loading';
+            }
+        }
+
+        async function saveLocalProject() {
+            const name = localProjectName.value.trim();
+            const path = localProjectPath.value.trim();
+            if (!name || !path) {
+                alert('Enter both a short name and folder path, then click Save project.');
+                return;
+            }
+            localProjectAdd.disabled = true;
+            if (localProjectSaveHint) localProjectSaveHint.textContent = 'Saving…';
+            try {
+                const res = await fetch('/api/local/projects', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ name, path }),
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || data.detail || 'Could not save project');
+                localProjectName.value = '';
+                localProjectPath.value = '';
+                if (localProjectSaveHint) {
+                    localProjectSaveHint.textContent = `✓ Saved "${data.project?.name || name}". Add another or close Settings.`;
+                }
+                loadLocalWorkspace();
+            } catch (err) {
+                if (localProjectSaveHint) localProjectSaveHint.textContent = '';
+                alert(err.message);
+            } finally {
+                localProjectAdd.disabled = false;
+            }
+        }
+
+        if (localProjectAdd) {
+            localProjectAdd.addEventListener('click', saveLocalProject);
+        }
+        if (localProjectPath) {
+            localProjectPath.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') saveLocalProject();
+            });
+        }
+
+        localSshGenerate.addEventListener('click', async () => {
+            localSshGenerate.disabled = true;
+            try {
+                const res = await fetch('/api/local/ssh/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ overwrite: false }),
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'SSH generation failed');
+                cachedPublicKey = data.public_key || '';
+                loadLocalWorkspace();
+                if (cachedPublicKey) {
+                    alert('SSH key ready. Use Copy public key, then paste in GitHub → Settings → SSH keys.');
+                }
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                localSshGenerate.disabled = false;
+            }
+        });
+
+        localSshCopy.addEventListener('click', async () => {
+            if (!cachedPublicKey) {
+                alert('Generate an SSH key first.');
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(cachedPublicKey);
+                alert('Public key copied to clipboard.');
+            } catch (err) {
+                prompt('Copy your public key:', cachedPublicKey);
             }
         });
     </script>
@@ -1719,8 +1937,27 @@
             if (u) syncCloudLicense(u);
         }, 60 * 60 * 1000);
 
+        let devGatesOpen = false;
+
+        async function applyDevGatesIfOpen() {
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/license/status');
+                const data = await res.json();
+                if (data.valid && data.reason === 'dev_gates') {
+                    devGatesOpen = true;
+                    authGate.style.display = 'none';
+                    licenseError.style.display = 'none';
+                    return true;
+                }
+            } catch (_) {}
+            return false;
+        }
+
+        applyDevGatesIfOpen();
+
         // ── Auth state listener ──────────────────────────────────────
         onAuthStateChanged(auth, async (user) => {
+            if (devGatesOpen || await applyDevGatesIfOpen()) return;
             if (user) {
                 await notifyBackend(user);
                 await checkLicenseAfterAuth(user);

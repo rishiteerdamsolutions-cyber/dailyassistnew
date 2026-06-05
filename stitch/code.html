@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AHA | Daily Computer Assistance for Mac and Windows</title>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-primary-container": "#e3e6ff",
+                "on-tertiary-container": "#dbe9ff",
+                "inverse-surface": "#2d3133",
+                "tertiary-fixed": "#d3e4fe",
+                "surface-container-high": "#e6e8ea",
+                "on-secondary": "#ffffff",
+                "surface-container-lowest": "#ffffff",
+                "surface-variant": "#e0e3e5",
+                "tertiary-container": "#596980",
+                "on-error-container": "#93000a",
+                "on-tertiary": "#ffffff",
+                "on-tertiary-fixed": "#0b1c30",
+                "secondary-fixed": "#dae2fd",
+                "secondary": "#565e74",
+                "on-secondary-container": "#5c647a",
+                "surface-container-highest": "#e0e3e5",
+                "on-surface-variant": "#434656",
+                "surface-dim": "#d8dadc",
+                "surface-container": "#eceef0",
+                "on-tertiary-fixed-variant": "#38485d",
+                "primary-fixed-dim": "#b6c4ff",
+                "on-secondary-fixed": "#131b2e",
+                "outline-variant": "#c3c5d9",
+                "border-subtle": "#E2E8F0",
+                "surface-container-low": "#f2f4f6",
+                "deep-navy": "#0F172A",
+                "inverse-primary": "#b6c4ff",
+                "error": "#ba1a1a",
+                "error-container": "#ffdad6",
+                "background": "#f7f9fb",
+                "on-background": "#191c1e",
+                "primary-container": "#0055ff",
+                "on-secondary-fixed-variant": "#3f465c",
+                "outline": "#737688",
+                "on-surface": "#191c1e",
+                "tertiary-fixed-dim": "#b7c8e1",
+                "success-green": "#10B981",
+                "surface": "#f7f9fb",
+                "primary-fixed": "#dce1ff",
+                "on-error": "#ffffff",
+                "action-blue": "#0055FF",
+                "slate-gray": "#475569",
+                "on-primary-fixed-variant": "#0039b3",
+                "secondary-container": "#dae2fd",
+                "surface-bright": "#f7f9fb",
+                "secondary-fixed-dim": "#bec6e0",
+                "surface-tint": "#004dea",
+                "tertiary": "#415166",
+                "inverse-on-surface": "#eff1f3",
+                "primary": "#0041c8",
+                "on-primary-fixed": "#001551",
+                "on-primary": "#ffffff"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "margin-desktop": "80px",
+                "gutter": "24px",
+                "max-width": "1200px",
+                "base": "8px",
+                "margin-mobile": "20px"
+            },
+            "fontFamily": {
+                "headline-md": ["Hanken Grotesk"],
+                "body-sm": ["Inter"],
+                "mono-md": ["JetBrains Mono"],
+                "headline-lg": ["Hanken Grotesk"],
+                "body-md": ["Inter"],
+                "label-sm": ["Geist"],
+                "label-md": ["Geist"],
+                "body-lg": ["Inter"],
+                "headline-xl": ["Hanken Grotesk"],
+                "headline-lg-mobile": ["Hanken Grotesk"]
+            },
+            "fontSize": {
+                "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "mono-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "label-sm": ["12px", {"lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "500"}],
+                "label-md": ["14px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                "headline-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #f7f9fb;
+            color: #191c1e;
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.5);
+        }
+    </style>
+</head>
+<body class="selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopNavBar -->
+<header class="bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-md docked full-width top-0 sticky z-50 shadow-sm dark:shadow-none h-20">
+<nav class="flex justify-between items-center w-full px-margin-desktop max-w-max-width mx-auto h-full">
+<div class="font-headline-md text-headline-md font-bold text-deep-navy dark:text-surface-bright">AHA</div>
+<div class="hidden md:flex items-center gap-10">
+<a class="text-primary dark:text-inverse-primary font-bold border-b-2 border-primary dark:border-inverse-primary pb-1 font-label-md text-label-md" href="#">Pricing</a>
+<a class="text-slate-gray dark:text-on-surface-variant font-body-md text-body-md hover:text-primary dark:hover:text-inverse-primary transition-colors duration-200" href="#">Download</a>
+<a class="text-slate-gray dark:text-on-surface-variant font-body-md text-body-md hover:text-primary dark:hover:text-inverse-primary transition-colors duration-200" href="#">How it Works</a>
+<a class="text-slate-gray dark:text-on-surface-variant font-body-md text-body-md hover:text-primary dark:hover:text-inverse-primary transition-colors duration-200" href="#">FAQ</a>
+</div>
+<button class="bg-primary-container text-white px-6 py-3 rounded-lg font-label-md text-label-md hover:bg-primary transition-all active:scale-95 duration-150">
+                Subscribe
+            </button>
+</nav>
+</header>
+<main>
+<!-- Hero Section -->
+<section class="relative pt-24 pb-32 overflow-hidden px-margin-mobile md:px-margin-desktop">
+<div class="max-w-max-width mx-auto grid lg:grid-cols-2 gap-16 items-center">
+<div class="z-10">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container mb-6">
+<span class="material-symbols-outlined text-[18px]">desktop_windows</span>
+<span class="font-label-sm text-label-sm tracking-widest uppercase">DESKTOP ONLY · MAC &amp; WINDOWS</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-deep-navy mb-6 max-w-xl">
+                        Daily computer assistance for Mac and Windows.
+                    </h1>
+<p class="font-body-lg text-body-lg text-slate-gray mb-10 max-w-lg">
+                        Ask AHA for help in chat, and it assists directly on your screen. It's like having an expert by your side for every task.
+                    </p>
+<div class="flex flex-wrap gap-4">
+<button class="bg-action-blue text-white px-8 py-4 rounded-lg font-label-md text-label-md shadow-lg shadow-action-blue/20 hover:shadow-xl hover:-translate-y-0.5 transition-all">
+                            Subscribe Now
+                        </button>
+<button class="border border-border-subtle bg-white text-deep-navy px-8 py-4 rounded-lg font-label-md text-label-md hover:bg-surface-container-low transition-all">
+                            Download App
+                        </button>
+</div>
+<p class="mt-4 font-label-sm text-label-sm text-slate-gray italic opacity-70">
+                        * Download is available immediately after subscription.
+                    </p>
+</div>
+<!-- Hero Visual: Clean Desktop Setup & Interface -->
+<div class="relative group">
+<div class="absolute -inset-4 bg-gradient-to-tr from-primary-fixed to-tertiary-fixed rounded-[2rem] blur-2xl opacity-30 group-hover:opacity-40 transition-opacity"></div>
+<div class="relative rounded-xl overflow-hidden shadow-2xl bg-white border border-border-subtle">
+<img alt="Professional Laptop Interface" class="w-full h-auto object-cover" data-alt="A clean and professional workspace featuring a high-end aluminum laptop open on a white oak desk. The screen displays a sophisticated utility application with a minimalist chat sidebar on the right. The interface shows a subtle highlight over a spreadsheet application as if the AI is providing contextual guidance. The lighting is bright and airy, creating a sense of professional productivity and calm intelligence in a light-mode office setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZWzzWPOLg2rTI1DB-KSwM9iMJTTaMtl0VcvI9uK9RM6w8dvPvFFG2esAwuuupnNZUyJuVURHWqNP9xMwtj9fpIHn-uSGBzIum97wO-PVVPEel821c370RDNIoJnoIay035mDh610gFw_FyuaKwWhfRMnaRRPNWj74Fib0aDkYImSmq0wleVe0XfCQPb5CR6D6i-0bSiI1Rho3SrwkPt7hDK12EEoyrU-aaNSPD6dM705K6dafTXBXIcJYUb8hPrakUaguisQoH5M"/>
+<!-- Floating Interface Snippet -->
+<div class="absolute bottom-8 right-8 w-64 glass-card rounded-xl p-4 shadow-xl border border-white/40">
+<div class="flex items-center gap-2 mb-3">
+<div class="w-2 h-2 rounded-full bg-success-green"></div>
+<span class="font-label-sm text-label-sm text-deep-navy">AHA Assistant</span>
+</div>
+<div class="space-y-3">
+<div class="bg-deep-navy text-white text-xs p-2 rounded-lg rounded-tr-none ml-4">
+                                    How do I merge these layers in Photoshop?
+                                </div>
+<div class="bg-surface-container-high text-deep-navy text-xs p-2 rounded-lg rounded-tl-none mr-4 flex items-start gap-2">
+<span class="material-symbols-outlined text-[14px] text-action-blue mt-0.5">info</span>
+                                    I see your layers panel. Click the 'Options' menu and select 'Merge Visible'.
+                                </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Pricing Section -->
+<section class="py-24 bg-surface-container-low" id="pricing">
+<div class="max-w-max-width mx-auto px-margin-mobile md:px-margin-desktop text-center">
+<h2 class="font-headline-lg text-headline-lg text-deep-navy mb-4">Transparent, Simple Pricing</h2>
+<p class="font-body-md text-body-md text-slate-gray mb-16 max-w-2xl mx-auto">
+                    Choose the plan that fits your daily workflow. Both tiers include our core visual reasoning engine.
+                </p>
+<div class="grid md:grid-cols-2 gap-gutter max-w-4xl mx-auto">
+<!-- Starter Plan -->
+<div class="bg-white p-10 rounded-xl shadow-sm border border-border-subtle text-left flex flex-col">
+<h3 class="font-headline-md text-headline-md text-deep-navy mb-2">Starter</h3>
+<div class="flex items-baseline gap-1 mb-6">
+<span class="text-4xl font-bold text-deep-navy">$20</span>
+<span class="text-slate-gray font-body-md text-body-md">/mo</span>
+</div>
+<p class="font-body-sm text-body-sm text-slate-gray mb-8">
+                            Perfect for individuals looking for a smarter way to handle repetitive digital tasks.
+                        </p>
+<ul class="space-y-4 mb-10 flex-grow">
+<li class="flex items-center gap-3 font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-action-blue">check_circle</span>
+                                50 Visual assistance requests / day
+                            </li>
+<li class="flex items-center gap-3 font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-action-blue">check_circle</span>
+                                Native Mac &amp; Windows apps
+                            </li>
+<li class="flex items-center gap-3 font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-action-blue">check_circle</span>
+                                Basic screen context awareness
+                            </li>
+</ul>
+<button class="w-full py-4 rounded-lg font-label-md text-label-md border border-action-blue text-action-blue hover:bg-action-blue/5 transition-colors">
+                            Subscribe to Starter
+                        </button>
+</div>
+<!-- Pro Plan -->
+<div class="bg-white p-10 rounded-xl shadow-lg border-t-2 border-t-action-blue border-x border-b border-border-subtle text-left relative flex flex-col">
+<div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-action-blue text-white px-4 py-1 rounded-full font-label-sm text-label-sm">
+                            RECOMMENDED
+                        </div>
+<h3 class="font-headline-md text-headline-md text-deep-navy mb-2">Pro</h3>
+<div class="flex items-baseline gap-1 mb-6">
+<span class="text-4xl font-bold text-deep-navy">$20</span>
+<span class="text-slate-gray font-body-md text-body-md">/mo</span>
+</div>
+<p class="font-body-sm text-body-sm text-slate-gray mb-8">
+                            (Limited Time Offer) Full power of AHA with unlimited interactions and priority processing.
+                        </p>
+<ul class="space-y-4 mb-10 flex-grow">
+<li class="flex items-center gap-3 font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-action-blue">check_circle</span>
+                                Unlimited assistance requests
+                            </li>
+<li class="flex items-center gap-3 font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-action-blue">check_circle</span>
+                                Real-time screen mirroring
+                            </li>
+<li class="flex items-center gap-3 font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-action-blue">check_circle</span>
+                                Multi-app task coordination
+                            </li>
+<li class="flex items-center gap-3 font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-action-blue">check_circle</span>
+                                Priority 24/7 expert support
+                            </li>
+</ul>
+<button class="w-full py-4 rounded-lg font-label-md text-label-md bg-action-blue text-white hover:bg-primary transition-all">
+                            Subscribe Now
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Product Preview / Bento Grid -->
+<section class="py-24 px-margin-mobile md:px-margin-desktop">
+<div class="max-w-max-width mx-auto">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Feature 1 -->
+<div class="md:col-span-2 bg-white rounded-xl p-8 border border-border-subtle flex flex-col justify-between overflow-hidden">
+<div>
+<h4 class="font-headline-md text-headline-md text-deep-navy mb-2">Native Integration</h4>
+<p class="font-body-md text-body-md text-slate-gray mb-6">Whether you are on macOS or Windows, AHA sits in your menu bar or system tray, ready at a hotkey's notice.</p>
+</div>
+<div class="mt-8 translate-y-4">
+<img alt="OS Integration" class="rounded-lg shadow-lg" data-alt="Close-up detail of a modern computer operating system interface showing a clean top menu bar. A subtle, minimalist logo for a screen assistant app is active in the menu bar. The background is a soft-focus office environment with natural daylight. The image conveys a sense of high-end software integration and unobtrusive desktop utility with a premium, corporate modern aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXz28z7HFsYVbp5VIS4PNwD013QAUTR8GEcsvMoq8DJdYFACQqC8WC-DBuxh0mgqlhkpVY6mzOE4UdIgt3iFxFOU7gqmtXnvdGdnURJf_EuHwe1Suksaugjb3jDGqkdymda6VpOh1a6b0G7pF9-56uwcDtqyAGjh8PSArcyw5ZxXIO8nFzbcXUBieK5x6dkWOHbSGGOAZvTZnXvilonphfwNjp5XWyfnSdsB6ZraokzhdIa_lbpQJApdszauZu9a4pZ7dFo4_8qKo"/>
+</div>
+</div>
+<!-- Feature 2 -->
+<div class="bg-deep-navy text-white rounded-xl p-8 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-[48px] text-primary-fixed mb-4">visibility</span>
+<h4 class="font-headline-md text-headline-md mb-2">Visual AI</h4>
+<p class="font-body-sm text-body-sm opacity-80">AHA actually 'sees' your screen layout to give contextually accurate help that general LLMs can't provide.</p>
+</div>
+<!-- Feature 3 -->
+<div class="bg-surface-container rounded-xl p-8 flex flex-col justify-between">
+<div>
+<div class="flex gap-2 mb-4">
+<div class="bg-white px-2 py-1 rounded text-[10px] font-bold text-deep-navy border border-border-subtle">MAC</div>
+<div class="bg-white px-2 py-1 rounded text-[10px] font-bold text-deep-navy border border-border-subtle">WINDOWS</div>
+</div>
+<h4 class="font-headline-md text-headline-md text-deep-navy mb-2">Cross-Platform</h4>
+</div>
+<p class="font-body-sm text-body-sm text-slate-gray">Unified experience across your home and work computers.</p>
+</div>
+<!-- Feature 4 -->
+<div class="md:col-span-2 bg-action-blue rounded-xl p-8 text-white relative overflow-hidden">
+<div class="relative z-10">
+<h4 class="font-headline-md text-headline-md mb-2">Your Privacy First</h4>
+<p class="font-body-md text-body-md opacity-90 max-w-lg">AHA only views your screen when you explicitly ask for help. All data is encrypted and processing happens securely in the cloud or locally where possible.</p>
+</div>
+<div class="absolute -right-20 -bottom-20 opacity-10">
+<span class="material-symbols-outlined text-[240px]" style="font-variation-settings: 'FILL' 1;">security</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container dark:bg-surface-container-high w-full">
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-gutter px-margin-desktop py-20 max-w-max-width mx-auto">
+<div class="col-span-2">
+<div class="font-headline-md text-headline-md font-bold text-deep-navy dark:text-surface-bright mb-4">AHA</div>
+<p class="font-body-sm text-body-sm text-slate-gray max-w-xs mb-8">
+                    Your quiet, intelligent partner for every digital task. Built for precision and reliability.
+                </p>
+</div>
+<div class="flex flex-col gap-4">
+<span class="font-label-md text-label-md text-deep-navy font-bold">Product</span>
+<a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue transition-colors" href="#">Pricing</a>
+<a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue transition-colors" href="#">Download</a>
+<a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue transition-colors" href="#">How it works</a>
+</div>
+<div class="flex flex-col gap-4">
+<span class="font-label-md text-label-md text-deep-navy font-bold">Company</span>
+<a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue transition-colors" href="#">About</a>
+<a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue transition-colors" href="#">Contact</a>
+<a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue transition-colors" href="#">FAQ</a>
+</div>
+<div class="flex flex-col gap-4">
+<span class="font-label-md text-label-md text-deep-navy font-bold">Legal</span>
+<a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue transition-colors" href="#">Terms of Service</a>
+<a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue transition-colors" href="#">Privacy Policy</a>
+<a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue transition-colors" href="#">Refund Policy</a>
+</div>
+<div class="flex flex-col gap-4">
+<span class="font-label-md text-label-md text-deep-navy font-bold">Resources</span>
+<a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue transition-colors" href="#">Delivery Policy</a>
+<a class="font-body-sm text-body-sm text-slate-gray hover:text-action-blue transition-colors" href="mailto:support@dailyassist.xyz">Support</a>
+</div>
+</div>
+<div class="max-w-max-width mx-auto px-margin-desktop py-8 border-t border-border-subtle/30 text-center">
+<p class="font-body-sm text-body-sm text-slate-gray opacity-60">
+                © 2024 AHA (dailyassist.xyz). All rights reserved. Support: support@dailyassist.xyz
+            </p>
+</div>
+</footer>
+<script>
+        // Smooth hover micro-interactions
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                btn.classList.add('transition-all');
+            });
+        });
+
+        // Simple visibility observer for scroll animations
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('opacity-100', 'translate-y-0');
+                    entry.target.classList.remove('opacity-0', 'translate-y-8');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('section > div').forEach(section => {
+            section.classList.add('transition-all', 'duration-700', 'opacity-0', 'translate-y-8');
+            observer.observe(section);
+        });
+    </script>
+</body></html>

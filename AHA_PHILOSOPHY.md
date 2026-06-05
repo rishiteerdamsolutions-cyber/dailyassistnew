@@ -23,12 +23,12 @@ AHA is a **desktop assistant** that uses your computer like a human: vision on t
 
 ## Two Tiers
 
-### Tier 1 — Social posting (no AI for execution)
+### Tier 1 — Local precision (no AI for execution)
 
-- **Hardcoded flows** with template images (`VISIONBUTTONS/`) so agents know where to click on Facebook, LinkedIn, Instagram, X, and WhatsApp status.
-- **No LLM** for these tasks — only chat that **understands intent** (e.g. user asks to post; agent posts).
-- **Content Vault:** slots, folders, and calendar setup for planned content used when posting.
-- **Module:** `m9_social` (deterministic state machines), coordinated by `m8_orchestrator`.
+- **Hardcoded flows** on the user's Mac or Windows: social posting (FB, LinkedIn, IG, X, WhatsApp status), **dev workstation** (git push, `.env.local`, SSH setup), **system** (Bluetooth connect, open settings), and expanding OS UI atlas.
+- **No LLM** for these tasks — chat parses intent only; execution is deterministic via `m9_local`, `m9_native`, and `m9_social`.
+- **Content Vault:** slots, folders, and calendar for planned content used when posting.
+- **Modules:** `m9_router`, `m9_local`, `m9_native`, `m9_social` — coordinated by `m8_orchestrator`.
 
 ### Tier 2 — Everything else (BYOK AI)
 
@@ -56,6 +56,9 @@ All modules live under `bol/modules/` and are coordinated by **m8_orchestrator**
 | **m4** | Behavioral Policy | Markov “personality”: pauses, distraction, idle scroll |
 | **m7** | Lifecycle Controller | Chrome profiles, session isolation for social accounts |
 | **m9_social** | Social Flow Executor | Deterministic posting flows (Tier 1) |
+| **m9_local** | Local Flow Executor | OS, dev, files — git, env, Bluetooth (Tier 1) |
+| **m9_native** | Native OS Commands | Allowlisted subprocess — no shell injection (Tier 1) |
+| **m9_router** | Tier-1 Router | Local vs social detection before LLM |
 | **m9_generator** | Content formatting | Captions and text formatting logic |
 | **m9_parser** | UI state parsing | Parses screen text to understand UI state |
 | **m10** | Background Scheduler | Watches Content Vault calendar; wakes orchestrator for **scheduled** posts |
@@ -64,7 +67,7 @@ All modules live under `bol/modules/` and are coordinated by **m8_orchestrator**
 
 1. **m8** receives the command from chat.
 2. **m3** looks at the screen.
-3. **m8** decides route: Tier 1 social flow vs Tier 2 LLM plan.
+3. **m8** decides route: Tier 1 local/social flow vs Tier 2 LLM plan.
 4. **m2** + **m1** shape motion and delays; **m5** for typing; **m4** for behavioral realism.
 5. **m6** performs physical OS actions.
 

@@ -4,12 +4,13 @@
 
 ## THE CORE PHILOSOPHY
 
-1. **Social Media Tasks (The "Gold Standard")**: 
-   - Tasks like posting on Facebook, LinkedIn, X, Instagram, WhatsApp.
-   - **Rule**: NO LLM CAPABILITIES USED. These must run 100% via hardcoded, deterministic flows (`m9_social`). 
-   - **Why?**: Because the LLM was missing intermediate steps (like the Facebook "Next" button). Hardcoding these specific flows ensures perfect reliability.
+1. **Tier-1 Local Precision (Mac + Windows)**:
+   - **Social posting** (Facebook, LinkedIn, X, Instagram, WhatsApp) via `m9_social` + `VISIONBUTTONS/`.
+   - **Dev & OS** (git push, `.env.local`, SSH, Bluetooth, open project) via `m9_local` + `m9_native`.
+   - **Rule**: NO LLM for execution. Hardcoded deterministic flows only.
+   - **Why?**: LLMs miss intermediate steps; native + vision flows ensure reliability.
 
-2. **Other Websites and New Tasks**:
+2. **Tier-2 — Other websites and novel tasks**:
    - For any other website not covered by the gold standard flows.
    - **Rule**: The LLM *is* used to analyze the screen, understand the user's intent, and tell the agent *which button is correct to click*. 
    - **Execution**: The LLM does *not* do the physical clicking itself. It just provides the plan (e.g., "click the Submit button"). The agent (via PyAutoGUI/vision) performs the actual physical OS actions.
@@ -20,11 +21,13 @@
 
 When the user says something:
 
-1. **Check for Social Media Flow**: 
-   `detect_flow(user_text)` checks if this is a known social media task.
-   - If YES → Run the hardcoded `SocialFlowExecutor`. The LLM is bypassed entirely. The task completes deterministically.
+1. **Check for Tier-1 local task** (`m9_local` — git, env, Bluetooth, projects):
+   - If YES → Run `run_local_task`. LLM bypassed.
 
-2. **Fallback to LLM (for "other" websites)**:
+2. **Check for Tier-1 social flow** (`m9_social`):
+   - If YES → Run `SocialFlowExecutor`. LLM bypassed.
+
+3. **Fallback to Tier-2 LLM** (for "other" websites):
    - If NO (e.g., "buy this item on amazon") → The LLM takes over. 
    - The LLM looks at the screenshot, figures out what steps are needed, and outputs a plan.
    - The agent framework then parses the LLM's plan and physically executes the clicks/typing using the vision libraries.

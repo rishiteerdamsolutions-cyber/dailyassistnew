@@ -21,6 +21,7 @@ import secrets
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
+from aha.dev_mode import dev_gates_open
 from aha.license import check_license_status
 
 # ── Session token ────────────────────────────────────────────────────
@@ -52,6 +53,7 @@ _OPEN_PREFIXES = (
     "/api/license",
     "/api/auth",       # Firebase sign-in — no session token yet
     "/api/config",     # BYOK key management (session token added separately)
+    "/api/local",      # Tier-1 project registry + SSH setup
     "/api/billing",    # Razorpay — Firebase Bearer on create/verify; webhook unsigned
 )
 
@@ -100,7 +102,7 @@ async def security_middleware(request: Request, call_next):
                 content={"status": "error", "message": "Unauthorized: missing or invalid session token."},
             )
 
-        if _needs_license(path):
+        if _needs_license(path) and not dev_gates_open():
             try:
                 status = check_license_status()
             except Exception:

@@ -65,6 +65,21 @@ class DeleteApiKeyRequest(BaseModel):
     provider: str = Field(..., description="Provider whose key should be removed")
 
 
+class AddProjectRequest(BaseModel):
+    name: str = Field(..., description="Short project name, e.g. dailyassist")
+    path: str = Field(..., description="Absolute or ~ path to project folder")
+    branch: str = Field(default="main", description="Default git branch")
+    remote: str = Field(default="origin", description="Git remote name")
+
+
+class RemoveProjectRequest(BaseModel):
+    name: str = Field(..., description="Registered project name to remove")
+
+
+class GenerateSshKeyRequest(BaseModel):
+    overwrite: bool = Field(default=False, description="Replace existing AHA SSH key")
+
+
 # ---------------------------------------------------------------------------
 # License endpoints
 # ---------------------------------------------------------------------------
@@ -287,3 +302,47 @@ async def config_delete_api_key(body: DeleteApiKeyRequest) -> dict:
 
         reset_agent()
     return result
+
+
+# ---------------------------------------------------------------------------
+# Tier-1 local workspace (projects, SSH)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/local/projects")
+async def local_list_projects() -> dict:
+    from aha.local_registry import list_projects
+
+    return {"projects": list_projects()}
+
+
+@router.post("/local/projects")
+async def local_add_project(body: AddProjectRequest) -> dict:
+    from aha.local_registry import add_project
+
+    return add_project(body.name, body.path, branch=body.branch, remote=body.remote)
+
+
+@router.delete("/local/projects")
+async def local_remove_project(body: RemoveProjectRequest) -> dict:
+    from aha.local_registry import remove_project
+
+    return remove_project(body.name)
+
+
+@router.get("/local/ssh")
+async def local_ssh_status() -> dict:
+    from aha.local_registry import read_public_key, ssh_key_exists, ssh_public_key_path
+
+    return {
+        "exists": ssh_key_exists(),
+        "public_key": read_public_key(),
+        "public_key_path": str(ssh_public_key_path()),
+    }
+
+
+@router.post("/local/ssh/generate")
+async def local_ssh_generate(body: GenerateSshKeyRequest) -> dict:
+    from aha.local_registry import generate_ssh_key
+
+    return generate_ssh_key(overwrite=body.overwrite)

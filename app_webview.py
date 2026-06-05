@@ -6,13 +6,22 @@ Starts the FastAPI server in a background daemon thread,
 then opens the companion UI in a native webview window.
 """
 
+from __future__ import annotations
+
+import os
+import socket
+import sys
 import threading
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 
 import uvicorn
 import webview
+
+from aha.env_loader import load_dotenv
+
+load_dotenv()
 
 from aha.runtime_paths import install_bundle_paths
 
@@ -22,34 +31,69 @@ from server import app  # noqa: E402
 
 # ── Configuration ────────────────────────────────────────────────────
 HOST = "127.0.0.1"
-PORT = 8000
-COMPANION_URL = f"http://{HOST}:{PORT}/companion"
-SERVER_POLL_INTERVAL = 0.15  # seconds between readiness checks
-SERVER_POLL_TIMEOUT = 15.0   # max seconds to wait for the server
+DEFAULT_PORT = 8000
+SERVER_POLL_INTERVAL = 0.15
+SERVER_POLL_TIMEOUT = 20.0
 
 
-# ── Server helpers ───────────────────────────────────────────────────
-
-def _run_server() -> None:
-    """Run the FastAPI/uvicorn server (blocking)."""
-    uvicorn.run(app, host=HOST, port=PORT, log_level="warning")
-
-
-def _wait_for_server() -> None:
-    """Poll the server until it responds or the timeout expires."""
-    deadline = time.monotonic() + SERVER_POLL_TIMEOUT
-    while time.monotonic() < deadline:
+def _port_is_free(port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
-            urllib.request.urlopen(f"http://{HOST}:{PORT}/", timeout=1)
-            return
-        except (urllib.error.URLError, ConnectionError, OSError):
-            time.sleep(SERVER_POLL_INTERVAL)
+            sock.bind((HOST, port))
+            return True
+        except OSError:
+            return False
+
+
+def _server_responds(port: int) -> bool:
+    try:
+        urllib.request.urlopen(f"http://{HOST}:{port}/companion", timeout=2)
+        return True
+    except (urllib.error.URLError, ConnectionError, OSError, TimeoutError):
+        return False
+
+
+def _resolve_port() -> tuple[int, bool]:
+    """
+    Return (port, start_new_server).
+
+    Reuse an existing companion on DEFAULT_PORT if present; otherwise bind
+    DEFAULT_PORT or the next free port in 8000–8009.
+    """
+    if _server_responds(DEFAULT_PORT):
+        print(f"[AHA] Reusing existing server on http://{HOST}:{DEFAULT_PORT}/companion")
+        return DEFAULT_PORT, False
+
+    if _port_is_free(DEFAULT_PORT):
+        return DEFAULT_PORT, True
+
+    for port in range(DEFAULT_PORT + 1, DEFAULT_PORT + 10):
+        if _port_is_free(port):
+            print(f"[AHA] Port {DEFAULT_PORT} busy — using {port}")
+            return port, True
+
     raise RuntimeError(
-        f"Server did not become ready within {SERVER_POLL_TIMEOUT}s"
+        f"No free port in {DEFAULT_PORT}–{DEFAULT_PORT + 9}. "
+        "Stop other AHA/uvicorn processes and try again."
     )
 
 
-# ── JS-exposed API ──────────────────────────────────────────────────
+def _run_server(port: int) -> None:
+    uvicorn.run(app, host=HOST, port=port, log_level="warning")
+
+
+def _wait_for_server(port: int) -> None:
+    url = f"http://{HOST}:{port}/"
+    deadline = time.monotonic() + SERVER_POLL_TIMEOUT
+    while time.monotonic() < deadline:
+        try:
+            urllib.request.urlopen(url, timeout=1)
+            return
+        except (urllib.error.URLError, ConnectionError, OSError):
+            time.sleep(SERVER_POLL_INTERVAL)
+    raise RuntimeError(f"Server did not become ready within {SERVER_POLL_TIMEOUT}s on port {port}")
+
 
 class Api:
     """Python API that pywebview exposes to the JavaScript context."""
@@ -58,13 +102,11 @@ class Api:
         self._browser_window: webview.Window | None = None
 
     def open_browser(self, url: str) -> None:
-        """Open (or navigate) a secondary browser window to *url*."""
         if self._browser_window is not None:
             try:
                 self._browser_window.load_url(url)
                 return
             except Exception:
-                # Window was probably closed by the user; create a new one.
                 self._browser_window = None
 
         self._browser_window = webview.create_window(
@@ -75,7 +117,6 @@ class Api:
         )
 
     def close_browser(self) -> None:
-        """Close the secondary browser window if it exists."""
         if self._browser_window is not None:
             try:
                 self._browser_window.destroy()
@@ -85,32 +126,36 @@ class Api:
                 self._browser_window = None
 
 
-# ── Main ─────────────────────────────────────────────────────────────
-
 def main() -> None:
-    # 1. Start the FastAPI server in a daemon thread.
-    server_thread = threading.Thread(target=_run_server, daemon=True)
-    server_thread.start()
+    port, start_server = _resolve_port()
+    companion_url = f"http://{HOST}:{port}/companion"
 
-    # 2. Wait until the server is accepting connections.
-    _wait_for_server()
+    if start_server:
+        server_thread = threading.Thread(target=_run_server, args=(port,), daemon=True)
+        server_thread.start()
+        _wait_for_server(port)
+    elif not _server_responds(port):
+        raise RuntimeError(f"Port {port} is in use but not serving AHA companion.")
 
-    # 3. Create the JS-exposed API instance.
     api = Api()
-
-    # 4. Create the main companion window.
     webview.create_window(
         title="AHA — Artificial Human Assistant",
-        url=COMPANION_URL,
+        url=companion_url,
         width=1300,
         height=900,
         min_size=(900, 600),
         js_api=api,
     )
 
-    # 5. Start the webview event loop (blocks until all windows close).
-    webview.start(debug=False)
+    debug = os.environ.get("AHA_WEBVIEW_DEBUG", "").strip().lower() in ("1", "true", "yes")
+    if debug:
+        print(f"[AHA] Webview debug ON — {companion_url}")
+    webview.start(debug=debug)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as exc:
+        print(f"[AHA] Failed to start: {exc}", file=sys.stderr)
+        sys.exit(1)
