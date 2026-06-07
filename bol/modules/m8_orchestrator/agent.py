@@ -486,6 +486,17 @@ class AutonomousCompanion:
                 }
         # ─────────────────────────────────────────────────────────────────────
 
+        # ── TIER-1 ONLY PRODUCT MODE — block Tier-2 LLM ─────────────────────
+        from aha.product_mode import TIER1_ONLY_HELP, tier1_only_mode
+
+        if tier1_only_mode():
+            self._capture_and_encode()
+            return {
+                "status": "success",
+                "messages": [TIER1_ONLY_HELP],
+                "image_data": self._draw_and_encode_base64(),
+            }
+
         # 1. Take screenshot
         pil_image = self._capture_and_encode()
 

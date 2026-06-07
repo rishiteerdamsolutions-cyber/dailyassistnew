@@ -23,7 +23,7 @@ You can also enter a license key manually in the app if support sent you one.
 
 | | Minimum |
 |-|---------|
-| Chrome | Any recent version (for Tier-2 web tasks) |
+| Chrome | Any recent version (for social posting flows) |
 | RAM | 4 GB |
 | Storage | 500 MB |
 
@@ -103,7 +103,7 @@ Some antivirus tools may flag `pyautogui` or the venv as suspicious because they
 
 Your key is stored locally on your machine only (`~/.aha/config.json`). It is never sent to our servers.
 
-Tier-1 (social media posting) never uses your API key.
+Tier-1 (social posting, dev workspace, system tasks) never uses your API key.
 
 ---
 

@@ -5,6 +5,8 @@
 **Status baseline:** ~65–70% complete → target **100%**  
 **Prerequisite:** **`BETA100_PLAN.md` must be 100%** before Launch can be 100%
 
+**Fast path:** **`TIER1_LAUNCH_PLAN.md`** — ship Tier-1 only (no BYOK) first; complete full Launch 100 after Tier-2 is ready.
+
 ---
 
 ## What “Launch 100” means

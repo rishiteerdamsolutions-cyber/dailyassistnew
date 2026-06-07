@@ -276,9 +276,24 @@ async def billing_webhook(request: Request) -> dict:
 # ---------------------------------------------------------------------------
 
 
+@router.get("/config/product_mode")
+async def config_product_mode() -> dict:
+    """Companion UI: Tier-1-only launch vs full assistant."""
+    from aha.product_mode import product_mode_payload
+
+    return product_mode_payload()
+
+
 @router.post("/config/set_api_key")
 async def config_set_api_key(body: SetApiKeyRequest) -> dict:
     """Store an API key for *provider*."""
+    from aha.product_mode import tier1_only_mode
+
+    if tier1_only_mode():
+        raise HTTPException(
+            status_code=403,
+            detail="API keys are not used in Tier-1 mode. General AI assistance ships in a future update.",
+        )
     result = set_api_key(body.provider, body.api_key)
     if result.get("success"):
         from aha.agent_runtime import reset_agent
@@ -296,6 +311,13 @@ async def config_get_api_keys() -> dict:
 @router.delete("/config/delete_api_key")
 async def config_delete_api_key(body: DeleteApiKeyRequest) -> dict:
     """Remove the stored API key for *provider*."""
+    from aha.product_mode import tier1_only_mode
+
+    if tier1_only_mode():
+        raise HTTPException(
+            status_code=403,
+            detail="API keys are not used in Tier-1 mode.",
+        )
     result = delete_api_key(body.provider)
     if result.get("success"):
         from aha.agent_runtime import reset_agent

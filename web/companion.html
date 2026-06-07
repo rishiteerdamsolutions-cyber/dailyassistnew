@@ -780,7 +780,7 @@
             <p>AHA runs on <strong>your machine</strong> only. To assist with Tier-2 tasks (clicks and vision), your operating system must grant:</p>
             <ul id="permissions-list">
                 <li><strong>Accessibility</strong> — so AHA can move the mouse and type when you ask</li>
-                <li><strong>Screen Recording</strong> — so AHA can see the screen region it helps with (screenshots stay local or go to <em>your</em> BYOK provider)</li>
+                <li><strong>Screen Recording</strong> — so AHA can see the screen while it helps (screenshots stay on your Mac)</li>
             </ul>
             <p id="permissions-platform-note" style="font-size: 0.8rem;"></p>
             <div class="permissions-actions">
@@ -822,14 +822,14 @@
                 </div>
             </div>
 
-            <div class="settings-section">
+            <div class="settings-section" id="settings-byok-section">
                 <label>API Provider</label>
                 <select id="settings-provider">
                     <option value="google">Google Gemini</option>
                     <option value="openai">OpenAI</option>
                 </select>
             </div>
-            <div class="settings-section">
+            <div class="settings-section" id="settings-byok-key-section">
                 <label>API Key</label>
                 <input type="password" id="settings-api-key" placeholder="Paste your API key here...">
                 <div class="settings-row">
@@ -865,13 +865,13 @@
             </header>
             
             <div class="chat-history" id="chat-history">
-                <div class="message msg-system">AHA initialized. Ready to execute intents.</div>
+                <div class="message msg-system" id="welcome-system-msg">AHA initialized. Ready to assist.</div>
                 
-                <div class="message-container agent">
+                <div class="message-container agent" id="welcome-agent-msg">
                     <div class="avatar agent">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"></path><rect x="4" y="8" width="16" height="12" rx="2"></rect><path d="M2 14h2"></path><path d="M20 14h2"></path><path d="M15 13v2"></path><path d="M9 13v2"></path></svg>
                     </div>
-                    <div class="message msg-agent">Hello! Where would you like to go today? Tell me a website and what you want to do.</div>
+                    <div class="message msg-agent" id="welcome-agent-text">Hello! Ask me to post on social, push to git, create .env.local, connect Bluetooth, and more.</div>
                 </div>
             </div>
 
@@ -1479,6 +1479,34 @@
         const settingsKeyStatus = document.getElementById('settings-key-status');
         const settingsLicenseInfo = document.getElementById('settings-license-info');
         const settingsPermissionsHelp = document.getElementById('settings-permissions-help');
+        const settingsByokSection = document.getElementById('settings-byok-section');
+        const settingsByokKeySection = document.getElementById('settings-byok-key-section');
+        const welcomeAgentText = document.getElementById('welcome-agent-text');
+        let tier1OnlyMode = false;
+
+        async function applyProductMode() {
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/config/product_mode');
+                if (!res.ok) return;
+                const data = await res.json();
+                tier1OnlyMode = !!data.tier1_only;
+                if (tier1OnlyMode) {
+                    if (settingsByokSection) settingsByokSection.style.display = 'none';
+                    if (settingsByokKeySection) settingsByokKeySection.style.display = 'none';
+                    if (welcomeAgentText) {
+                        welcomeAgentText.textContent =
+                            'Hello! Ask me to post on Instagram, Facebook, LinkedIn, X, or WhatsApp — or push to git, create .env.local, connect Bluetooth, and more. No API key needed.';
+                    }
+                    if (chatInput) {
+                        chatInput.placeholder =
+                            'e.g. Post today\'s photo on Instagram, push dailyassist to git, connect to Noise Buds…';
+                    }
+                }
+            } catch (err) {
+                console.warn('Product mode check skipped:', err.message);
+            }
+        }
+        applyProductMode();
 
         // ── Permissions onboarding (macOS / Windows) ─────────────────
         const PERMS_STORAGE_KEY = 'aha_permissions_ack_v1';

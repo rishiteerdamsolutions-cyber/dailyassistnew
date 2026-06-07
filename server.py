@@ -1126,6 +1126,13 @@ class GenerateContentRequest(BaseModel):
 
 @app.post("/api/content/generate")
 def generate_content(req: GenerateContentRequest):
+    from aha.product_mode import tier1_only_mode
+
+    if tier1_only_mode():
+        return {
+            "status": "error",
+            "message": "AI content generation is not available in Tier-1 mode.",
+        }
     try:
         generator = ContentGenerator(api_key=req.api_key)
         
