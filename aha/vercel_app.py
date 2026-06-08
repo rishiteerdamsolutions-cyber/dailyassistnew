@@ -45,9 +45,11 @@ app.add_middleware(
 
 from aha.admin_routes import router as admin_router
 from aha.api_routes import router as aha_router
+from vercel_backend.routes import router as cloud_router
 
 app.include_router(aha_router)
 app.include_router(admin_router)
+app.include_router(cloud_router)
 
 
 from pydantic import BaseModel
@@ -68,6 +70,9 @@ async def firebase_signin(req: _FirebaseSigninRequest):
         email = claims.get("email", "")
         name = claims.get("name") or claims.get("display_name", "")
         upsert_user(uid, email, name)
+        from aha.firebase_session import save_firebase_session
+
+        save_firebase_session(id_token=req.id_token, uid=uid, email=email)
         return {"status": "ok", "uid": uid, "email": email}
     except Exception as e:
         return {"status": "error", "message": str(e)}

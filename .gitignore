@@ -30,13 +30,25 @@ firebase-credentials.json
 *.aha_license
 *.aha_config
 
+# Staged binaries for Nuitka bundling (generated on build machine)
+vendor/tesseract/
+
 # Build / dist
 dist/
 build/
 *.egg-info/
 
-# Customer zips — build locally, upload to Supabase (never commit)
+# Customer zips / DMGs — build locally, upload to Supabase (never commit)
 downloads/*.zip
+downloads/*.dmg
+
+# Nuitka crash diagnostics (local only)
+nuitka-crash-report.xml
+
+# Release work folders — nested clone / venv (never commit)
+macos/.venv/
+macos/.git/
+windows/.git/
 
 # Local dev / vision experiments (do not ship)
 vision_debug_crops/

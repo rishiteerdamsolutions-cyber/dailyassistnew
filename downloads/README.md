@@ -9,17 +9,30 @@ Customers do **not** receive `.py` agent source, `bol/`, or repo files.
 
 ## Build (maintainers only)
 
+**Ship gate:** **Nuitka** retail build (`build_desktop_release.sh` / `build_macos.sh`).  
+Compiled native binary — customers do not install Python.
+
 ```bash
-chmod +x scripts/build_desktop_release.sh
+chmod +x scripts/build_desktop_release.sh scripts/launch_gate_check.sh
 
-# macOS (must run on a Mac):
+# macOS (must run on a Mac with Python 3.10+):
 ./scripts/build_desktop_release.sh mac
+./scripts/package_dmg.sh          # optional → downloads/AHA-mac.dmg
 
-# Windows (must run on Windows):
+# Windows (must run on Windows with Python 3.10+):
 ./scripts/build_desktop_release.sh win
+
+# Honest status (no guessing):
+./scripts/launch_gate_check.sh
 ```
 
 Requires: Python 3.10+, `pip install -r requirements-build.txt`
+
+**Build machine also needs Tesseract** (staged into the bundle — customers do not install it):
+- macOS: `brew install tesseract` then `scripts/stage_tesseract_mac.sh` (runs automatically in `build_macos.sh`)
+- Windows: install [UB Mannheim Tesseract](https://github.com/UB-Mannheim/tesseract/wiki) then `scripts\stage_tesseract_win.bat`
+
+**Warning:** Small zips (~600 KB) that contain `bol/` are **source** bundles — never upload those to `aha-releases`.
 
 **Legacy source zip** (do not ship to customers): `scripts/build_release_zip.sh`
 

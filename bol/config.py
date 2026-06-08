@@ -26,12 +26,10 @@ def _default_chrome_binary() -> str:
 
 
 def _default_tesseract_cmd() -> str:
-    """Return the default Tesseract binary path for the current OS."""
-    system = platform.system()
-    if system == "Darwin":
-        # Apple Silicon default; Intel would be /usr/local/bin/tesseract
-        return "/opt/homebrew/bin/tesseract"
-    return "/usr/bin/tesseract"
+    """Bundled tesseract in retail builds; system install in dev."""
+    from aha.tesseract_runtime import resolve_tesseract_cmd
+
+    return resolve_tesseract_cmd()
 
 
 class BOLConfig(BaseSettings):

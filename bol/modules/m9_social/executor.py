@@ -16,14 +16,21 @@ import time
 import subprocess
 import pyautogui
 import numpy as np
-import cv2
 from pathlib import Path
 from typing import Any, Optional
 from bol.modules.m9_social.flows import (
-    SocialFlow, Step, ActionType, detect_flow, FLOW_REGISTRY
+    SocialFlow, Step, ActionType, detect_flow, FLOW_REGISTRY, final_publish_step
 )
 from bol.modules.m3_visual.vision_buttons import VisionButtonLibrary
 from bol.utils.logging import get_logger
+from bol.utils.platform import (
+    chrome_is_frontmost,
+    get_chrome_window_bounds,
+    maximize_chrome_window,
+    navigate_chrome_url,
+    submit_file_dialog_path,
+    upload_via_go_to_folder,
+)
 
 logger = get_logger(__name__)
 
@@ -55,23 +62,19 @@ def _capture_screen() -> np.ndarray:
 
 
 def _chrome_bounds() -> tuple[int, int, int, int] | None:
-    """Get Chrome window bounds via AppleScript. Returns (x, y, w, h) or None."""
-    try:
-        script = '''
-        tell application "Google Chrome"
-            if not (exists window 1) then return "none"
-            set b to bounds of window 1
-            return (item 1 of b) & "," & (item 2 of b) & "," & (item 3 of b) & "," & (item 4 of b)
-        end tell
-        '''
-        result = subprocess.check_output(['osascript', '-e', script], timeout=2).decode().strip()
-        if result == "none":
-            return None
-        x1, y1, x2, y2 = [int(v.strip()) for v in result.split(',')]
-        return x1, y1, x2 - x1, y2 - y1
-    except Exception:
-        return None
+    """Get Chrome window bounds. Returns (x, y, w, h) or None."""
+    return get_chrome_window_bounds()
 
+
+def _clamp_to_bounds(x: int, y: int) -> tuple[int, int]:
+    """Force an (x,y) coordinate to stay strictly inside the Chrome window."""
+    bounds = _chrome_bounds()
+    if not bounds: return x, y
+    bx, by, bw, bh = bounds
+    # Keep it at least 2 pixels away from the absolute edge to avoid triggering hot corners/dock
+    cx = max(bx + 2, min(x, bx + bw - 2))
+    cy = max(by + 2, min(y, by + bh - 2))
+    return cx, cy
 
 def _bezier_curve(x0: int, y0: int, x3: int, y3: int, num_points: int = 20) -> list[tuple[int, int]]:
     """Generate a Cubic Bezier curve from (x0,y0) to (x3,y3) with random control points."""
@@ -89,26 +92,97 @@ def _bezier_curve(x0: int, y0: int, x3: int, y3: int, num_points: int = 20) -> l
         t = i / num_points
         x = (1-t)**3 * x0 + 3*(1-t)**2 * t * x1 + 3*(1-t)*t**2 * x2 + t**3 * x3
         y = (1-t)**3 * y0 + 3*(1-t)**2 * t * y1 + 3*(1-t)*t**2 * y2 + t**3 * y3
-        points.append((int(x), int(y)))
+        # Clamp every intermediate point
+        points.append(_clamp_to_bounds(int(x), int(y)))
     return points
 
-def _execute_bezier_move(tx: int, ty: int, duration: float) -> None:
-    """Move mouse to target using a Bezier curve."""
+def _yield_if_human_override(expected_x: int, expected_y: int) -> tuple[int, int]:
+    """Check if human grabbed the mouse. If so, yield until they stop."""
+    import math
     cx, cy = pyautogui.position()
-    num_points = random.randint(15, 30)
-    points = _bezier_curve(cx, cy, tx, ty, num_points)
+    dist = math.hypot(cx - expected_x, cy - expected_y)
     
-    sleep_time = duration / len(points)
-    for px, py in points:
+    if dist > 20: # 20 pixel threshold for human interference
+        logger.warning(f"HUMAN OVERRIDE DETECTED! Mouse drifted {dist:.1f}px from expected. Yielding...")
+        # Wait until mouse stops moving
+        last_hx, last_hy = cx, cy
+        stable_count = 0
+        while stable_count < 10: # Wait for 1 second of complete stability
+            time.sleep(0.1)
+            nx, ny = pyautogui.position()
+            if abs(nx - last_hx) < 2 and abs(ny - last_hy) < 2:
+                stable_count += 1
+            else:
+                stable_count = 0 # reset if they keep moving
+            last_hx, last_hy = nx, ny
+            
+        logger.info("Human has released the mouse. Resuming from new position...")
+        return last_hx, last_hy
+        
+    return cx, cy
+
+def _execute_bezier_move(tx: int, ty: int, duration: float) -> None:
+    """Move mouse to target using a Bezier curve with a waypoint (installment)."""
+    cx, cy = pyautogui.position()
+    
+    # Generate a waypoint 30-80 pixels away from the final target to create hesitation
+    angle = random.uniform(0, 2 * 3.14159)
+    dist = random.uniform(30, 80)
+    wx = int(tx + dist * np.cos(angle))
+    wy = int(ty + dist * np.sin(angle))
+    
+    # Clamp waypoint to ensure the hesitation doesn't dip into the dock
+    wx, wy = _clamp_to_bounds(wx, wy)
+    
+    # Move to waypoint
+    points1 = _bezier_curve(cx, cy, wx, wy, num_points=random.randint(10, 20))
+    sleep_time1 = (duration * 0.7) / max(len(points1), 1)
+    
+    expected_x, expected_y = cx, cy
+    for px, py in points1:
+        cx, cy = _yield_if_human_override(expected_x, expected_y)
+        if (cx, cy) != (expected_x, expected_y):
+            # Recalculate remaining path if human grabbed it!
+            points1 = _bezier_curve(cx, cy, wx, wy, num_points=random.randint(10, 20))
+            # Just jump to next loop iteration
+            
         pyautogui.moveTo(px, py, _pause=False)
-        time.sleep(sleep_time)
+        expected_x, expected_y = px, py
+        time.sleep(sleep_time1)
+        
+    # Hesitate at waypoint
+    time.sleep(random.uniform(0.1, 0.3))
+    
+    # Final micro-movement to target
+    points2 = _bezier_curve(wx, wy, tx, ty, num_points=random.randint(5, 10))
+    sleep_time2 = (duration * 0.3) / max(len(points2), 1)
+    
+    expected_x, expected_y = wx, wy
+    for px, py in points2:
+        cx, cy = _yield_if_human_override(expected_x, expected_y)
+        if (cx, cy) != (expected_x, expected_y):
+            points2 = _bezier_curve(cx, cy, tx, ty, num_points=random.randint(5, 10))
+            
+        pyautogui.moveTo(px, py, _pause=False)
+        expected_x, expected_y = px, py
+        time.sleep(sleep_time2)
 
 
-def _human_click(x: int, y: int) -> None:
+def _is_within_chrome_bounds(x: int, y: int) -> bool:
+    bounds = _chrome_bounds()
+    if not bounds: return True # If we can't get bounds, assume it's fine (or if it's OS dialog)
+    bx, by, bw, bh = bounds
+    return bx <= x <= bx + bw and by <= y <= by + bh
+
+def _human_click(x: int, y: int, ignore_bounds: bool = False) -> None:
     """
     Click at (x, y) with a smooth Bezier curve move.
     Applies drift calibration offset.
     """
+    if not ignore_bounds and not _is_within_chrome_bounds(x, y):
+        logger.error(f"ABORT CLICK: Coordinate ({x}, {y}) is outside Chrome window! Agent prevented from clicking random apps.")
+        return
+
     tx = x + CLICK_DRIFT_OFFSET_X
     ty = y + CLICK_DRIFT_OFFSET_Y
     
@@ -128,10 +202,14 @@ def _human_click(x: int, y: int) -> None:
     time.sleep(random.uniform(0.1, 0.4))
 
 
-def _human_move(x: int, y: int) -> None:
+def _human_move(x: int, y: int, ignore_bounds: bool = False) -> None:
     """
     Move mouse to (x, y) with a smooth Bezier curve without clicking.
     """
+    if not ignore_bounds and not _is_within_chrome_bounds(x, y):
+        logger.error(f"ABORT MOVE: Coordinate ({x}, {y}) is outside Chrome window! Agent prevented from drifting.")
+        return
+
     tx = x + CLICK_DRIFT_OFFSET_X
     ty = y + CLICK_DRIFT_OFFSET_Y
     
@@ -141,64 +219,106 @@ def _human_move(x: int, y: int) -> None:
     time.sleep(random.uniform(0.1, 0.3))
 
 def _find_and_click(
-    template: Optional[str],
-    text_fallback: Optional[str],
+    step: Step,
     lib: VisionButtonLibrary,
     screenshot: np.ndarray,
     chrome_offset: tuple[int, int] = (0, 0),
     click_offset: tuple[int, int] = (0, 0),
+    allow_ocr_fallback: bool = True,
 ) -> bool:
     """
     Try template match first, then OCR text fallback.
+    Every proposed click is evaluated by the Swarm Council before execution.
     Returns True if something was clicked.
     """
     import cv2
 
     # 1. Template match
-    if template:
-        match = lib.find(template, screenshot)
+    if step.template:
+        match = lib.find(step.template, screenshot)
         if match:
-            # Randomize click within the inner 50% of the bounding box to avoid clicking exact center
             rx = random.randint(-match.bbox.width // 4, match.bbox.width // 4) if match.bbox.width > 4 else 0
             ry = random.randint(-match.bbox.height // 4, match.bbox.height // 4) if match.bbox.height > 4 else 0
             cx = match.bbox.x + match.bbox.width // 2 + chrome_offset[0] + rx + click_offset[0]
             cy = match.bbox.y + match.bbox.height // 2 + chrome_offset[1] + ry + click_offset[1]
-            _human_click(cx, cy)
-            logger.info("Template match '%s' → clicked (%d, %d) conf=%.3f",
-                        template, cx, cy, match.confidence)
-            return True
+
+            # --- SWARM COUNCIL EVALUATION ---
+            if not step.bypass_swarm:
+                try:
+                    from bol.modules.m12_swarm import swarm_council
+                    decision = swarm_council.evaluate(
+                        action_type="click", x=cx, y=cy, screenshot=screenshot,
+                        context={"target_text": step.template, "all_bboxes": []}
+                    )
+                    if not decision.approved:
+                        logger.warning("SWARM VETOED template '%s': %s", step.template, decision.reason)
+                        # Fall through to OCR fallback instead of clicking a bad target
+                    else:
+                        _human_click(cx, cy, ignore_bounds=(step.action == ActionType.OS_OPEN))
+                        logger.info("Template match '%s' → clicked (%d, %d) conf=%.3f",
+                                    step.template, cx, cy, match.confidence)
+                        return True
+                except ImportError:
+                    # Swarm not available — click anyway (backwards compatible)
+                    _human_click(cx, cy, ignore_bounds=(step.action == ActionType.OS_OPEN))
+                    logger.info("Template match '%s' → clicked (%d, %d) conf=%.3f",
+                                step.template, cx, cy, match.confidence)
+                    return True
+            else:
+                _human_click(cx, cy, ignore_bounds=(step.action == ActionType.OS_OPEN))
+                logger.info("Template match '%s' → clicked (%d, %d) conf=%.3f (Swarm bypassed)",
+                            step.template, cx, cy, match.confidence)
+                return True
 
     # 2. OCR text fallback
-    if text_fallback:
-        try:
-            import pytesseract
-            gray = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
-            inverted = cv2.bitwise_not(gray)
-            
-            needle_words = [w for w in text_fallback.lower().split() if len(w) > 2]
-            if not needle_words:
-                needle_words = [text_fallback.lower()]
+    if step.text_fallback and allow_ocr_fallback:
+        from bol.modules.m3_visual.ocr import OCREngine
+        ocr = OCREngine()
 
-            for img_variant in [gray, inverted]:
-                data = pytesseract.image_to_data(
-                    img_variant, output_type=pytesseract.Output.DICT, config='--psm 11'
-                )
-                for i, word in enumerate(data['text']):
-                    w = word.strip().lower()
-                    if w and int(data['conf'][i]) > 40:
-                        # Check if any significant needle word is in the detected word
-                        if any(nw in w for nw in needle_words) or (w in text_fallback.lower() and len(w) > 3):
-                            rx = random.randint(-data['width'][i] // 4, data['width'][i] // 4) if data['width'][i] > 4 else 0
-                            ry = random.randint(-data['height'][i] // 4, data['height'][i] // 4) if data['height'][i] > 4 else 0
-                            x = data['left'][i] + data['width'][i] // 2 + chrome_offset[0] + rx + click_offset[0]
-                            y = data['top'][i] + data['height'][i] // 2 + chrome_offset[1] + ry + click_offset[1]
-                            _human_click(x, y)
-                            logger.info("OCR fallback '%s' matched '%s' → clicked (%d, %d)", text_fallback, w, x, y)
-                            return True
-        except Exception as e:
-            logger.warning("OCR fallback failed: %s", e)
+        below = getattr(step, 'spatial_anchor_below', None)
+        above = getattr(step, 'spatial_anchor_above', None)
+        right_of = getattr(step, 'spatial_anchor_right_of', None)
+        left_of = getattr(step, 'spatial_anchor_left_of', None)
 
-    logger.warning("Could not find: template=%s, text=%s", template, text_fallback)
+        bboxes = ocr.find_text_on_screen(
+            screenshot, target=step.text_fallback,
+            below=below, above=above, right_of=right_of, left_of=left_of
+        )
+
+        # First-line defense: filter out Chrome URL/tab bar area
+        bboxes = [b for b in bboxes if b.y > 90]
+
+        if bboxes:
+            for box in bboxes:
+                rx = random.randint(-box.width // 4, box.width // 4) if box.width > 4 else 0
+                ry = random.randint(-box.height // 4, box.height // 4) if box.height > 4 else 0
+
+                x = box.x + box.width // 2 + chrome_offset[0] + rx + click_offset[0]
+                y = box.y + box.height // 2 + chrome_offset[1] + ry + click_offset[1]
+
+                # --- SWARM COUNCIL EVALUATION ---
+                if not step.bypass_swarm:
+                    try:
+                        from bol.modules.m12_swarm import swarm_council
+                        decision = swarm_council.evaluate(
+                            action_type="click", x=x, y=y, screenshot=screenshot,
+                            context={
+                                "target_text": step.text_fallback,
+                                "all_bboxes": bboxes,
+                                "has_spatial_anchor": bool(below or above or right_of or left_of)
+                            }
+                        )
+                        if not decision.approved:
+                            logger.warning("SWARM VETOED '%s' at (%d,%d): %s", step.text_fallback, x, y, decision.reason)
+                            continue  # Try the next candidate box
+                    except ImportError:
+                        pass  # Swarm not available — proceed anyway
+
+                _human_click(x, y, ignore_bounds=(step.action == ActionType.OS_OPEN))
+                logger.info("OCR match '%s' → clicked (%d, %d) %s", step.text_fallback, x, y, "(Swarm bypassed)" if step.bypass_swarm else "")
+                return True
+
+    logger.warning("Could not find: template=%s, text=%s", step.template, step.text_fallback)
     return False
 
 
@@ -216,6 +336,57 @@ class SocialFlowExecutor:
 
     def __init__(self) -> None:
         self._lib = VisionButtonLibrary()
+        self._verified_publish = False
+
+    def _save_paused_state(self, reason: str, screenshot: np.ndarray = None) -> None:
+        import os
+        import cv2
+        import time
+        pause_dir = Path.home() / ".aha" / "paused_states"
+        pause_dir.mkdir(parents=True, exist_ok=True)
+        if screenshot is None:
+            screenshot = _capture_screen()
+        filename = pause_dir / f"paused_{reason}_{int(time.time())}.png"
+        cv2.imwrite(str(filename), screenshot)
+
+    def _verify_stable_state(self, step: Step) -> float:
+        """
+        Check if Chrome is in focus and if there's no login screen.
+        If an issue is found, enter an infinite polling loop (every 10s).
+        Returns the total seconds slept, so the caller can adjust its timeout.
+        """
+        import pytesseract
+        import cv2
+
+        time_slept = 0.0
+        while True:
+            is_unstable = False
+
+            # 1. Check if Chrome is frontmost (unless it's an OS dialog step)
+            if step.action != ActionType.OS_OPEN and not chrome_is_frontmost():
+                logger.warning("[PAUSED] Chrome is not in focus. Waiting 10s...")
+                self._save_paused_state("out_of_focus")
+                is_unstable = True
+            
+            # 2. Check for login screens
+            if not is_unstable:
+                screenshot = _capture_screen()
+                gray = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
+                text_data = pytesseract.image_to_string(gray, config='--psm 11').lower()
+                
+                login_keywords = ["log in", "sign in to x", "sign in to linkedin", "password", "forgot password", "link with qr code"]
+                if any(kw in text_data for kw in login_keywords):
+                    logger.warning("[PAUSED] Login screen or logged out state detected. Waiting 10s...")
+                    self._save_paused_state("login_screen", screenshot)
+                    is_unstable = True
+
+            if is_unstable:
+                time.sleep(10)
+                time_slept += 10.0
+            else:
+                break
+                
+        return time_slept
 
     def run(
         self,
@@ -244,8 +415,10 @@ class SocialFlowExecutor:
         if not flow:
             return {"success": False, "error": f"Unknown task: {task_id}"}
 
+        self._verified_publish = False
         logger.info("Starting flow: %s (%d steps)", flow.task_id, len(flow.steps))
         results = []
+        publish_step = final_publish_step(flow)
 
         for step in flow.steps:
             desc = f"[Step {step.number}/{len(flow.steps)}] {step.description}"
@@ -255,8 +428,6 @@ class SocialFlowExecutor:
 
             try:
                 ok = self._execute_step(step, params, flow)
-                if ok:
-                    ok = self._verify_step_confirmation(step)
             except Exception as e:
                 logger.error("Step %d failed: %s", step.number, e)
                 ok = False
@@ -269,6 +440,12 @@ class SocialFlowExecutor:
 
             if not ok and step.action != ActionType.CONFIRM_DONE:
                 logger.error("Flow aborted at step %d", step.number)
+                
+                # --- SMART RECOVERY (REMOVED) ---
+                # Based on user feedback, the agent should never automatically refresh the page.
+                # If a step fails, we abort gracefully leaving the page exactly as it is.
+                logger.info("Flow aborted. Leaving page state as-is (no automatic refresh).")
+
                 return {
                     "success": False,
                     "stopped_at_step": step.number,
@@ -279,11 +456,33 @@ class SocialFlowExecutor:
             # Minimal stability pause between steps (polling handles the real waiting now)
             time.sleep(0.5)
 
-        logger.info("Flow '%s' completed successfully.", flow.task_id)
+        if not self._verified_publish:
+            logger.error(
+                "Flow '%s' finished steps but final publish was not verified — not counting as posted.",
+                flow.task_id,
+            )
+            return {
+                "success": False,
+                "stopped_at_step": publish_step.number if publish_step else "?",
+                "error": "Post was not verified — final publish button did not confirm. You can try again.",
+                "steps": results,
+                "verified_publish": False,
+            }
+
+        from aha.post_completion import complete_verified_post
+
+        completion = complete_verified_post(flow.platform, flow.task_id, params)
+        logger.info("Flow '%s' verified and recorded: %s", flow.task_id, completion)
+
         if progress_callback:
             progress_callback(len(flow.steps), "Done", "complete")
 
-        return {"success": True, "steps": results}
+        return {
+            "success": True,
+            "verified_publish": True,
+            "steps": results,
+            "completion": completion,
+        }
 
     def _get_cropped_screen_and_offset(self, step: Step) -> tuple[np.ndarray, tuple[int, int]]:
         screenshot = _capture_screen()
@@ -304,63 +503,137 @@ class SocialFlowExecutor:
             
         return screenshot, offset
 
+    def _dismiss_obstructive_modals(self, step: Step) -> bool:
+        """Heuristic to dismiss common interrupting popups on social media."""
+        from bol.modules.m3_visual.ocr import OCREngine
+        ocr = OCREngine()
+        screenshot, offset = self._get_cropped_screen_and_offset(step)
+        
+        # Added OK and No based on user feedback for Instagram Reel modals
+        dismiss_words = ["OK", "Not Now", "Cancel", "Close", "No Thanks", "Leave", "Skip", "Decline", "Dismiss", "No"]
+        for word in dismiss_words:
+            bboxes = ocr.find_text_on_screen(screenshot, target=word)
+            if bboxes:
+                box = bboxes[0]
+                x = box.x + box.width // 2 + offset[0]
+                y = box.y + box.height // 2 + offset[1]
+                logger.info(f"Found obstructive modal dismissal button '{word}'. Clicking it.")
+                _human_click(x, y)
+                time.sleep(1.0)
+                return True
+        return False
+
     def _wait_and_find_and_click(self, step: Step, max_wait: float = 15.0) -> bool:
         start_time = time.time()
         click_offset = (getattr(step, 'offset_x', 0), getattr(step, 'offset_y', 0))
+        
+        has_scrolled = False
+        has_dismissed_modals = False
+        
         while time.time() - start_time < max_wait:
+            time_slept = self._verify_stable_state(step)
+            if time_slept > 0:
+                start_time += time_slept  # Extend timeout so it doesn't fail due to pause
+                
             screenshot, offset = self._get_cropped_screen_and_offset(step)
-            if _find_and_click(step.template, step.text_fallback, self._lib, screenshot, offset, click_offset):
+            elapsed = time.time() - start_time
+            
+            allow_ocr = True
+            if step.template and step.text_fallback:
+                # Delay OCR fallback until the last 10% of the timeout
+                # to give the visual template the full duration to appear (e.g. waiting for grey button to turn blue)
+                if elapsed < (max_wait * 0.9):
+                    allow_ocr = False
+
+            if _find_and_click(step, self._lib, screenshot, offset, click_offset, allow_ocr_fallback=allow_ocr):
                 return True
+                
+            
+            # Modal Dismissal: If 75% through timeout, try dismissing popups
+            if elapsed > (max_wait * 0.75) and not has_dismissed_modals and step.action != ActionType.OS_OPEN:
+                logger.info("75% through timeout, attempting to dismiss any obstructive modals...")
+                if self._dismiss_obstructive_modals(step):
+                    # Reset timeout partially to allow element to be found after modal closes
+                    start_time = time.time() - (max_wait / 4.0) 
+                has_dismissed_modals = True
+                continue
+
             time.sleep(0.5)
+            
         logger.warning(f"Timeout ({max_wait}s) waiting for element: {step.description}")
         return False
 
-    def _verify_step_confirmation(self, step: Step, max_wait: float = 12.0) -> bool:
-        """Wait until confirm_template or confirm_text appears after a step."""
-        if not step.confirm_template and not step.confirm_text:
-            return True
+    def _is_final_publish_step(self, step: Step, flow: SocialFlow) -> bool:
+        final = final_publish_step(flow)
+        return final is not None and step.number == final.number
 
+    def _verify_publish_success(self, step: Step, flow: SocialFlow) -> bool:
+        """
+        After the final publish click, screenshot the screen and confirm the post went through.
+        Only a verified publish consumes the daily limit and writes the vault tick.
+        """
+        import pytesseract
+
+        max_wait = 45.0
         start = time.time()
-        needle = (step.confirm_text or "").lower()
+        logger.info(
+            "Verifying publish for %s — waiting for post-confirmation on screen...",
+            flow.platform,
+        )
 
         while time.time() - start < max_wait:
-            screenshot, _offset = self._get_cropped_screen_and_offset(step)
+            self._verify_stable_state(step)
+            screenshot, offset = self._get_cropped_screen_and_offset(step)
 
-            if step.confirm_template:
-                match = self._lib.find(step.confirm_template, screenshot)
-                if match:
-                    logger.info(
-                        "Step %d confirmed via template '%s' (conf=%.3f)",
-                        step.number,
-                        step.confirm_template,
-                        match.confidence,
-                    )
+            if step.confirm_text:
+                gray = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
+                ocr_text = pytesseract.image_to_string(gray, config="--psm 11").lower()
+                if step.confirm_text.lower() in ocr_text:
+                    logger.info("Publish verified via confirm_text: '%s'", step.confirm_text)
+                    self._verified_publish = True
                     return True
 
-            if needle:
-                try:
-                    import pytesseract
+            if step.confirm_template:
+                matches = self._lib.find_all(step.confirm_template, screenshot)
+                if matches:
+                    logger.info(
+                        "Publish verified via confirm_template: %s",
+                        step.confirm_template,
+                    )
+                    self._verified_publish = True
+                    return True
 
-                    gray = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
-                    text = pytesseract.image_to_string(gray, config="--psm 11").lower()
-                    if needle in text:
-                        logger.info(
-                            "Step %d confirmed via text '%s'",
-                            step.number,
-                            step.confirm_text,
-                        )
-                        return True
-                except Exception as exc:
-                    logger.warning("Confirmation OCR failed: %s", exc)
+            if step.template and step.action == ActionType.CLICK:
+                matches = self._lib.find_all(step.template, screenshot)
+                if not matches:
+                    logger.info(
+                        "Publish verified — final button '%s' no longer on screen.",
+                        step.template,
+                    )
+                    self._verified_publish = True
+                    return True
 
-            time.sleep(0.5)
+            if step.action == ActionType.PRESS_ENTER and not step.template:
+                elapsed = time.time() - start
+                if elapsed >= 4.0:
+                    logger.info(
+                        "Publish assumed after Enter key (no template to verify). "
+                        "Elapsed %.1fs on %s.",
+                        elapsed,
+                        flow.platform,
+                    )
+                    self._verified_publish = True
+                    return True
+
+            time.sleep(1.0)
 
         logger.warning(
-            "Step %d confirmation timeout: template=%s text=%s",
+            "Publish verification timed out for %s at step %d (%s)",
+            flow.task_id,
             step.number,
-            step.confirm_template,
-            step.confirm_text,
+            step.description,
         )
+        self._save_paused_state(f"unverified_publish_{flow.task_id}", _capture_screen())
         return False
 
     def _execute_step(self, step: Step, params: dict, flow: SocialFlow) -> bool:
@@ -378,23 +651,28 @@ class SocialFlowExecutor:
             return True
 
         if step.action == ActionType.NAVIGATE:
-            url = step.url or ""
-            logger.info("Navigating Chrome to: %s", url)
-            subprocess.run(["open", "-a", "Google Chrome", url])
-            time.sleep(2.0)  # Wait briefly for Chrome to launch
-            
-            # Maximize the window natively (respecting the macOS dock) to prevent elements from being hidden
-            applescript = """
-            tell application "Google Chrome"
-                activate
-                set zoomed of front window to true
-            end tell
-            """
-            subprocess.run(["osascript", "-e", applescript])
-            time.sleep(0.5)
+            url = step.url or params.get("url")
+            if not url:
+                logger.error("NAVIGATE missing url")
+                return False
+
+            logger.info("NAVIGATE: opening %s", url)
+
+            if not navigate_chrome_url(url):
+                logger.error("Failed to navigate: %s", url)
+                return False
+
+            try:
+                maximize_chrome_window()
+            except Exception as e:
+                logger.error("Failed to maximize Chrome automatically: %s", e)
+
+            # Minimal additional safety buffer after DOM load and maximize
+            time.sleep(step.wait_seconds)
             return True
 
         if step.action == ActionType.WAIT:
+            self._verify_stable_state(step)
             time.sleep(step.wait_seconds)
             return True
 
@@ -402,7 +680,12 @@ class SocialFlowExecutor:
         screenshot, offset = self._get_cropped_screen_and_offset(step)
 
         if step.action == ActionType.CLICK:
-            return self._wait_and_find_and_click(step, max_wait=max(15.0, step.wait_seconds))
+            clicked = self._wait_and_find_and_click(step, max_wait=max(15.0, step.wait_seconds))
+            if not clicked:
+                return False
+            if self._is_final_publish_step(step, flow):
+                return self._verify_publish_success(step, flow)
+            return True
 
         if step.action == ActionType.HOVER_AND_VERIFY:
             if not step.hover_template or not step.hover_verify_text:
@@ -416,12 +699,18 @@ class SocialFlowExecutor:
             max_wait = max(15.0, step.wait_seconds)
             
             while time.time() - start_time < max_wait:
+                time_slept = self._verify_stable_state(step)
+                if time_slept > 0:
+                    start_time += time_slept
+                    
                 screenshot, offset = self._get_cropped_screen_and_offset(step)
                 matches = self._lib.find_all(step.hover_template, screenshot)
                 
                 if not matches:
                     # Fallback to direct OCR if template isn't found
-                    if _find_and_click(None, step.hover_verify_text, self._lib, screenshot, offset):
+                    # We create a dummy step just for this OCR check
+                    hover_step = Step(number=0, description="hover", action=ActionType.CLICK, text_fallback=step.hover_verify_text)
+                    if _find_and_click(hover_step, self._lib, screenshot, offset):
                         return True
                     time.sleep(0.5)
                     continue
@@ -467,6 +756,9 @@ class SocialFlowExecutor:
             # Click to focus the text area first (find it by context)
             time.sleep(random.uniform(0.5, 1.0))
             
+            # Verify state before typing to ensure focus hasn't been lost
+            self._verify_stable_state(step)
+            
             # Type character by character with a truly randomized gap between EVERY key
             for char in text:
                 pyautogui.typewrite(char)
@@ -478,28 +770,26 @@ class SocialFlowExecutor:
 
         if step.action == ActionType.PRESS_ENTER:
             logger.info("PRESS_ENTER Action: pressing return key natively.")
+            self._verify_stable_state(step)
             time.sleep(random.uniform(0.5, 1.0))
             pyautogui.press('return')
             time.sleep(random.uniform(0.5, 1.0))
+            if self._is_final_publish_step(step, flow):
+                return self._verify_publish_success(step, flow)
             return True
 
         if step.action == ActionType.OS_OPEN:
-            # The OS file picker is open. If media_path given, type it in first.
             media_path = params.get(step.file_key or "media_path", "")
-            if media_path:
-                # Use Cmd+Shift+G to navigate to path in macOS file dialog
-                time.sleep(0.5)
-                pyautogui.hotkey('command', 'shift', 'g')
-                time.sleep(0.5)
-                pyautogui.typewrite(str(media_path), interval=0.03)
-                time.sleep(0.5)
-                pyautogui.press('return')
-                time.sleep(1.0)
-                pyautogui.press('return')  # confirm selection
-                time.sleep(1.5) # Wait for dialog to close and browser to process upload
-                return True # Dialog is closed, we are done with this step!
+            logger.info("OS_OPEN executing. media_path resolved to: '%s'", media_path)
 
-            # If no media path (or we want to click Open manually), do it here
+            if media_path:
+                try:
+                    return submit_file_dialog_path(str(media_path))
+                except Exception:
+                    raise
+
+            logger.info("OS_OPEN: media_path was EMPTY! Falling back to visual click.")
+            self._verify_stable_state(step)
             return self._wait_and_find_and_click(step, max_wait=max(15.0, step.wait_seconds))
 
         if step.action == ActionType.UPLOAD:
@@ -507,17 +797,11 @@ class SocialFlowExecutor:
             clicked = self._wait_and_find_and_click(step, max_wait=max(15.0, step.wait_seconds))
             if not clicked:
                 return False
-            time.sleep(1.5)
+            time.sleep(2.0)
             # Handle file dialog
             media_path = params.get(step.file_key or "media_path", "")
             if media_path:
-                pyautogui.hotkey('command', 'shift', 'g')
-                time.sleep(0.5)
-                pyautogui.typewrite(str(media_path), interval=0.03)
-                pyautogui.press('return')
-                time.sleep(0.8)
-                pyautogui.press('return')
-                time.sleep(0.5)
+                upload_via_go_to_folder(str(media_path))
             return True
 
         return False

@@ -1,4 +1,5 @@
 fastapi>=0.100.0
+python-multipart>=0.0.9
 uvicorn>=0.20.0
 pydantic>=2.5
 pydantic-settings>=2.1
@@ -15,3 +16,4 @@ firebase-admin>=6.0
 supabase>=2.0
 pywebview>=4.0
 razorpay>=1.4.0
+pygetwindow>=0.0.9; sys_platform == "win32"

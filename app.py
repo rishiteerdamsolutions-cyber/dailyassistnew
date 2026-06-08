@@ -701,26 +701,41 @@ class CompanionApp(QMainWindow):
 
     def update_chrome_browser_coordinates(self):
         """Poll Chrome window bounds and tell the server where to capture."""
-        import subprocess
+        import sys
+
         try:
-            script = '''
-            tell application "Google Chrome"
-                if not (exists window 1) then return "none"
-                set b to bounds of window 1
-                return (item 1 of b) & "," & (item 2 of b) & "," & (item 3 of b) & "," & (item 4 of b)
-            end tell
-            '''
-            result = subprocess.check_output(
-                ['osascript', '-e', script], timeout=1
-            ).decode().strip()
-            if result == "none" or not result:
+            if sys.platform == "darwin":
+                import subprocess
+
+                script = '''
+                tell application "Google Chrome"
+                    if not (exists window 1) then return "none"
+                    set b to bounds of window 1
+                    return (item 1 of b) & "," & (item 2 of b) & "," & (item 3 of b) & "," & (item 4 of b)
+                end tell
+                '''
+                result = subprocess.check_output(
+                    ["osascript", "-e", script], timeout=1
+                ).decode().strip()
+                if result == "none" or not result:
+                    return
+                parts = [int(x.strip()) for x in result.split(",")]
+                x1, y1, x2, y2 = parts
+                payload = {"x": x1, "y": y1, "width": x2 - x1, "height": y2 - y1}
+            elif sys.platform == "win32":
+                import pygetwindow as gw
+
+                wins = gw.getWindowsWithTitle("Chrome")
+                if not wins:
+                    return
+                win = wins[0]
+                payload = {"x": win.left, "y": win.top, "width": win.width, "height": win.height}
+            else:
                 return
-            parts = [int(x.strip()) for x in result.split(',')]
-            x1, y1, x2, y2 = parts
-            payload = {"x": x1, "y": y1, "width": x2 - x1, "height": y2 - y1}
+
             requests.post(f"{SERVER_URL}/api/config/set_browser_region", json=payload, timeout=0.5)
         except Exception:
-            pass  # Chrome not running or server not ready
+            pass
 
     def send_message(self):
         text = self.chat_input.text().strip()

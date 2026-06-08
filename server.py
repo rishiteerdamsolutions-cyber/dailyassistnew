@@ -79,6 +79,9 @@ async def firebase_signin(req: FirebaseSigninRequest):
         email = claims.get("email", "")
         name  = claims.get("name") or claims.get("display_name", "")
         upsert_user(uid, email, name)
+        from aha.firebase_session import save_firebase_session
+
+        save_firebase_session(id_token=req.id_token, uid=uid, email=email)
         return {"status": "ok", "uid": uid, "email": email}
     except Exception as e:
         # Non-fatal: app still works offline
@@ -351,11 +354,19 @@ def get_vault_slot_days(slot: str, year: int, month: int):
         except Exception:
             pass
             
+        posted = False
+        try:
+            from aha.post_completion import is_vault_day_posted
+            posted = is_vault_day_posted(slot, year, month, day)
+        except Exception:
+            pass
+
         days.append({
             "day": day,
             "has_text": has_text,
             "has_image": has_image,
-            "has_video": has_video
+            "has_video": has_video,
+            "posted": posted,
         })
         
     return JSONResponse(content={"slot": slot, "days": days})
@@ -1120,33 +1131,116 @@ import threading
 _routine_scheduler = None
 
 class GenerateContentRequest(BaseModel):
-    api_key: str
+    api_key: str | None = None
     topic: str
     plan: str = "ai"
 
+
+class GenerateVaultBatchRequest(BaseModel):
+    topic: str
+    num_days: int
+    slot: str
+    year: int | None = None
+    month: int | None = None
+    start_day: int | None = None
+    api_key: str | None = None
+
+
+def _resolve_byok_api_key(override: str | None) -> str:
+    from aha.access_mode import byok_required_message, has_byok_key
+    from aha.byok import resolve_gemini_api_key
+    from bol.config import get_config
+
+    if override and override.strip():
+        return override.strip()
+    if not has_byok_key():
+        raise HTTPException(status_code=400, detail=byok_required_message())
+    key = resolve_gemini_api_key(get_config())
+    if not key:
+        raise HTTPException(status_code=400, detail=byok_required_message())
+    return key
+
+
+@app.get("/api/vault/next-day/{slot}/{year}/{month}")
+def vault_next_text_day(slot: str, year: int, month: int):
+    from aha.vault_slots import last_filled_text_day, next_text_day
+
+    slot = _safe_slot(slot)
+    try:
+        nxt = next_text_day(slot, year, month)
+    except ValueError as exc:
+        return JSONResponse(
+            status_code=400,
+            content={"error": str(exc), "last_filled": last_filled_text_day(slot, year, month)},
+        )
+    return {
+        "slot": slot,
+        "year": year,
+        "month": month,
+        "next_day": nxt,
+        "last_filled": last_filled_text_day(slot, year, month),
+    }
+
+
+@app.post("/api/vault/generate-texts")
+def generate_vault_texts(req: GenerateVaultBatchRequest):
+    """BYOK only — generate N captions into consecutive vault days for a slot."""
+    if req.num_days < 1 or req.num_days > 31:
+        raise HTTPException(status_code=400, detail="num_days must be 1..31.")
+    try:
+        api_key = _resolve_byok_api_key(req.api_key)
+    except HTTPException:
+        raise
+    slot = _safe_slot(req.slot)
+
+    def _bg():
+        try:
+            gen = ContentGenerator(api_key=api_key)
+            result = gen.generate_slot_batch(
+                topic=req.topic.strip(),
+                num_days=req.num_days,
+                slot=slot,
+                year=req.year,
+                month=req.month,
+                start_day=req.start_day,
+            )
+            logger.info("Vault batch generation done: %s", result)
+        except Exception as exc:
+            logger.error("Vault batch generation failed: %s", exc)
+
+    threading.Thread(target=_bg, daemon=True).start()
+    return {
+        "status": "success",
+        "message": (
+            f"Generating {req.num_days} captions for '{slot}' on topic "
+            f"\"{req.topic.strip()}\". Refresh the calendar in a few seconds."
+        ),
+    }
+
+
 @app.post("/api/content/generate")
 def generate_content(req: GenerateContentRequest):
-    from aha.product_mode import tier1_only_mode
-
-    if tier1_only_mode():
-        return {
-            "status": "error",
-            "message": "AI content generation is not available in Tier-1 mode.",
-        }
+    """Legacy 30-day generator (BYOK only)."""
     try:
-        generator = ContentGenerator(api_key=req.api_key)
-        
-        # We run this in a background thread because Gemini takes a few seconds to generate 30 posts
+        api_key = _resolve_byok_api_key(req.api_key)
+    except HTTPException:
+        raise
+    try:
+        generator = ContentGenerator(api_key=api_key)
+
         def _bg_generate():
             try:
                 paths = generator.generate_30_days(topic=req.topic, layer_key=req.plan)
                 logger.info(f"Background generation complete. Created {len(paths)} files.")
             except Exception as e:
                 logger.error(f"Background generation failed: {e}")
-                
+
         threading.Thread(target=_bg_generate, daemon=True).start()
-        
-        return {"status": "success", "message": f"Generation started for topic '{req.topic}'. 30 text files will appear in the vault shortly."}
+
+        return {
+            "status": "success",
+            "message": f"Generation started for topic '{req.topic}'. 30 text files will appear in the vault shortly.",
+        }
     except Exception as e:
         return {"status": "error", "message": str(e)}
 

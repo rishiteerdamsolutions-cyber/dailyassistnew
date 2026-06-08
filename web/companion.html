@@ -461,6 +461,8 @@
         .cal-ind.active.text { background: #3b82f6; opacity: 1; }
         .cal-ind.active.img { background: #10b981; opacity: 1; }
         .cal-ind.active.vid { background: #8b5cf6; opacity: 1; }
+        .cal-ind.active.posted { background: #22c55e; opacity: 1; }
+        .cal-ind.posted::after { content: '✓'; font-size: 0.55rem; color: #fff; line-height: 1; }
         
         /* Modal */
         .modal-overlay {
@@ -478,10 +480,96 @@
             background: var(--bg-color);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            width: 500px;
-            max-width: 90%;
+            width: 560px;
+            max-width: 92vw;
+            max-height: 88vh;
             padding: 20px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            overflow-y: auto;
+        }
+
+        .vault-modal-grid {
+            display: grid;
+            grid-template-columns: 1fr 200px;
+            gap: 16px;
+            align-items: start;
+        }
+
+        @media (max-width: 640px) {
+            .vault-modal-grid { grid-template-columns: 1fr; }
+        }
+
+        .vault-preview-panel {
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            position: sticky;
+            top: 0;
+        }
+
+        .vault-preview-panel h4 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .vault-media-thumb {
+            display: none;
+            max-width: 100%;
+            max-height: 120px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            margin-top: 6px;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .vault-generate-panel {
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .vault-generate-panel.visible { display: block; }
+
+        .vault-generate-panel h4 {
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+        }
+
+        .vault-generate-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .vault-generate-row input[type="text"],
+        .vault-generate-row input[type="number"] {
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: rgba(0,0,0,0.3);
+            color: white;
+            font-size: 0.85rem;
+        }
+
+        .vault-generate-hint {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        .cal-day.has-content {
+            border-color: rgba(59, 130, 246, 0.35);
         }
         
         .modal h3 {
@@ -777,7 +865,7 @@
     <div class="permissions-overlay" id="permissions-overlay">
         <div class="permissions-box">
             <h3>Allow AHA to help on your computer</h3>
-            <p>AHA runs on <strong>your machine</strong> only. To assist with Tier-2 tasks (clicks and vision), your operating system must grant:</p>
+            <p>AHA runs on <strong>your machine</strong> only. To help on your screen when you ask (clicks and vision), your operating system must grant:</p>
             <ul id="permissions-list">
                 <li><strong>Accessibility</strong> — so AHA can move the mouse and type when you ask</li>
                 <li><strong>Screen Recording</strong> — so AHA can see the screen while it helps (screenshots stay on your Mac)</li>
@@ -931,6 +1019,15 @@
                         <button id="create-slot-btn" style="padding: 6px 12px; font-size: 0.85rem; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 4px; cursor: pointer;">Create Slot</button>
                     </div>
                 </div>
+                <div class="vault-generate-panel" id="vault-generate-panel">
+                    <h4>Generate captions (your API key)</h4>
+                    <div class="vault-generate-row">
+                        <input type="text" id="vault-gen-topic" placeholder="Topic e.g. latest news on AI" style="flex:1; min-width:180px;">
+                        <input type="number" id="vault-gen-days" min="1" max="31" value="5" style="width:64px;" title="Number of days">
+                        <button type="button" id="vault-gen-btn" style="padding:8px 14px;font-size:0.85rem;background:var(--accent-primary);color:white;border:none;border-radius:6px;cursor:pointer;">Generate</button>
+                    </div>
+                    <p class="vault-generate-hint" id="vault-gen-hint">Saves text to the next empty days in this slot (e.g. days 1–5, then 6–8).</p>
+                </div>
                 <div class="calendar-grid" id="vault-calendar">
                     <!-- Days generated by JS -->
                 </div>
@@ -951,31 +1048,34 @@
     <!-- Vault Upload Modal -->
     <div class="modal-overlay" id="vault-modal">
         <div class="modal">
-            <h3 id="modal-title">Upload Content for Day 1</h3>
-            
+            <h3 id="modal-title">Day 1 — Content Vault</h3>
             <form id="vault-upload-form" onsubmit="return false;">
                 <input type="hidden" id="modal-day" value="">
-                
-                <div class="upload-section">
-                    <label>Caption Text (.txt)</label>
-                    <textarea class="vault-textarea" id="modal-text" placeholder="Paste your caption/tweet here..."></textarea>
-                </div>
-                
-                <div class="upload-section">
-                    <label>Image (.png, .jpg)</label>
-                    <input type="file" id="modal-image" class="file-input" accept="image/*">
-                    <img id="preview-image" src="" style="display:none; max-width: 100%; margin-top: 10px; border-radius: 8px; border: 1px solid var(--border-color);" />
-                </div>
-                
-                <div class="upload-section">
-                    <label>Video (.mp4, .mov)</label>
-                    <input type="file" id="modal-video" class="file-input" accept="video/*">
-                    <video id="preview-video" src="" controls style="display:none; max-width: 100%; margin-top: 10px; border-radius: 8px; border: 1px solid var(--border-color);"></video>
-                </div>
-                
-                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-                    <button type="button" id="modal-cancel" style="background: rgba(255,255,255,0.1); box-shadow: none;">Cancel</button>
-                    <button type="button" id="modal-save" style="background: var(--success); box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);">Save to Vault</button>
+                <div class="vault-modal-grid">
+                    <div class="vault-form-col">
+                        <div class="upload-section">
+                            <label>Caption text</label>
+                            <textarea class="vault-textarea" id="modal-text" placeholder="Caption for this day…" rows="6"></textarea>
+                        </div>
+                        <div class="upload-section">
+                            <label>Image</label>
+                            <input type="file" id="modal-image" class="file-input" accept="image/*">
+                        </div>
+                        <div class="upload-section">
+                            <label>Video</label>
+                            <input type="file" id="modal-video" class="file-input" accept="video/*">
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px;">
+                            <button type="button" id="modal-cancel" style="background: rgba(255,255,255,0.1); box-shadow: none;">Cancel</button>
+                            <button type="button" id="modal-save" style="background: var(--success); box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);">Save</button>
+                        </div>
+                    </div>
+                    <aside class="vault-preview-panel">
+                        <h4>Preview</h4>
+                        <img id="preview-image" class="vault-media-thumb" alt="Image preview" />
+                        <video id="preview-video" class="vault-media-thumb" controls muted playsinline></video>
+                        <p id="vault-preview-empty" style="font-size:0.8rem;color:var(--text-secondary);margin:0;">No media for this day yet.</p>
+                    </aside>
                 </div>
             </form>
         </div>
@@ -1347,6 +1447,7 @@
                 fetchSlots();
                 slotsFetched = true;
             }
+            refreshByokVaultPanel();
         });
         
         // Load Calendar Data
@@ -1365,18 +1466,21 @@
                 vaultCalendar.innerHTML = '';
                 data.days.forEach(d => {
                     const el = document.createElement('div');
-                    el.className = 'cal-day';
+                    const hasAny = d.has_text || d.has_image || d.has_video;
+                    el.className = 'cal-day' + (hasAny ? ' has-content' : '');
                     el.innerHTML = `
                         <div class="cal-day-num">${d.day}</div>
                         <div class="cal-indicators">
                             <div class="cal-ind text ${d.has_text ? 'active' : ''}" title="Caption"></div>
                             <div class="cal-ind img ${d.has_image ? 'active' : ''}" title="Image"></div>
                             <div class="cal-ind vid ${d.has_video ? 'active' : ''}" title="Video"></div>
+                            <div class="cal-ind posted ${d.posted ? 'active' : ''}" title="Posted"></div>
                         </div>
                     `;
                     el.addEventListener('click', () => openVaultModal(d.day));
                     vaultCalendar.appendChild(el);
                 });
+                updateVaultGenHint();
             } catch (err) {
                 vaultCalendar.innerHTML = `<div style="grid-column: 1/-1; color: var(--warning);">Error: ${err.message}</div>`;
             }
@@ -1386,45 +1490,130 @@
         vaultMonth.addEventListener('change', loadCalendar);
         
         // Modal Logic
-        async function openVaultModal(day) {
-            currentUploadDay = day;
-            modalTitle.textContent = `Upload Content for ${vaultPlatform.options[vaultPlatform.selectedIndex].text} - Day ${day}`;
-            modalText.value = 'Loading...';
-            modalImage.value = '';
-            modalVideo.value = '';
-            
+        const vaultGenPanel = document.getElementById('vault-generate-panel');
+        const vaultGenTopic = document.getElementById('vault-gen-topic');
+        const vaultGenDays = document.getElementById('vault-gen-days');
+        const vaultGenBtn = document.getElementById('vault-gen-btn');
+        const vaultGenHint = document.getElementById('vault-gen-hint');
+        const vaultPreviewEmpty = document.getElementById('vault-preview-empty');
+
+        function setVaultMediaPreview(data) {
             const previewImg = document.getElementById('preview-image');
             const previewVid = document.getElementById('preview-video');
+            let any = false;
             previewImg.style.display = 'none';
             previewImg.src = '';
             previewVid.style.display = 'none';
             previewVid.src = '';
-            
+            if (data.has_image && data.image_url) {
+                previewImg.src = `http://127.0.0.1:8000${data.image_url}?t=${Date.now()}`;
+                previewImg.style.display = 'block';
+                any = true;
+            }
+            if (data.has_video && data.video_url) {
+                previewVid.src = `http://127.0.0.1:8000${data.video_url}?t=${Date.now()}`;
+                previewVid.style.display = 'block';
+                any = true;
+            }
+            if (vaultPreviewEmpty) vaultPreviewEmpty.style.display = any ? 'none' : 'block';
+        }
+
+        async function refreshByokVaultPanel() {
+            if (!vaultGenPanel) return;
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/config/get_api_keys');
+                if (!res.ok) return;
+                const data = await res.json();
+                const hasKey = !!(data.api_keys && (data.api_keys.google || data.api_keys.gemini));
+                vaultGenPanel.classList.toggle('visible', hasKey);
+            } catch (_) { /* ignore */ }
+        }
+
+        async function updateVaultGenHint() {
+            if (!vaultGenHint || !vaultPlatform.value) return;
+            const platform = vaultPlatform.value;
+            const year = vaultYear.value;
+            const month = vaultMonth.value;
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/vault/next-day/${platform}/${year}/${month}`);
+                const data = await res.json();
+                if (res.ok) {
+                    vaultGenHint.textContent =
+                        `Next captions start at day ${data.next_day}` +
+                        (data.last_filled ? ` (last filled: day ${data.last_filled}).` : '.');
+                } else {
+                    vaultGenHint.textContent = data.error || 'This month is full — pick another month.';
+                }
+            } catch (err) {
+                vaultGenHint.textContent = 'Select a slot to see where new captions will be saved.';
+            }
+        }
+
+        if (vaultGenBtn) {
+            vaultGenBtn.addEventListener('click', async () => {
+                const topic = (vaultGenTopic?.value || '').trim();
+                const numDays = parseInt(vaultGenDays?.value || '5', 10);
+                const slot = vaultPlatform.value;
+                const year = parseInt(vaultYear.value, 10);
+                const month = parseInt(vaultMonth.value, 10);
+                if (!topic || !slot) {
+                    alert('Enter a topic and select a slot.');
+                    return;
+                }
+                vaultGenBtn.disabled = true;
+                vaultGenBtn.textContent = 'Generating…';
+                try {
+                    const res = await fetch('http://127.0.0.1:8000/api/vault/generate-texts', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ topic, num_days: numDays, slot, year, month }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.detail || data.message || 'Generation failed');
+                    addMessage(data.message || 'Generation started.', 'system');
+                    setTimeout(() => { loadCalendar(); updateVaultGenHint(); }, 4000);
+                } catch (err) {
+                    alert(err.message);
+                } finally {
+                    vaultGenBtn.disabled = false;
+                    vaultGenBtn.textContent = 'Generate';
+                }
+            });
+        }
+
+        async function openVaultModal(day) {
+            currentUploadDay = day;
+            const slotLabel = vaultPlatform.options[vaultPlatform.selectedIndex]?.text || vaultPlatform.value;
+            modalTitle.textContent = `${slotLabel} — Day ${day}`;
+            modalText.value = 'Loading…';
+            modalImage.value = '';
+            modalVideo.value = '';
+            setVaultMediaPreview({ has_image: false, has_video: false });
             vaultModal.style.display = 'flex';
-            
+
             try {
                 const platform = vaultPlatform.value;
                 const year = vaultYear.value;
                 const month = vaultMonth.value;
                 const res = await fetch(`http://127.0.0.1:8000/api/vault/content/${platform}/${year}/${month}/${day}`);
                 const data = await res.json();
-                
                 modalText.value = data.text || '';
-                
-                if (data.has_image && data.image_url) {
-                    previewImg.src = `http://127.0.0.1:8000${data.image_url}?t=${new Date().getTime()}`;
-                    previewImg.style.display = 'block';
-                }
-                
-                if (data.has_video && data.video_url) {
-                    previewVid.src = `http://127.0.0.1:8000${data.video_url}?t=${new Date().getTime()}`;
-                    previewVid.style.display = 'block';
-                }
+                setVaultMediaPreview(data);
             } catch (err) {
                 modalText.value = '';
-                console.warn("Failed to load preview:", err);
+                console.warn('Failed to load preview:', err);
             }
         }
+
+        document.getElementById('modal-image')?.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const previewImg = document.getElementById('preview-image');
+            if (file) {
+                previewImg.src = URL.createObjectURL(file);
+                previewImg.style.display = 'block';
+                if (vaultPreviewEmpty) vaultPreviewEmpty.style.display = 'none';
+            }
+        });
         
         modalCancel.addEventListener('click', () => {
             vaultModal.style.display = 'none';
@@ -1527,7 +1716,7 @@
         }
         if (permsPlatformNote) {
             permsPlatformNote.textContent = isMac
-                ? 'On Mac: enable Terminal or Python in each list after opening Settings.'
+                ? 'On Mac: enable AHA in each list after opening Settings (System Settings may show it as AHA or Python).'
                 : 'On Windows: allow AHA when prompted; add the AHA folder to antivirus exclusions if clicks are blocked.';
         }
         if (permsOpenA11y) {

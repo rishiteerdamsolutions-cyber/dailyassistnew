@@ -14,11 +14,12 @@ Customers receive a **compiled desktop app** in a zip — **not** Python source.
 ### Build (maintainers)
 
 ```bash
-# macOS (Python 3.10+ required):
+# macOS (Python 3.10+ required — brew install python@3.12):
 ./scripts/build_desktop_release.sh mac
+./scripts/package_dmg.sh   # optional → downloads/AHA-mac.dmg
 
-# Windows (on a Windows machine):
-./scripts/build_desktop_release.sh win
+# Windows (on a Windows machine with Python 3.10+):
+scripts\build_windows_release.bat
 ```
 
 Output: `downloads/AHA-mac.zip` or `downloads/AHA-win.zip`.  
@@ -28,7 +29,7 @@ Output: `downloads/AHA-mac.zip` or `downloads/AHA-win.zip`.
 
 ### Security layers (today)
 
-1. **No source in download** — PyInstaller bytecode bundle, not `bol/` / `aha/` files
+1. **No source in download** — Nuitka compiled binary, not `bol/` / `aha/` files
 2. **Dev license bypass disabled** — `AHA_ALLOW_DEV_LICENSE` cannot work in retail builds (`packaging/aha_retail_hook.py`)
 3. **Cloud license gate** — Firebase sign-in + Supabase `aha_licenses` (Razorpay or coupon)
 4. **Paid download gate** — `/api/download/*` checks active subscription before redirecting to zip URL

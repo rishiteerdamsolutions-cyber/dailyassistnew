@@ -1,0 +1,19 @@
+---
+description: macos/ and windows/ are the shippable product — do not edit core agents
+globs:
+  - macos/bol/modules/m8_orchestrator/**
+  - macos/bol/modules/m9_social/**
+  - macos/bol/modules/m9_local/**
+  - windows/bol/modules/m8_orchestrator/**
+  - windows/bol/modules/m9_social/**
+  - windows/bol/modules/m9_local/**
+alwaysApply: true
+---
+
+# Release product folders
+
+- **`macos/`** and **`windows/`** are the **release work folders** — the apps customers get.
+- **Do NOT change** core agent code: `bol/modules/m8_orchestrator/agent.py`, `m9_social/` (flows, executor), `m9_local/`, vision routing in `bol/`.
+- **OK to change** in those folders: `aha/` (cloud, vault, license), `server.py` wrappers, `web/companion.html`, launchers (`Start AHA.command`, `start.bat`), `build_release.*`.
+- Cloud backend lives at repo root: `vercel_backend/`, `api/`, `supabase/migrations/`.
+- Social post limits: same for BYOK and Direct Access — enforce via `aha/release_bridge.py` + `server.py`, not by editing agents.

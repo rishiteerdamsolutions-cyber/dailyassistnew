@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from aha.admin_auth import require_admin
-from aha.admin_service import get_analytics, list_customers
+from aha.admin_service import get_analytics, get_usage_dashboard, list_customers
 from aha.coupons import list_coupons, upsert_coupon, validate_coupon
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -29,6 +29,14 @@ class ToggleCouponBody(BaseModel):
 @router.get("/analytics")
 async def admin_analytics(_admin: dict = Depends(require_admin)) -> dict:
     return get_analytics()
+
+
+@router.get("/usage")
+async def admin_usage(
+    days: int = Query(default=7, ge=1, le=90),
+    _admin: dict = Depends(require_admin),
+) -> dict:
+    return get_usage_dashboard(days=days)
 
 
 @router.get("/customers")

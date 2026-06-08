@@ -272,51 +272,54 @@ class AutonomousCompanion:
                 if path_match:
                     params["media_path"] = path_match.group(1)
                 else:
-                    # Look for keywords optionally followed by words like 'named' or 'called', and optional quotes
                     file_match = _re.search(
                         r'\b(image|photo|pic|video|media|file)\s+(?:named|called|with\s+name|nmed)?\s*[\'"]?([a-zA-Z0-9_\-\.]+)[\'"]?\b',
                         user_message, _re.IGNORECASE
                     )
                     if file_match:
                         filename_query = file_match.group(2).lower()
-                        stop_words = {"and", "with", "some", "the", "a", "an", "text", "txt", "on", "in", "to", "for", "fb"}
+                        stop_words = {"and", "with", "some", "the", "a", "an", "text", "txt", "on", "in", "to", "for", "fb", "from", "vault"}
                         if filename_query not in stop_words:
                             import os
                             from pathlib import Path
                             search_dirs = [Path.home() / "Downloads", Path.home() / "Desktop", Path.home() / "Documents"]
                             found_path = None
                             for d in search_dirs:
-                                if not d.exists(): continue
+                                if not d.exists():
+                                    continue
                                 for root, _, files in os.walk(d):
                                     for f in files:
-                                        # If the user says "cute_cat", match "cute_cat.jpg" or "cute_cat_final.png"
                                         if filename_query in f.lower() and f.lower().endswith(('.jpg', '.jpeg', '.png', '.mp4', '.mov', '.gif', '.webp')):
                                             found_path = os.path.join(root, f)
                                             break
-                                    if found_path: break
-                                if found_path: break
+                                    if found_path:
+                                        break
+                                if found_path:
+                                    break
                             if found_path:
                                 params["media_path"] = found_path
 
-                # Caption — quoted text first
+                # Caption — quoted text first (double or single quotes)
                 caption_match = _re.search(
-                    r'["\u201c\u201d]([^""\u201c\u201d]+)["\u201c\u201d]',
+                    r'["\'\u201c\u201d\u2018\u2019]([^""\'\'\u201c\u201d\u2018\u2019]+)["\'\u201c\u201d\u2018\u2019]',
                     user_message
                 )
                 if caption_match:
                     params["caption"] = caption_match.group(1)
                 else:
-                    # Strip platform/action words → extract actual content
                     stripped = _re.sub(
-                        r'\b(post|share|upload|write|send|tweet|on|to|in|the|a|an|'
-                        r'facebook|fb|instagram|insta|linkedin|whatsapp|twitter|x\.com|'
+                        r'\b(post|share|upload|write|send|tweet|on|to|in|the|a|an|and|with|only|'
+                        r'facebook|fb|fcbk|facebok|facebk|fcebk|acebok|facebkok|fcbook|fbook|faceboook|fbc|'
+                        r'instagram|insta|instgrm|instgram|ig|instrm|instagam|instagrm|intagram|inst|'
+                        r'linkedin|linkdin|linkdn|li|linkd\sin|linked\sin|lnkdin|lkin|linkden|linkin|'
+                        r'whatsapp|watsap|whsatapp|whasap|wahtsapp|whtsapp|wapp|wahtsap|wtsap|whstapp|whtsp|wa|whatsap|watsapp|wtsp|watsp|whtap|'
+                        r'twitter|x\.com|x|twiter|twtter|twitr|twt|twtr|'
                         r'status|story|reel|message|dm|photo|video|pic|image|media|file)\b',
                         '', user_message, flags=_re.IGNORECASE
                     ).strip()
-                    # Also strip the filename if we matched one
                     if 'filename_query' in locals() and filename_query and filename_query not in stop_words:
                         stripped = stripped.replace(filename_query, "", 1).replace(filename_query.lower(), "", 1).strip()
-                        
+
                     stripped = _re.sub(r'\s+', ' ', stripped).strip(' /.,!?')
                     if stripped and stripped.lower() not in ["and txt", "txt", "text", "and text", "some text"]:
                         params["caption"] = stripped
@@ -328,73 +331,86 @@ class AutonomousCompanion:
                 # ── Vault Fallback (Content Calendar) ─────────────────────────
                 from datetime import date
                 from aha.storage_vault import vault_root
-                
+
                 today = date.today()
                 today_day = today.day
                 today_year = today.year
                 today_month = today.month
-                
-                # Convert the platform word (e.g. "instagram") to Title Case for folder matching 
-                # or we can check case-insensitively if the slot exists.
+
                 slot_base = vault_root() / "Slots"
-                
-                if slot_base.exists():
-                    # Try to find a slot matching the requested platform
-                    # e.g., if user says "post on instagram", flow.platform="instagram". 
-                    # We check if a slot named "instagram" (case-insensitive) exists.
+
+                if slot_base.exists() and "media_path" not in params:
                     matched_slot_dir = None
                     for slot_dir in slot_base.iterdir():
                         if slot_dir.is_dir() and slot_dir.name.lower() == flow.platform.lower():
                             matched_slot_dir = slot_dir
                             break
-                            
+
                     if matched_slot_dir:
                         target_dir = matched_slot_dir / str(today_year) / str(today_month)
-                        if "media_path" not in params:
-                            # Try to find today's image or video in Vault
-                            img_dir = target_dir / "Images"
-                            vid_dir = target_dir / "Videos"
-                            
-                            found_img = None
-                            if img_dir.exists():
-                                for ext in [".png", ".jpg", ".jpeg", ".webp", ".gif"]:
-                                    p = img_dir / f"{today_day}{ext}"
-                                    if p.exists() and p.stat().st_size > 0:
-                                        found_img = p
-                                        break
-                                        
-                            found_vid = None
-                            if vid_dir.exists():
-                                for ext in [".mp4", ".mov", ".webm"]:
-                                    p = vid_dir / f"{today_day}{ext}"
-                                    if p.exists() and p.stat().st_size > 0:
-                                        found_vid = p
-                                        break
-                            
-                            # Disambiguate if both exist based on user prompt
-                            msg_lower = user_message.lower()
-                            wants_video = any(w in msg_lower for w in ["video", "reel", "story", "clip", "mp4"])
-                            wants_image = any(w in msg_lower for w in ["image", "photo", "pic", "picture", "png", "jpg"])
-                            wants_text_only = any(w in msg_lower for w in ["text only", "only text", "without image", "without video", "no image", "no video", "no media", "without media", "just text"])
-                            
-                            if not wants_text_only:
-                                if wants_video and not wants_image:
-                                    if found_vid:
-                                        params["media_path"] = str(found_vid.resolve())
-                                elif wants_image and not wants_video:
-                                    if found_img:
-                                        params["media_path"] = str(found_img.resolve())
-                                else:
-                                    # Neither or both specified: fallback to what exists, prioritizing image
-                                    if found_img and found_vid:
-                                        params["media_path"] = str(found_img.resolve())
-                                    elif found_img:
-                                        params["media_path"] = str(found_img.resolve())
-                                    elif found_vid:
-                                        params["media_path"] = str(found_vid.resolve())
-                                
+
+                        img_dir = target_dir / "Images"
+                        vid_dir = target_dir / "Videos"
+
+                        found_img = None
+                        if img_dir.exists():
+                            for ext in [".png", ".jpg", ".jpeg", ".webp", ".gif"]:
+                                p = img_dir / f"{today_day}{ext}"
+                                if p.exists() and p.stat().st_size > 0:
+                                    found_img = p
+                                    break
+                            if not found_img:
+                                for p in img_dir.iterdir():
+                                    if p.is_file() and p.suffix.lower() in [".png", ".jpg", ".jpeg", ".webp", ".gif"]:
+                                        if p.stat().st_size > 0:
+                                            found_img = p
+                                            break
+
+                        found_vid = None
+                        if vid_dir.exists():
+                            for ext in [".mp4", ".mov", ".webm"]:
+                                p = vid_dir / f"{today_day}{ext}"
+                                if p.exists() and p.stat().st_size > 0:
+                                    found_vid = p
+                                    break
+                            if not found_vid:
+                                for p in vid_dir.iterdir():
+                                    if p.is_file() and p.suffix.lower() in [".mp4", ".mov", ".webm"]:
+                                        if p.stat().st_size > 0:
+                                            found_vid = p
+                                            break
+
+                        msg_lower = user_message.lower()
+                        wants_video = any(w in msg_lower for w in ["video", "reel", "story", "clip", "mp4"])
+                        wants_image = any(w in msg_lower for w in ["image", "photo", "pic", "picture", "png", "jpg"])
+                        wants_text_only = any(w in msg_lower for w in ["text only", "only text", "without image", "without video", "no image", "no video", "no media", "without media", "just text"])
+                        wants_no_text = any(w in msg_lower for w in ["no text", "without text", "only image", "image only", "only video", "video only", "just video", "just image", "zero text"])
+
+                        if "caption" in params and not wants_image and not wants_video:
+                            wants_text_only = True
+
+                        if "text" in msg_lower and not wants_image and not wants_video:
+                            wants_text_only = True
+
+                        if not wants_text_only:
+                            if wants_video and not wants_image:
+                                if found_vid:
+                                    params["media_path"] = str(found_vid.resolve())
+                            elif wants_image and not wants_video:
+                                if found_img:
+                                    params["media_path"] = str(found_img.resolve())
+                            else:
+                                if found_img and found_vid:
+                                    params["media_path"] = str(found_img.resolve())
+                                elif found_img:
+                                    params["media_path"] = str(found_img.resolve())
+                                elif found_vid:
+                                    params["media_path"] = str(found_vid.resolve())
+
+                        if wants_no_text and "caption" not in params:
+                            params["caption"] = ""
+
                         if "caption" not in params:
-                            # Try to find today's text in Vault
                             txt_path = target_dir / "Texts" / f"{today_day}.txt"
                             if txt_path.exists() and txt_path.stat().st_size > 0:
                                 try:
@@ -403,6 +419,41 @@ class AutonomousCompanion:
                                     params["message"] = params["caption"]
                                 except Exception:
                                     pass
+
+                if flow.task_id == "facebook_text_post" and params.get("media_path"):
+                    from bol.modules.m9_social.flows import FLOW_REGISTRY
+                    if "facebook_post" in FLOW_REGISTRY:
+                        flow = FLOW_REGISTRY["facebook_post"]
+                        logger.info("Upgraded flow to facebook_post because media was found.")
+
+                if flow.platform == "instagram" and not params.get("media_path"):
+                    msg = (
+                        "❌ I cannot post to Instagram because no image or video was found! "
+                        "Instagram requires media. Please attach a file or schedule one in the Vault."
+                    )
+                    logger.error(msg)
+                    self._capture_and_encode()
+                    return {
+                        "status": "error",
+                        "messages": [msg],
+                        "is_done": True,
+                        "image_data": self._draw_and_encode_base64(),
+                    }
+
+                # ── Cloud daily limit (tamper-proof; server UTC day) ───────────
+                from aha.cloud_client import check_platform_limit, LIMIT_MESSAGE
+
+                limit = check_platform_limit(flow.platform)
+                if not limit.get("allowed"):
+                    msg = limit.get("message") or LIMIT_MESSAGE
+                    logger.warning("Daily limit blocked for %s: %s", flow.platform, msg)
+                    self._capture_and_encode()
+                    return {
+                        "status": "error",
+                        "messages": [msg],
+                        "is_done": True,
+                        "image_data": self._draw_and_encode_base64(),
+                    }
 
                 # ── Run the flow — no LLM involvement ────────────────────────
                 disclaimer = (
@@ -423,20 +474,28 @@ class AutonomousCompanion:
 
                 result = run_social_task(flow.task_id, params, _progress)
 
-                if result.get("success"):
+                if result.get("success") and result.get("verified_publish"):
                     messages_out.append(f"✅ Done — {flow.description}")
+                    messages_out.append(
+                        f"✓ {flow.platform.capitalize()} marked posted in your vault for today."
+                    )
                 else:
                     stopped = result.get("stopped_at_step", "?")
                     error = result.get("error", "Unknown error")
+                    retry_hint = (
+                        "Your daily limit was not used — you can try again."
+                        if not result.get("verified_publish")
+                        else "Please check the screen and try again."
+                    )
                     messages_out.append(
-                        f"❌ Flow stopped at step {stopped}: {error}\n"
-                        f"Please check the screen and try again."
+                        f"❌ Flow stopped at step {stopped}: {error}\n{retry_hint}"
                     )
 
                 # HARD RETURN — LLM never runs for social media tasks
                 self._capture_and_encode()
+                ok = bool(result.get("success") and result.get("verified_publish"))
                 return {
-                    "status": "success",
+                    "status": "success" if ok else "error",
                     "messages": messages_out,
                     "is_done": True,
                     "image_data": self._draw_and_encode_base64(),
@@ -646,22 +705,17 @@ class AutonomousCompanion:
                             self.chat_history.append({"role": "user", "parts": [prompt]})
                             self.chat_history.append({"role": "model", "parts": [response_text]})
                         else:
-                            try:
-                                model = genai.GenerativeModel(
-                                    model_name=model_name,
-                                    system_instruction=self.system_instruction
-                                )
-                            except Exception:
-                                model = genai.GenerativeModel(model_name=model_name)
-                                
-                            chat = model.start_chat(history=self.chat_history)
-                            if self.needs_vision:
-                                response = chat.send_message([prompt, labeled_pil_image])
-                            else:
-                                response = chat.send_message(prompt)
-                            response_text = response.text
-                            # Save updated history
-                            self.chat_history = chat.history
+                            from aha.gemini_client import generate_gemini
+
+                            response_text, new_history = generate_gemini(
+                                config=self.config,
+                                model=model_name,
+                                prompt=prompt,
+                                image=labeled_pil_image if self.needs_vision else None,
+                                system_instruction=self.system_instruction,
+                                history=self.chat_history,
+                            )
+                            self.chat_history = new_history
                         break
                     except Exception as e:
                         if "429" in str(e) and attempt < max_retries - 1:

@@ -13,7 +13,7 @@ Paying users can **download**, **sign in**, get a **license**, and **ask in chat
 
 | Category | Examples |
 |----------|----------|
-| **Social** | Post on Instagram, Facebook, LinkedIn, X, WhatsApp status/DM |
+| **Social** | Post on Instagram, Facebook, LinkedIn, X, WhatsApp status |
 | **Dev** | Git push/status/commit, `.env.local`, SSH key, open project |
 | **System** | Connect Bluetooth device, open folder |
 
@@ -53,7 +53,6 @@ python3 -m uvicorn server:app --host 127.0.0.1 --port 8000
 
 ### B. Tier-1 quality (same week)
 
-- [ ] **WhatsApp DM `contact_name`** — extract from user message in `agent.py` params
 - [ ] **Vision preview** — social steps show non-blank preview in companion
 - [ ] **Vault path doc** — one paragraph in `INSTALL.md`: which calendar folder beta users use
 

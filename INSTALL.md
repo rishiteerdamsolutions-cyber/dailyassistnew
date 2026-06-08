@@ -4,7 +4,7 @@
 
 AHA runs as a **compiled desktop app** (not source code). Because it is not sold through the App Store or Microsoft Store, your OS may show a one-time security warning. This is normal — follow the steps below to open it anyway.
 
-**You do not need to install Python** — the retail download includes everything to run.
+**You do not need to install Python or Tesseract** — the retail Nuitka build bundles the assistant, vision templates, and OCR engine.
 
 ---
 
@@ -45,16 +45,19 @@ If macOS says the app is from an unidentified developer: **System Settings → P
 
 Double-click **AHA.app** as usual.
 
-### Accessibility permission (required for Tier-2 assistant tasks)
+### Accessibility permission (required — first launch)
 
-The first time AHA helps by moving your mouse or keyboard, macOS will ask:
+The compiled **AHA.app** is a **new application** to macOS. It does **not** inherit permissions you gave Terminal, VS Code, or Python.
 
-> *Allow "Terminal" (or "AHA") to control your computer?*
+On first use:
 
-Click **Allow** in **System Settings → Privacy & Security → Accessibility**.  
-Without this, Tier-2 tasks (helping you click buttons in other apps) will not work.
+1. Open **System Settings → Privacy & Security → Accessibility**
+2. Enable **AHA** (the list may briefly show “Python” during beta builds — allow **AHA**)
+3. If AHA is missing, launch **AHA.app** once, then return to Accessibility and add it
 
-The AHA companion also shows a **permissions guide** on first launch — use **Open System Settings** there if you need help.
+Without this, the assistant cannot move the mouse or type when you ask.
+
+The in-app **permissions guide** opens the right Settings panes — use **Open Accessibility Settings** on first launch.
 
 ### Screen Recording permission (required for vision)
 

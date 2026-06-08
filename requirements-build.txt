@@ -1,2 +1,5 @@
 # Desktop retail builds only (maintainers — not shipped to customers)
 pyinstaller>=6.0
+nuitka>=2.0
+ordered-set>=4.1
+zstandard>=0.22

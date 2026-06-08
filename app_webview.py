@@ -11,6 +11,24 @@ from __future__ import annotations
 import os
 import socket
 import sys
+
+
+def _bootstrap_retail_build() -> None:
+    """Nuitka / PyInstaller: mark retail + Tier-1 before other imports."""
+    frozen = getattr(sys, "frozen", False)
+    main = sys.modules.get("__main__")
+    if main and getattr(main, "__compiled__", False):
+        frozen = True
+    if not frozen:
+        exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+        if os.path.isdir(os.path.join(exe_dir, "web")):
+            frozen = True
+    if frozen:
+        os.environ.setdefault("AHA_RETAIL_BUILD", "1")
+        os.environ.setdefault("AHA_TIER1_ONLY", "1")
+
+
+_bootstrap_retail_build()
 import threading
 import time
 import urllib.error
@@ -24,8 +42,10 @@ from aha.env_loader import load_dotenv
 load_dotenv()
 
 from aha.runtime_paths import install_bundle_paths
+from aha.tesseract_runtime import ensure_tesseract_configured
 
 install_bundle_paths()
+ensure_tesseract_configured()
 
 from server import app  # noqa: E402
 
@@ -126,6 +146,23 @@ class Api:
                 self._browser_window = None
 
 
+def _macos_request_accessibility_prompt() -> None:
+    """Trigger the macOS Accessibility prompt so AHA appears in System Settings."""
+    if sys.platform != "darwin":
+        return
+
+    def _poke() -> None:
+        time.sleep(2.5)
+        try:
+            import pyautogui
+
+            pyautogui.position()
+        except Exception:
+            pass
+
+    threading.Thread(target=_poke, daemon=True).start()
+
+
 def main() -> None:
     port, start_server = _resolve_port()
     companion_url = f"http://{HOST}:{port}/companion"
@@ -146,6 +183,8 @@ def main() -> None:
         min_size=(900, 600),
         js_api=api,
     )
+
+    _macos_request_accessibility_prompt()
 
     debug = os.environ.get("AHA_WEBVIEW_DEBUG", "").strip().lower() in ("1", "true", "yes")
     if debug:

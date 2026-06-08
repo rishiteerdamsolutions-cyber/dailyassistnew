@@ -56,9 +56,14 @@ class Step:
     confirm_text: Optional[str] = None       # OCR text that must appear after this step
     optional_if_no_key: Optional[str] = None # Skip this step if params[key] is empty (e.g. 'media_path')
     skip_if_key: Optional[str] = None        # Skip this step if params[key] is PRESENT (e.g. 'media_path')
-    # --- precise clicking ---
+    bypass_swarm: bool = False               # Skip Swarm Council safety checks (e.g., if button is in Dock zone)
+    # --- precise clicking & spatial context ---
     offset_x: int = 0                        # Click offset X from the center of the match
     offset_y: int = 0                        # Click offset Y from the center of the match
+    spatial_anchor_below: Optional[str] = None    # Find target ONLY below this text
+    spatial_anchor_above: Optional[str] = None    # Find target ONLY above this text
+    spatial_anchor_right_of: Optional[str] = None # Find target ONLY right of this text
+    spatial_anchor_left_of: Optional[str] = None  # Find target ONLY left of this text
     # --- hover and verify ---
     hover_template: Optional[str] = None     # Base template to search for
     hover_verify_text: Optional[str] = None  # Text that must appear on hover
@@ -146,6 +151,7 @@ WHATSAPP_STATUS = SocialFlow(
             number=7,
             description="Type the text status (if no media)",
             action=ActionType.TYPE,
+            text_fallback="Type a status",
             type_text_key="caption",
             skip_if_key="media_path",
             wait_seconds=0.5,
@@ -153,6 +159,16 @@ WHATSAPP_STATUS = SocialFlow(
         ),
         Step(
             number=8,
+            description="Type caption for image/video (if media)",
+            action=ActionType.TYPE,
+            text_fallback="Add a caption",
+            type_text_key="caption",
+            optional_if_no_key="media_path",
+            wait_seconds=0.5,
+            notes="Types the text into the media caption box."
+        ),
+        Step(
+            number=9,
             description="Press Enter to post the status",
             action=ActionType.PRESS_ENTER,
             template=None,
@@ -162,7 +178,7 @@ WHATSAPP_STATUS = SocialFlow(
             notes="Presses OS Enter key instead of clicking."
         ),
         Step(
-            number=9,
+            number=10,
             description="Status posted successfully",
             action=ActionType.CONFIRM_DONE,
             notes="Task complete. WhatsApp status has been posted."
@@ -350,25 +366,22 @@ FACEBOOK_TEXT_POST = SocialFlow(
              wait_seconds=1.5,
              notes="OCR finds 'What's on your mind' on the feed. Opens the composer modal."),
         Step(number=3,
+             description="Wait for composer modal to fully open",
+             action=ActionType.WAIT,
+             wait_seconds=2.0,
+             notes="The composer modal animates open. Wait for it to settle."),
+        Step(number=4,
              description="Type the post text",
              action=ActionType.TYPE,
              type_text_key="caption",
              wait_seconds=0.5,
-             notes="The composer text area should be focused. Type the post content."),
-        Step(number=4,
-             description="Click Next (NOT Post — Facebook shows this before the final Post)",
-             action=ActionType.CLICK,
-             template="facebook_next_button",
-             text_fallback="Next",
-             wait_seconds=1.5,
-             notes="STEP 4: Facebook shows a Next button before the final Post. "
-                   "This moves to the audience/confirmation screen. DO NOT click Post here."),
+             notes="The composer text area should be auto-focused after the modal opens."),
         Step(number=5,
              description="Click Post to publish",
              action=ActionType.CLICK,
-             template="facebook_post_button",
+             text_fallback="B-Post",
              wait_seconds=3.0,
-             notes="FINAL STEP: Blue Post button. Publishes the text post."),
+             notes="FINAL STEP: Pure OCR: finds 'Post' as a button shape. B- forces button-only match. No anchor or template needed."),
         Step(number=6, description="Post published successfully", action=ActionType.CONFIRM_DONE),
     ]
 )
@@ -396,29 +409,28 @@ FACEBOOK_POST = SocialFlow(
              wait_seconds=1.5,
              notes="Opens the composer modal."),
         Step(number=3,
+             description="Wait for composer modal to fully open",
+             action=ActionType.WAIT,
+             wait_seconds=2.0,
+             notes="The composer modal animates open. Wait for it to fully settle before typing."),
+        Step(number=4,
              description="Type caption text",
              action=ActionType.TYPE,
              type_text_key="caption",
              wait_seconds=0.5,
-             notes="Text area is auto-focused. Will skip if no text provided."),
-        Step(number=4,
-             description="Click the green Photo/Video icon in the composer toolbar",
-             action=ActionType.CLICK,
-             template="facebook_photo_icon",
-             optional_if_no_key="media_path",
-             wait_seconds=1.5,
-             notes="Green photo icon at bottom of composer. Opens the photo upload area."),
+             notes="Text area is auto-focused after modal opens. Will skip if no text provided."),
         Step(number=5,
              description="Click the 'Add photos or videos' upload area",
              action=ActionType.CLICK,
-             template="facebook_add_photo_button",
+             template="facebook_s6_add_photo_button",
+             text_fallback="Add photos",
              optional_if_no_key="media_path",
-             wait_seconds=1.5,
-             notes="Large upload area that appeared after clicking photo icon. Opens OS file picker."),
+             wait_seconds=2.0,
+             notes="Large upload area. OCR fallback uses 'Add photos'. Opens OS file picker."),
         Step(number=6,
              description="OS file picker is open — click Open",
              action=ActionType.OS_OPEN,
-             template="facebook_open_button",
+             template="facebook_s7_open_button",
              text_fallback="Open",
              file_key="media_path",
              optional_if_no_key="media_path",
@@ -427,12 +439,15 @@ FACEBOOK_POST = SocialFlow(
         Step(number=7,
              description="Click Post to publish",
              action=ActionType.CLICK,
-             template="facebook_post_button",
-             wait_seconds=3.0,
-             notes="FINAL STEP: Blue Post button at bottom-right of composer."),
+             template="facebook_s8_post_button",
+             text_fallback="BUP-Post",
+             wait_seconds=60.0,
+             bypass_swarm=True,
+             notes="FINAL STEP: Uses the user's perfectly cropped 150x60 image template."),
         Step(number=8, description="Post published successfully", action=ActionType.CONFIRM_DONE),
     ]
 )
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -468,15 +483,6 @@ LINKEDIN_POST = SocialFlow(
              wait_seconds=1.5,
              notes="Opens the media file picker dialog."),
         Step(number=4,
-             description="Click Next in the media picker (NOT Post)",
-             action=ActionType.CLICK,
-             template="linkedin_next_button",
-             text_fallback="Next",
-             optional_if_no_key="media_path",
-             wait_seconds=2.0,
-             notes="STEP 4: LinkedIn shows a media picker modal with Next button. "
-                   "Click Next to open the OS file dialog. DO NOT click Post here."),
-        Step(number=5,
              description="OS file picker is open — click Open",
              action=ActionType.OS_OPEN,
              template="linkedin_open_button",
@@ -484,19 +490,31 @@ LINKEDIN_POST = SocialFlow(
              file_key="media_path",
              optional_if_no_key="media_path",
              wait_seconds=2.5,
-             notes="Blue Open button in macOS file dialog."),
+             notes="Blue Open button in macOS file dialog. This uploads the media."),
+        Step(number=5,
+             description="Click Next in the media preview modal",
+             action=ActionType.CLICK,
+             template=None,
+             text_fallback="Next",
+             optional_if_no_key="media_path",
+             wait_seconds=60.0,
+             bypass_swarm=True,
+             notes="After selecting a file, LinkedIn shows a preview editor. You MUST click 'Next' here to return to the composer. Only do this if media was uploaded. Wait is 60s to allow videos to finish processing before the Next button appears."),
         Step(number=6,
              description="Type the post caption/text",
              action=ActionType.TYPE,
              type_text_key="caption",
-             wait_seconds=0.5,
-             notes="Click in the 'What do you want to talk about?' field and type."),
+             text_fallback="talk about",
+             wait_seconds=1.0,
+             notes="Click in the 'What do you want to talk about?' field to focus it, then type the caption."),
         Step(number=7,
              description="Click Post to publish",
              action=ActionType.CLICK,
              template="linkedin_post_button",
+             text_fallback="Post",
              wait_seconds=3.0,
-             notes="FINAL STEP: Blue Post button at bottom-right of composer."),
+             bypass_swarm=True,
+             notes="FINAL STEP: Blue Post button bottom right."),
         Step(number=8, description="Post published successfully", action=ActionType.CONFIRM_DONE),
     ]
 )
@@ -505,11 +523,6 @@ LINKEDIN_POST = SocialFlow(
 # ─────────────────────────────────────────────────────────────────────────────
 # X (TWITTER) POST
 # ─────────────────────────────────────────────────────────────────────────────
-# SIMPLEST FLOW — no intermediary Next steps.
-# Step 2: click compose icon → text box opens
-# Step 3: type text
-# Step 4: (optional) click photo icon → file picker → Open
-# Step 5: click Post ← FINAL
 X_POST = SocialFlow(
     task_id="x_post",
     platform="x",
@@ -519,40 +532,41 @@ X_POST = SocialFlow(
         Step(number=1, description="Open X",
              action=ActionType.NAVIGATE, url="https://x.com", wait_seconds=4.0),
         Step(number=2,
-             description="Click the compose/new tweet button",
+             description="Click the active black 'Post' button in the left sidebar to open the composer",
              action=ActionType.CLICK,
-             template="x_compose_icon",
-             wait_seconds=1.5,
-             notes="Dark circular pencil/edit icon. Opens the tweet composer."),
+             template="x_s2_compose_icon",
+             text_fallback="B-Post",
+             wait_seconds=2.0,
+             notes="Black rounded rectangle button with white 'Post' text in the left sidebar. Opens the tweet composer modal. The text box is auto-focused on open."),
         Step(number=3,
              description="Type the tweet text",
              action=ActionType.TYPE,
              type_text_key="tweet_text",
              wait_seconds=0.5,
-             notes="The tweet text box should be focused after step 2."),
+             notes="Composer auto-focuses text box on open — type directly without clicking."),
         Step(number=4,
-             description="(If media) Click the photo icon to attach",
+             description="(If media) Click the photo icon to attach image/video",
              action=ActionType.CLICK,
-             template="x_photo_icon",
+             template="x_s4_photo_icon",
              text_fallback="Photo",
              optional_if_no_key="media_path",
              wait_seconds=1.0,
-             notes="Optional step. Only if media_path is provided."),
+             notes="Optional step. Only runs if media_path is provided."),
         Step(number=5,
-             description="(If media) OS file picker — click Open",
+             description="(If media) OS file picker — select and click Open",
              action=ActionType.OS_OPEN,
-             template="x_open_button",
              text_fallback="Open",
              file_key="media_path",
              optional_if_no_key="media_path",
-             wait_seconds=2.5,
-             notes="Optional step. Only if media_path is provided."),
-        Step(number=6,
-             description="Click Post to publish the tweet",
-             action=ActionType.CLICK,
-             template="x_post_button",
              wait_seconds=3.0,
-             notes="FINAL STEP: Black 'Post' button. No intermediary Next on X."),
+             notes="Optional step. Opens Mac file picker and selects the vault media file."),
+        Step(number=6,
+             description="Click the Post button inside the composer to publish",
+             action=ActionType.CLICK,
+             template="x_s6_post_button",
+             text_fallback="B-Post",
+             wait_seconds=3.0,
+             notes="FINAL STEP: Black Post button inside the composer."),
         Step(number=7, description="Tweet posted successfully", action=ActionType.CONFIRM_DONE),
     ]
 )
@@ -561,6 +575,20 @@ X_POST = SocialFlow(
 # ─────────────────────────────────────────────────────────────────────────────
 # FLOW REGISTRY — look up any flow by task_id
 # ─────────────────────────────────────────────────────────────────────────────
+def final_publish_step(flow: SocialFlow) -> Step | None:
+    """
+    The last user action before CONFIRM_DONE — publish / share / send / post.
+
+    Verification runs after this step succeeds; only then is the daily limit consumed.
+    """
+    for i, step in enumerate(flow.steps):
+        if step.action == ActionType.CONFIRM_DONE and i > 0:
+            prev = flow.steps[i - 1]
+            if prev.action in (ActionType.CLICK, ActionType.PRESS_ENTER):
+                return prev
+    return None
+
+
 FLOW_REGISTRY: dict[str, SocialFlow] = {
     flow.task_id: flow for flow in [
         WHATSAPP_STATUS,

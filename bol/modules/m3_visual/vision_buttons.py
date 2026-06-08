@@ -19,22 +19,29 @@ from bol.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-def _visionbuttons_dir() -> Path:
-    from aha.runtime_paths import resource_path
 
-    return resource_path("VISIONBUTTONS")
+def _visionbuttons_root() -> Path:
+    try:
+        from aha.runtime_paths import resource_path
+
+        bundled = resource_path("VISIONBUTTONS")
+        if bundled.is_dir():
+            return bundled
+    except Exception:
+        pass
+    return Path(__file__).parent.parent.parent.parent / "VISIONBUTTONS"
 
 
-VISIONBUTTONS_DIR = _visionbuttons_dir()
-
-# Map platform folder names
-PLATFORM_DIRS = {
-    "facebook":  VISIONBUTTONS_DIR / "facebookbuttons",
-    "instagram": VISIONBUTTONS_DIR / "instagrambuttons",
-    "linkedin":  VISIONBUTTONS_DIR / "linkedinbuttons",
-    "x":         VISIONBUTTONS_DIR / "xbuttons",
-    "whatsapp":  VISIONBUTTONS_DIR / "whatsappbuttons",
-}
+def _platform_dirs() -> dict[str, Path]:
+    """Resolve at runtime — Nuitka bundle paths differ from dev checkout."""
+    root = _visionbuttons_root()
+    return {
+        "facebook": root / "facebookbuttons",
+        "instagram": root / "instagrambuttons",
+        "linkedin": root / "linkedinbuttons",
+        "x": root / "xbuttons",
+        "whatsapp": root / "whatsappbuttons",
+    }
 
 
 @dataclass
@@ -71,7 +78,7 @@ class VisionButtonLibrary:
 
     def _load_all_templates(self) -> None:
         """Pre-load all button templates into memory."""
-        for platform, folder in PLATFORM_DIRS.items():
+        for platform, folder in _platform_dirs().items():
             if not folder.exists():
                 continue
             for img_path in folder.glob("*.png"):
@@ -80,15 +87,6 @@ class VisionButtonLibrary:
                 if tmpl is not None:
                     self._cache[name] = tmpl
                     logger.debug("Loaded template: %s (%dx%d)", name, tmpl.shape[1], tmpl.shape[0])
-
-        # Aliases for templates referenced in flows but stored under another name.
-        _ALIASES = {
-            "whatsapp_text_status_icon": "whatsapp_new_status_icon",
-        }
-        for alias, target in _ALIASES.items():
-            if target in self._cache and alias not in self._cache:
-                self._cache[alias] = self._cache[target]
-                logger.debug("Template alias: %s -> %s", alias, target)
 
         logger.info("VisionButtonLibrary: %d templates loaded", len(self._cache))
 
@@ -138,13 +136,16 @@ class VisionButtonLibrary:
             if st_h > screenshot_bgr.shape[0] or st_w > screenshot_bgr.shape[1]:
                 continue
 
-            result = cv2.matchTemplate(screenshot_bgr, scaled_tmpl, cv2.TM_CCOEFF_NORMED)
-            _, max_val, _, max_loc = cv2.minMaxLoc(result)
+            templates_to_check = [scaled_tmpl, cv2.bitwise_not(scaled_tmpl)]
+            
+            for tmpl_variant in templates_to_check:
+                result = cv2.matchTemplate(screenshot_bgr, tmpl_variant, cv2.TM_CCOEFF_NORMED)
+                _, max_val, _, max_loc = cv2.minMaxLoc(result)
 
-            if max_val > best_conf:
-                best_conf = max_val
-                best_loc = max_loc
-                best_scale = scale
+                if max_val > best_conf:
+                    best_conf = max_val
+                    best_loc = max_loc
+                    best_scale = scale
 
         if best_conf < threshold or best_loc is None:
             logger.debug("Template '%s' not found (best conf=%.3f < %.3f)",

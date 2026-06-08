@@ -11,26 +11,10 @@ import numpy as np
 import pytesseract
 from PIL import Image
 from pytesseract import Output
-import sys
-import os
-from pathlib import Path
 from bol.modules.m3_visual.semantic_dict import get_semantic_intent
+from aha.tesseract_runtime import ensure_tesseract_configured
 
-# Windows compatibility for Tesseract binary
-if sys.platform.startswith('win'):
-    # Look for bundled tesseract in the project root first
-    project_root = Path(__file__).parent.parent.parent.parent
-    bundled_tesseract = project_root / "tesseract" / "tesseract.exe"
-    
-    if bundled_tesseract.exists():
-        pytesseract.pytesseract.tesseract_cmd = str(bundled_tesseract)
-        # Critical: Tell Tesseract where the language data is!
-        tessdata_dir = project_root / "tesseract" / "tessdata"
-        if tessdata_dir.exists():
-            os.environ["TESSDATA_PREFIX"] = str(tessdata_dir)
-    else:
-        # Fallback to common installation path
-        pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+ensure_tesseract_configured()
 
 from bol.schemas.visual import BoundingBox, OCRResult, OCRWord
 from bol.utils.logging import get_logger
@@ -314,7 +298,11 @@ class OCREngine:
         return best_button_bbox, is_button
 
     def find_text_on_screen(
-        self, screen_bgr: np.ndarray, target: str
+        self, screen_bgr: np.ndarray, target: str,
+        below: str | None = None,
+        above: str | None = None,
+        right_of: str | None = None,
+        left_of: str | None = None,
     ) -> list[BoundingBox]:
         """
         Find all occurrences of target text on screen.
@@ -341,6 +329,7 @@ class OCREngine:
         is_text_only = False
         sort_bottom_up = False
         sort_top_down = False
+        is_exact_match = False
         
         original_target = target
         parts = target.split('-')
@@ -357,6 +346,9 @@ class OCREngine:
                 parts.pop(0)
             elif prefix == 'TBO':
                 sort_top_down = True
+                parts.pop(0)
+            elif prefix == 'E':
+                is_exact_match = True
                 parts.pop(0)
             else:
                 break
@@ -375,14 +367,32 @@ class OCREngine:
 
         # Group words to handle multi-word targets that Tesseract separated
         grouped_words = self.group_words_into_blocks(ocr_result.words, screen_bgr)
+        
+        # Determine target intent for fallback matching
+        from bol.modules.m3_visual.semantic_dict import get_semantic_intent
+        target_intent = get_semantic_intent(clean_target) if clean_target else None
 
         for block in grouped_words:
             block_clean = re.sub(r'\[.*?\]', '', block.text).strip().lower()
-            if clean_target and clean_target in block_clean:
-                if all(tag in block.text.lower() for tag in tags_in_target):
-                    results.append(block.bounding_box)
-            elif not clean_target:
-                # If clean_target is empty, we only searched for tags (e.g. "[type:button]")
+            
+            # Primary match: Exact text or Substring
+            is_match = False
+            if clean_target:
+                if is_exact_match:
+                    if clean_target == block_clean:
+                        is_match = True
+                else:
+                    if clean_target in block_clean:
+                        is_match = True
+            else:
+                is_match = True
+                
+            # Secondary match: Semantic intent fallback
+            if not is_match and target_intent:
+                if f"[intent:{target_intent.lower()}]" in block.text.lower():
+                    is_match = True
+                    
+            if is_match:
                 if all(tag in block.text.lower() for tag in tags_in_target):
                     results.append(block.bounding_box)
 
@@ -415,8 +425,37 @@ class OCREngine:
         elif sort_top_down:
             filtered_results.sort(key=lambda b: b.y, reverse=False)
 
-        logger.debug("Found %d occurrences of '%s' (filtered & expanded)", len(filtered_results), original_target)
-        return filtered_results
+        # Apply spatial constraints if provided
+        final_results = filtered_results
+        if below or above or right_of or left_of:
+            anchor_results = []
+            if below: anchor_results = self.find_text_on_screen(screen_bgr, below)
+            elif above: anchor_results = self.find_text_on_screen(screen_bgr, above)
+            elif right_of: anchor_results = self.find_text_on_screen(screen_bgr, right_of)
+            elif left_of: anchor_results = self.find_text_on_screen(screen_bgr, left_of)
+            
+            if anchor_results:
+                anchor = anchor_results[0]  # Use the first/best match for the anchor
+                spatially_filtered = []
+                for res in filtered_results:
+                    if below and res.y > anchor.y + anchor.height * 0.5:
+                        spatially_filtered.append(res)
+                    elif above and res.y + res.height < anchor.y + anchor.height * 0.5:
+                        spatially_filtered.append(res)
+                    elif right_of and res.x > anchor.x + anchor.width * 0.5:
+                        spatially_filtered.append(res)
+                    elif left_of and res.x + res.width < anchor.x + anchor.width * 0.5:
+                        spatially_filtered.append(res)
+                final_results = spatially_filtered
+            else:
+                # SAFETY: anchor was specified but not found — UI is not in the expected state.
+                # Return EMPTY so the caller retries. Never click randomly when anchor is missing.
+                logger.warning(f"Spatial anchor not found on screen. Returning empty to force retry — will NOT click blindly.")
+                final_results = []
+
+
+        logger.debug("Found %d occurrences of '%s' (filtered & expanded)", len(final_results), original_target)
+        return final_results
 
     @staticmethod
     def _merge_bounding_boxes(boxes: list[BoundingBox]) -> BoundingBox:

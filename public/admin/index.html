@@ -62,6 +62,22 @@
     </div>
 
     <div class="bg-white rounded-xl border border-border-subtle shadow-card p-6 mb-10 overflow-x-auto">
+      <h2 class="text-lg font-semibold text-deep-navy mb-2">Daily task usage</h2>
+      <p class="text-slate-gray text-sm mb-4" id="usage-today-summary"></p>
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>License</th>
+            <th>Platform</th>
+            <th>UTC date</th>
+            <th>Last task</th>
+          </tr>
+        </thead>
+        <tbody id="usage-body"></tbody>
+      </table>
+    </div>
+
+    <div class="bg-white rounded-xl border border-border-subtle shadow-card p-6 mb-10 overflow-x-auto">
       <h2 class="text-lg font-semibold text-deep-navy mb-4">Customers</h2>
       <table class="tbl">
         <thead>
@@ -174,6 +190,24 @@
     `).join('') || '<tr><td colspan="5">No customers</td></tr>';
   }
 
+  function renderUsage(data) {
+    const today = data.today || {};
+    const byPlat = today.by_platform || {};
+    const platText = Object.entries(byPlat).map(([p, n]) => `${p}: ${n}`).join(' · ') || 'none yet';
+    document.getElementById('usage-today-summary').textContent =
+      `UTC ${today.usage_date || '—'} — ${today.total_tasks ?? 0} tasks, ${today.unique_users ?? 0} users (${platText})`;
+
+    const body = document.getElementById('usage-body');
+    body.innerHTML = (data.recent || []).map(u => `
+      <tr>
+        <td><code class="text-xs">${(u.user_id || '').slice(0, 18)}</code></td>
+        <td>${u.platform || '—'}</td>
+        <td>${u.usage_date || '—'}</td>
+        <td>${fmtDate(u.last_post_timestamp)}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="4">No usage yet — run migration 006_daily_usage.sql</td></tr>';
+  }
+
   function renderCoupons(data) {
     const body = document.getElementById('coupons-body');
     body.innerHTML = (data.coupons || []).map(c => `
@@ -198,6 +232,9 @@
     document.getElementById('denied').style.display = 'none';
     document.getElementById('dashboard').style.display = 'block';
     renderStats(await res.json());
+
+    const usage = await api('/api/admin/usage?days=14');
+    if (usage.ok) renderUsage(await usage.json());
 
     const cust = await api('/api/admin/customers?limit=200');
     if (cust.ok) renderCustomers(await cust.json());

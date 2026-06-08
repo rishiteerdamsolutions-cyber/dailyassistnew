@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AHA UI</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar glass-panel">
+            <div class="brand">
+                <div class="logo"></div>
+                <h1>AHA</h1>
+            </div>
+            <p class="subtitle">AI-Mediated HCI Engine</p>
+            
+            <nav class="module-nav">
+                <button class="nav-btn active" data-module="timing">
+                    <span class="icon">⏱️</span> Chrono-Entropy
+                </button>
+                <button class="nav-btn" data-module="kinematic">
+                    <span class="icon">📈</span> Kinematics
+                </button>
+                <button class="nav-btn" data-module="policy">
+                    <span class="icon">🧠</span> Policy Engine
+                </button>
+                <button class="nav-btn" data-module="linguistic">
+                    <span class="icon">⌨️</span> Linguistic Variance
+                </button>
+                <button class="nav-btn" data-module="lifecycle">
+                    <span class="icon">📅</span> Lifecycle Controller
+                </button>
+                <button class="nav-btn" data-module="hardware">
+                    <span class="icon">💻</span> Hardware Jitter
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h2 id="module-title">Chrono-Entropy & Timing Manager</h2>
+                <button id="run-btn" class="run-btn">Run Simulation</button>
+            </header>
+
+            <div class="content-area glass-panel" id="content-area">
+                <div class="empty-state">
+                    <div class="pulse-ring"></div>
+                    <p>Click "Run Simulation" to execute this module.</p>
+                </div>
+            </div>
+            
+            <footer style="margin-top: auto; padding: 20px; text-align: center; font-size: 0.85rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <a href="/legal.html" style="color: #94a3b8; text-decoration: none; margin: 0 10px;">Terms of Service</a>
+                <a href="/legal.html#privacy" style="color: #94a3b8; text-decoration: none; margin: 0 10px;">Privacy Policy</a>
+                <a href="/legal.html#refund" style="color: #94a3b8; text-decoration: none; margin: 0 10px;">Refund Policy</a>
+                <a href="/legal.html#shipping" style="color: #94a3b8; text-decoration: none; margin: 0 10px;">Shipping Policy</a>
+            </footer>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

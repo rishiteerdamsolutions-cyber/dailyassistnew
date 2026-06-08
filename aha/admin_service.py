@@ -138,3 +138,15 @@ def list_customers(limit: int = 200, offset: int = 0) -> dict[str, Any]:
     total = len(rows)
     page = rows[offset : offset + limit]
     return {"total": total, "offset": offset, "limit": limit, "customers": page}
+
+
+def get_usage_dashboard(*, days: int = 7) -> dict[str, Any]:
+    from vercel_backend.usage import fetch_usage_for_admin, usage_summary_today
+
+    rows = fetch_usage_for_admin(days=days)
+    today = usage_summary_today()
+    return {
+        "today": today,
+        "recent": rows,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }

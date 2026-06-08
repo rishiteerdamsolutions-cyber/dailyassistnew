@@ -35,7 +35,8 @@
     { "source": "/faq", "destination": "/faq/index.html" },
     { "source": "/about", "destination": "/about/index.html" },
     { "source": "/contact", "destination": "/contact/index.html" },
-    { "source": "/legal", "destination": "/legal/index.html" }
+    { "source": "/legal", "destination": "/legal/index.html" },
+    { "source": "/admin", "destination": "/admin/index.html" }
   ],
   "cleanUrls": true,
   "trailingSlash": false

@@ -2,7 +2,7 @@
 
 import os
 
-from aha.runtime_paths import is_frozen, is_retail_build
+from aha.runtime_paths import bundle_root, is_frozen, is_retail_build, repo_root
 from aha.subscription import allow_dev_license_keys
 
 
@@ -27,3 +27,13 @@ def test_allow_dev_license_enabled_in_dev_checkout(monkeypatch):
 
 def test_is_frozen_false_in_tests():
     assert is_frozen() is False
+
+
+def test_repo_root_has_visionbuttons_in_dev():
+    root = repo_root()
+    assert (root / "VISIONBUTTONS").is_dir()
+
+
+def test_bundle_root_is_dev_tree_in_tests():
+    root = bundle_root()
+    assert root.is_dir()
