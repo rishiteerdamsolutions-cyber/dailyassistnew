@@ -28,6 +28,16 @@ def is_frozen() -> bool:
     return False
 
 
+def is_cloud_deploy() -> bool:
+    """True on Vercel/serverless — no writable home dir (~/.aha)."""
+    return bool(os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"))
+
+
+def can_write_local_aha_state() -> bool:
+    """Desktop only — cloud API must not write ~/.aha (read-only sandbox)."""
+    return not is_cloud_deploy()
+
+
 def is_retail_build() -> bool:
     """True for customer desktop builds — disables dev license bypass."""
     if is_frozen():

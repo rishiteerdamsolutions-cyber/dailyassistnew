@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AHA — Sign in with Google</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
+            background: #0f0f10;
+            color: #ececf1;
+        }
+        .card {
+            max-width: 440px;
+            padding: 32px;
+            text-align: center;
+            border: 1px solid #27272a;
+            border-radius: 12px;
+            background: #18181b;
+        }
+        h1 { font-size: 1.5rem; margin: 0 0 8px; }
+        p { color: #a1a1aa; line-height: 1.5; margin: 0 0 20px; }
+        button {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            background: #4285f4;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        button:disabled { opacity: 0.6; cursor: wait; }
+        .ok { color: #4ade80; }
+        .warn { color: #fbbf24; }
+        .err { color: #f87171; margin-top: 12px; font-size: 0.9rem; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Sign in to AHA</h1>
+        <p id="status">Checking sign-in…</p>
+        <button id="google-btn" type="button" hidden>Continue with Google</button>
+        <div id="error" class="err" hidden></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+        import {
+            browserLocalPersistence,
+            getAuth,
+            getRedirectResult,
+            GoogleAuthProvider,
+            onAuthStateChanged,
+            setPersistence,
+            signInWithPopup,
+            signInWithRedirect,
+        } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+        const firebaseConfig = {
+            apiKey: 'AIzaSyA_6P1QftvmS3_KM0v5kkCUOo7KP1eHPKw',
+            authDomain: 'assist-daily.firebaseapp.com',
+            projectId: 'assist-daily',
+            storageBucket: 'assist-daily.firebasestorage.app',
+            messagingSenderId: '204177096003',
+            appId: '1:204177096003:web:03e82d5c4d5c8e489183f6',
+        };
+
+        const statusEl = document.getElementById('status');
+        const errorEl = document.getElementById('error');
+        const googleBtn = document.getElementById('google-btn');
+        const apiBase = window.location.origin;
+
+        const auth = getAuth(initializeApp(firebaseConfig));
+        const google = new GoogleAuthProvider();
+        google.setCustomParameters({ prompt: 'select_account' });
+
+        let finishing = false;
+
+        function showError(msg) {
+            errorEl.textContent = msg;
+            errorEl.hidden = false;
+        }
+
+        function showReady() {
+            statusEl.textContent = 'Sign in with the Google account you used at dailyassist.xyz/subscribe.';
+            googleBtn.hidden = false;
+        }
+
+        async function finishSignIn(user) {
+            if (finishing) return;
+            finishing = true;
+            googleBtn.disabled = true;
+            googleBtn.hidden = true;
+            errorEl.hidden = true;
+            statusEl.textContent = 'Linking your account to AHA…';
+
+            const idToken = await user.getIdToken(true);
+
+            const signinRes = await fetch(`${apiBase}/api/auth/firebase_signin`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_token: idToken }),
+            });
+            const signinData = await signinRes.json();
+            if (signinData.status === 'error') {
+                finishing = false;
+                throw new Error(signinData.message || 'Could not verify sign-in with AHA.');
+            }
+
+            const syncRes = await fetch(`${apiBase}/api/license/sync`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_token: idToken }),
+            });
+            const syncData = await syncRes.json();
+
+            if (syncData.valid) {
+                statusEl.innerHTML = '<span class="ok">All set.</span> Close this tab and return to the AHA app.';
+                return;
+            }
+
+            const email = signinData.email || user.email || 'your account';
+            if (syncData.reason === 'no_subscription') {
+                statusEl.innerHTML =
+                    `<span class="warn">Signed in as ${email}, but no active subscription found.</span><br>` +
+                    'Subscribe at <a href="https://www.dailyassist.xyz/subscribe" style="color:#60a5fa">dailyassist.xyz/subscribe</a>, ' +
+                    'then return to AHA or paste your license key there.';
+                return;
+            }
+            if (syncData.reason === 'expired') {
+                statusEl.innerHTML =
+                    `<span class="warn">Signed in as ${email}, but your subscription has ended.</span><br>` +
+                    'Renew at <a href="https://www.dailyassist.xyz/subscribe" style="color:#60a5fa">dailyassist.xyz/subscribe</a>.';
+                return;
+            }
+
+            statusEl.innerHTML =
+                `<span class="ok">Signed in as ${email}.</span> Return to the AHA app. ` +
+                'If it stays locked, paste your license key on the sign-in screen.';
+            if (syncData.message) {
+                showError(syncData.message);
+            }
+        }
+
+        async function handleUser(user) {
+            if (!user) return;
+            try {
+                await finishSignIn(user);
+            } catch (e) {
+                finishing = false;
+                googleBtn.hidden = false;
+                googleBtn.disabled = false;
+                showError((e.message || String(e)).replace('Firebase: ', ''));
+                statusEl.textContent = 'Sign-in failed. Try again.';
+            }
+        }
+
+        googleBtn.addEventListener('click', async () => {
+            errorEl.hidden = true;
+            googleBtn.disabled = true;
+            statusEl.textContent = 'Opening Google sign-in…';
+            try {
+                await signInWithPopup(auth, google);
+            } catch (popupErr) {
+                try {
+                    await signInWithRedirect(auth, google);
+                } catch (redirectErr) {
+                    googleBtn.disabled = false;
+                    showError((redirectErr.message || popupErr.message || 'Sign-in failed').replace('Firebase: ', ''));
+                    statusEl.textContent = 'Could not start Google sign-in.';
+                }
+            }
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) handleUser(user);
+        });
+
+        await setPersistence(auth, browserLocalPersistence);
+        await auth.authStateReady();
+
+        try {
+            const result = await getRedirectResult(auth);
+            if (result?.user) {
+                await handleUser(result.user);
+            } else if (auth.currentUser) {
+                await handleUser(auth.currentUser);
+            } else {
+                showReady();
+            }
+        } catch (e) {
+            showReady();
+            showError((e.message || String(e)).replace('Firebase: ', ''));
+        }
+    </script>
+</body>
+</html>

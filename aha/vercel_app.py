@@ -69,7 +69,10 @@ async def firebase_signin(req: _FirebaseSigninRequest):
         uid = claims["uid"]
         email = claims.get("email", "")
         name = claims.get("name") or claims.get("display_name", "")
-        upsert_user(uid, email, name)
+        try:
+            upsert_user(uid, email, name)
+        except Exception:
+            pass
         from aha.firebase_session import save_firebase_session
 
         save_firebase_session(id_token=req.id_token, uid=uid, email=email)

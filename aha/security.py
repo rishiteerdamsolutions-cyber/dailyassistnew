@@ -52,6 +52,7 @@ _OPEN_EXACT = {
 _OPEN_PREFIXES = (
     "/api/license",
     "/api/auth",       # Firebase sign-in — no session token yet
+    "/api/system",     # Open macOS privacy settings from companion
     "/api/config",     # BYOK key management (session token added separately)
     "/api/local",      # Tier-1 project registry + SSH setup
     "/api/billing",    # Razorpay — Firebase Bearer on create/verify; webhook unsigned

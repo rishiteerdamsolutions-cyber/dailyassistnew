@@ -51,6 +51,7 @@ echo [INFO] Compiling AHA.exe with Nuitka...
   --include-package=psutil ^
   --include-package=uvicorn ^
   --include-package=fastapi ^
+  --include-package=multipart ^
   --include-package=starlette ^
   --include-package=pydantic ^
   --include-package=pydantic_settings ^

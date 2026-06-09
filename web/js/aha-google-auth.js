@@ -4,7 +4,6 @@
  */
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import {
-  authStateReady,
   browserLocalPersistence,
   getAuth,
   getRedirectResult,
@@ -44,7 +43,7 @@ export async function initGoogleAuth() {
     console.warn('Google redirect sign-in:', e?.message || e);
   }
 
-  await authStateReady(auth);
+  await auth.authStateReady();
 
   return { auth, google };
 }

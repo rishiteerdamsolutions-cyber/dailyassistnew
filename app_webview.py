@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 import socket
 import sys
+import webbrowser
 
 
 def _bootstrap_retail_build() -> None:
@@ -144,6 +145,16 @@ class Api:
                 pass
             finally:
                 self._browser_window = None
+
+    def open_external_browser(self, url: str) -> None:
+        """Open Google sign-in in Safari/Chrome — embedded webviews are blocked by Google."""
+        webbrowser.open(url)
+
+    def open_system_settings(self, pane: str) -> None:
+        """Open macOS Accessibility or Screen Recording settings."""
+        from aha.system_settings import open_privacy_pane
+
+        open_privacy_pane((pane or "").strip().lower())
 
 
 def _macos_request_accessibility_prompt() -> None:

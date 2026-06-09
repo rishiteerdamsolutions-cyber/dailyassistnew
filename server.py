@@ -78,7 +78,10 @@ async def firebase_signin(req: FirebaseSigninRequest):
         uid   = claims["uid"]
         email = claims.get("email", "")
         name  = claims.get("name") or claims.get("display_name", "")
-        upsert_user(uid, email, name)
+        try:
+            upsert_user(uid, email, name)
+        except Exception:
+            pass  # retail desktop has no Supabase service key
         from aha.firebase_session import save_firebase_session
 
         save_firebase_session(id_token=req.id_token, uid=uid, email=email)
@@ -125,7 +128,7 @@ def _inject_aha_session(html: str) -> str:
         "var _f=window.fetch.bind(window);"
         "window.fetch=function(input,init){init=init||{};try{"
         "var u=(typeof input==='string')?input:((input&&input.url)||'');"
-        "if(u.indexOf('127.0.0.1:8000')!==-1||u.indexOf('localhost:8000')!==-1||u.charAt(0)==='/'){"
+        "if(/^https?:\\/\\/(127\\.0\\.0\\.1|localhost)(:\\d+)?\\//.test(u)||u.charAt(0)==='/'){"
         "var h=new Headers(init.headers||{});h.set('X-AHA-Token',window.AHA_TOKEN);init.headers=h;}"
         "}catch(e){}return _f(input,init);};})();</script>"
     )
@@ -173,6 +176,12 @@ def serve_demo_dashboard():
 @app.get("/companion")
 def serve_companion():
     return _html_page("companion.html")
+
+
+@app.get("/auth/desktop")
+def serve_auth_desktop():
+    """Google sign-in in the system browser (pywebview blocks embedded OAuth)."""
+    return _html_page("auth-desktop.html")
 
 @app.get("/subscribe")
 def serve_subscribe():

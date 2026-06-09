@@ -15,6 +15,10 @@ def save_firebase_session(
     uid: str,
     email: str = "",
 ) -> None:
+    from aha.runtime_paths import can_write_local_aha_state
+
+    if not can_write_local_aha_state():
+        return
     token = (id_token or "").strip()
     if not token:
         return

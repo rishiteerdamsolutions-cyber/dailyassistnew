@@ -47,6 +47,10 @@ def load_license() -> dict:
 
 def save_license(data: dict) -> None:
     """Persist *data* to the license file."""
+    from aha.runtime_paths import can_write_local_aha_state
+
+    if not can_write_local_aha_state():
+        return
     try:
         ensure_aha_dir()
         LICENSE_FILE.write_text(
@@ -57,14 +61,36 @@ def save_license(data: dict) -> None:
         print(f"[aha] Warning: could not write license file: {exc}")
 
 
+def _as_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
 def _local_license_expired(data: dict) -> bool:
     from aha.subscription import is_expired
 
-    return is_expired(data.get("expires"))
+    try:
+        return is_expired(data.get("expires"))
+    except (TypeError, ValueError):
+        return False
 
 
 def _validate_license_cloud(license_key: str) -> Optional[dict]:
     """Check Supabase for a paid license row."""
+    from aha.supabase_client import SUPABASE_SERVICE_KEY, SUPABASE_URL
+
+    if not (SUPABASE_URL and SUPABASE_SERVICE_KEY):
+        try:
+            from aha.cloud_client import cloud_license_validate
+
+            result = cloud_license_validate(license_key)
+            if not result.get("valid"):
+                return result if result.get("reason") == "expired" else None
+            return result
+        except Exception:
+            return None
+
     try:
         from aha.supabase_client import deactivate_license, get_supabase_admin
         from aha.subscription import license_row_is_active
@@ -130,7 +156,10 @@ def sync_license_for_uid(uid: str) -> dict:
             "expires": row.get("expires_at"),
             "reason": None,
         }
-        save_license_from_cloud(key, result.get("plan", "core"), result.get("expires"))
+        from aha.runtime_paths import can_write_local_aha_state
+
+        if can_write_local_aha_state():
+            save_license_from_cloud(key, result.get("plan", "core"), result.get("expires"))
         return {**result, "license_key": key}
     except Exception as exc:
         return {"valid": False, "reason": "sync_failed", "message": str(exc)}
@@ -161,13 +190,15 @@ def validate_license(license_key: str) -> dict:
             "reason": "invalid_key",
         }
 
-    # Persist alongside a timestamp so we can cache / grace-period later.
-    license_data = {
-        **result,
-        "license_key": license_key,
-        "last_validated": now_iso,
-    }
-    save_license(license_data)
+    from aha.runtime_paths import can_write_local_aha_state
+
+    if can_write_local_aha_state():
+        license_data = {
+            **result,
+            "license_key": license_key,
+            "last_validated": now_iso,
+        }
+        save_license(license_data)
 
     return result
 
@@ -210,7 +241,9 @@ def check_license_status() -> dict:
     last_validated_str = data.get("last_validated")
     if last_validated_str:
         try:
-            last_ts = datetime.fromisoformat(last_validated_str)
+            last_ts = _as_utc(
+                datetime.fromisoformat(str(last_validated_str).replace("Z", "+00:00"))
+            )
             age_hours = (
                 datetime.now(timezone.utc) - last_ts
             ).total_seconds() / 3600.0

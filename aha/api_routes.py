@@ -91,21 +91,94 @@ async def license_validate(body: LicenseKeyRequest) -> dict:
     return validate_license(body.license_key)
 
 
+def _use_cloud_license_api() -> bool:
+    from aha.supabase_client import SUPABASE_SERVICE_KEY, SUPABASE_URL
+
+    return not (SUPABASE_URL and SUPABASE_SERVICE_KEY)
+
+
 @router.post("/license/activate")
 async def license_activate(body: LicenseKeyRequest) -> dict:
     """Validate *and* persist a license key."""
+    if _use_cloud_license_api():
+        from aha.cloud_client import cloud_license_activate
+        from aha.license import save_license
+
+        try:
+            result = cloud_license_activate(body.license_key)
+            if result.get("valid"):
+                save_license(
+                    {
+                        **result,
+                        "license_key": body.license_key,
+                        "source": "cloud",
+                    }
+                )
+            return result
+        except RuntimeError as exc:
+            return {"valid": False, "reason": "sync_failed", "message": str(exc)}
     return activate_license(body.license_key)
+
+
+class OpenSettingsBody(BaseModel):
+    pane: str = Field(..., description="accessibility | screen")
+
+
+@router.post("/system/open-settings")
+async def system_open_settings(body: OpenSettingsBody) -> dict:
+    """Open macOS Privacy settings (pywebview blocks window.open for x-apple:// URLs)."""
+    from aha.system_settings import open_privacy_pane
+
+    pane = (body.pane or "").strip().lower()
+    if open_privacy_pane(pane):
+        return {"ok": True, "pane": pane}
+    return {"ok": False, "pane": pane, "message": "Could not open System Settings on this OS."}
+
+
+@router.get("/auth/check")
+async def auth_check() -> dict:
+    """Poll after system-browser sign-in from the desktop companion."""
+    from aha.firebase_session import load_firebase_id_token
+
+    token = load_firebase_id_token()
+    if not token:
+        return {"authenticated": False, "license_valid": False}
+    status = check_license_status()
+    return {
+        "authenticated": True,
+        "license_valid": bool(status.get("valid")),
+        "license": status,
+    }
 
 
 @router.get("/license/status")
 async def license_status() -> dict:
     """Return the current license status (cached or re-validated)."""
-    return check_license_status()
+    try:
+        return check_license_status()
+    except Exception as exc:
+        return {"valid": False, "reason": "license_check_failed", "message": str(exc)}
 
 
 @router.post("/license/sync")
 async def license_sync_cloud(body: FirebaseTokenBody) -> dict:
     """After Firebase sign-in, pull paid subscription from Supabase to this device."""
+    if _use_cloud_license_api():
+        from aha.cloud_client import cloud_license_sync
+        from aha.license import save_license_from_cloud
+
+        try:
+            result = cloud_license_sync(body.id_token)
+            if result.get("valid") and result.get("license_key"):
+                save_license_from_cloud(
+                    result["license_key"],
+                    result.get("plan", "core"),
+                    result.get("expires"),
+                )
+            return result
+        except RuntimeError as exc:
+            return {"valid": False, "reason": "sync_failed", "message": str(exc)}
+
     from aha.firebase_auth import verify_firebase_token
 
     try:

@@ -108,6 +108,32 @@ def check_platform_limit(platform: str, *, license_key: str | None = None) -> di
     return result
 
 
+def verify_firebase_via_cloud(id_token: str) -> dict:
+    """Retail desktop: verify Google token on dailyassist.xyz (no local Firebase JSON)."""
+    result = _post("/api/auth/firebase_signin", {"id_token": id_token})
+    if result.get("status") != "ok":
+        raise ValueError(result.get("message", "Sign-in verification failed"))
+    return {
+        "uid": result["uid"],
+        "email": result.get("email", ""),
+    }
+
+
+def cloud_license_sync(id_token: str) -> dict:
+    """Pull subscription license from cloud after Firebase sign-in."""
+    return _post("/api/license/sync", {"id_token": id_token})
+
+
+def cloud_license_activate(license_key: str) -> dict:
+    """Validate and activate a license key via cloud (retail has no Supabase service key)."""
+    return _post("/api/license/activate", {"license_key": license_key})
+
+
+def cloud_license_validate(license_key: str) -> dict:
+    """Validate a license key via cloud without persisting locally."""
+    return _post("/api/license/validate", {"license_key": license_key})
+
+
 def confirm_platform_post(
     platform: str,
     *,

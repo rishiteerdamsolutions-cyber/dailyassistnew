@@ -137,13 +137,18 @@ def _init_firebase() -> None:
 def verify_firebase_token(id_token: str) -> dict:
     """Verify a Firebase ID token and return the decoded claims dict.
 
+    Retail builds without a local service-account file verify via dailyassist.xyz.
     Raises ValueError on invalid / expired tokens.
     """
-    _init_firebase()
-    from firebase_admin import auth
-
     try:
+        _init_firebase()
+        from firebase_admin import auth
+
         return auth.verify_id_token(id_token)
+    except RuntimeError:
+        from aha.cloud_client import verify_firebase_via_cloud
+
+        return verify_firebase_via_cloud(id_token)
     except Exception as exc:
         raise ValueError(f"Invalid Firebase token: {exc}") from exc
 

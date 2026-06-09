@@ -739,10 +739,11 @@
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.75);
-            z-index: 10000;
+            z-index: 20001;
             align-items: center;
             justify-content: center;
             padding: 24px;
+            pointer-events: auto;
         }
         .permissions-box {
             max-width: 520px;
@@ -751,6 +752,9 @@
             border-radius: 12px;
             padding: 28px;
             color: var(--text-primary);
+            pointer-events: auto;
+            position: relative;
+            z-index: 20002;
         }
         .permissions-box h3 { margin: 0 0 12px; color: #3b82f6; }
         .permissions-box p, .permissions-box li {
@@ -841,10 +845,12 @@
 
             <div id="auth-email-form">
                 <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:16px;">Use the same Google account you used at <a href="https://www.dailyassist.xyz/subscribe" style="color:#60a5fa;">dailyassist.xyz/subscribe</a>.</p>
-                <button class="license-btn" id="auth-google-btn" style="background:#4285f4; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <a class="license-btn" id="auth-google-btn" href="/auth/desktop" target="_blank" rel="noopener noreferrer"
+                   style="background:#4285f4; display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; color:#fff;">
                     <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#fff" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.6 20-21 0-1.4-.2-2.7-.5-4z"/></svg>
                     Sign in with Google
-                </button>
+                </a>
+                <p style="font-size:0.8rem;color:var(--text-secondary);margin-top:12px;">Opens Safari — complete sign-in there, then return here.</p>
             </div>
 
             <div class="license-error" id="auth-error"></div>
@@ -872,12 +878,59 @@
             </ul>
             <p id="permissions-platform-note" style="font-size: 0.8rem;"></p>
             <div class="permissions-actions">
-                <button type="button" class="btn-primary" id="perms-open-accessibility">Open Accessibility Settings</button>
-                <button type="button" class="btn-secondary" id="perms-open-screen">Open Screen Recording Settings</button>
-                <button type="button" class="btn-secondary" id="perms-dismiss">I&rsquo;ve granted these — continue</button>
+                <a class="btn-primary" href="/static/open-accessibility.html" target="_blank" rel="noopener noreferrer" id="perms-open-accessibility" style="text-decoration:none;color:#fff;display:inline-block;">Open Accessibility Settings</a>
+                <a class="btn-secondary" href="/static/open-screen-recording.html" target="_blank" rel="noopener noreferrer" id="perms-open-screen" style="text-decoration:none;color:#fff;display:inline-block;">Open Screen Recording Settings</a>
+                <button type="button" class="btn-secondary" id="perms-dismiss"
+                    onclick="var o=document.getElementById('permissions-overlay');if(o)o.style.display='none';try{localStorage.setItem('aha_permissions_ack_v1','1')}catch(e){}var g=document.getElementById('auth-gate');if(g)g.style.display='flex';">I&rsquo;ve granted these — continue</button>
             </div>
         </div>
     </div>
+    <script>
+        (function () {
+            const PERMS_KEY = 'aha_permissions_ack_v1';
+            const overlay = document.getElementById('permissions-overlay');
+            const authGate = document.getElementById('auth-gate');
+            const apiOrigin = window.location.origin || 'http://127.0.0.1:8000';
+
+            function showPermissionsGuide() {
+                if (overlay) overlay.style.display = 'flex';
+            }
+            function hidePermissionsGuide(remember) {
+                if (overlay) overlay.style.display = 'none';
+                if (remember) try { localStorage.setItem(PERMS_KEY, '1'); } catch (_) {}
+                if (authGate) authGate.style.display = 'flex';
+            }
+
+            window.__ahaPermissions = { show: showPermissionsGuide, hide: hidePermissionsGuide };
+
+            var dismissBtn = document.getElementById('perms-dismiss');
+            if (dismissBtn && !dismissBtn.getAttribute('onclick')) {
+                dismissBtn.addEventListener('click', function () { hidePermissionsGuide(true); });
+            }
+
+            // Poll after Google sign-in in Safari
+            setInterval(function () {
+                fetch(apiOrigin + '/api/auth/check').then(function (r) { return r.json(); }).then(function (data) {
+                    if (data.license_valid && authGate) {
+                        authGate.style.display = 'none';
+                    } else if (data.authenticated && authGate) {
+                        var err = document.getElementById('auth-error');
+                        if (err && data.license && !data.license_valid) {
+                            err.textContent = data.license.reason === 'no_subscription'
+                                ? 'No subscription on this Google account. Subscribe at dailyassist.xyz/subscribe or enter your license key below.'
+                                : 'Sign-in OK — enter your license key below or subscribe at dailyassist.xyz/subscribe.';
+                            err.style.display = 'block';
+                            var lic = document.getElementById('auth-license-section');
+                            if (lic) lic.style.display = 'block';
+                            authGate.style.display = 'flex';
+                        }
+                    }
+                }).catch(function () {});
+            }, 3000);
+
+            // Do not auto-block the app — open via Settings → System permissions
+        })();
+    </script>
 
     <!-- Settings Modal -->
     <div class="settings-overlay" id="settings-overlay">
@@ -1697,54 +1750,19 @@
         }
         applyProductMode();
 
-        // ── Permissions onboarding (macOS / Windows) ─────────────────
-        const PERMS_STORAGE_KEY = 'aha_permissions_ack_v1';
-        const permissionsOverlay = document.getElementById('permissions-overlay');
-        const permsDismiss = document.getElementById('perms-dismiss');
-        const permsOpenA11y = document.getElementById('perms-open-accessibility');
-        const permsOpenScreen = document.getElementById('perms-open-screen');
+        // ── Permissions onboarding (handlers in early script above) ───
         const permsPlatformNote = document.getElementById('permissions-platform-note');
         const isMac = navigator.platform.toLowerCase().includes('mac') ||
             navigator.userAgent.toLowerCase().includes('mac');
-
-        function showPermissionsGuide() {
-            if (permissionsOverlay) permissionsOverlay.style.display = 'flex';
-        }
-        function hidePermissionsGuide(remember) {
-            if (permissionsOverlay) permissionsOverlay.style.display = 'none';
-            if (remember) localStorage.setItem(PERMS_STORAGE_KEY, '1');
-        }
         if (permsPlatformNote) {
             permsPlatformNote.textContent = isMac
                 ? 'On Mac: enable AHA in each list after opening Settings (System Settings may show it as AHA or Python).'
                 : 'On Windows: allow AHA when prompted; add the AHA folder to antivirus exclusions if clicks are blocked.';
         }
-        if (permsOpenA11y) {
-            permsOpenA11y.addEventListener('click', () => {
-                if (isMac) {
-                    window.open('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility');
-                } else {
-                    alert('Open Settings → Privacy → Accessibility and allow AHA (or Python).');
-                }
-            });
-        }
-        if (permsOpenScreen) {
-            permsOpenScreen.addEventListener('click', () => {
-                if (isMac) {
-                    window.open('x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture');
-                } else {
-                    alert('Open Settings → Privacy → Screen capture and allow AHA.');
-                }
-            });
-        }
-        if (permsDismiss) {
-            permsDismiss.addEventListener('click', () => hidePermissionsGuide(true));
-        }
         if (settingsPermissionsHelp) {
-            settingsPermissionsHelp.addEventListener('click', () => showPermissionsGuide());
-        }
-        if (!localStorage.getItem(PERMS_STORAGE_KEY)) {
-            setTimeout(showPermissionsGuide, 800);
+            settingsPermissionsHelp.addEventListener('click', () => {
+                window.__ahaPermissions?.show?.();
+            });
         }
 
         // Check license on load (local file; cloud sync runs after Firebase sign-in)
@@ -2044,12 +2062,23 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
         import {
+            browserLocalPersistence,
             getAuth,
+            getRedirectResult,
             signInWithPopup,
+            signInWithRedirect,
             GoogleAuthProvider,
             onAuthStateChanged,
+            setPersistence,
             signOut
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+        const POPUP_FALLBACK_CODES = new Set([
+            'auth/popup-blocked',
+            'auth/popup-closed-by-user',
+            'auth/cancelled-popup-request',
+            'auth/operation-not-supported-in-this-environment',
+        ]);
 
         const firebaseConfig = {
             apiKey: "AIzaSyA_6P1QftvmS3_KM0v5kkCUOo7KP1eHPKw",
@@ -2065,6 +2094,14 @@
         const auth   = getAuth(fbApp);
         const google = new GoogleAuthProvider();
         google.setCustomParameters({ prompt: 'select_account' });
+
+        await setPersistence(auth, browserLocalPersistence);
+        try {
+            await getRedirectResult(auth);
+        } catch (e) {
+            console.warn('Google redirect sign-in:', e?.message || e);
+        }
+        await auth.authStateReady();
 
         // ── DOM refs ────────────────────────────────────────────────
         const authGate          = document.getElementById('auth-gate');
@@ -2183,15 +2220,78 @@
             }
         });
 
-        // ── Google sign-in ───────────────────────────────────────────
-        authGoogleBtn.addEventListener('click', async () => {
-            clearAuthError();
-            try {
-                await signInWithPopup(auth, google);
-            } catch (e) {
-                showAuthError(e.message.replace('Firebase: ', ''));
+        const apiOrigin = window.location.origin || 'http://127.0.0.1:8000';
+        const isDesktopApp = typeof window.pywebview !== 'undefined';
+        let authPollTimer = null;
+
+        function stopAuthPoll() {
+            if (authPollTimer) {
+                clearInterval(authPollTimer);
+                authPollTimer = null;
             }
-        });
+        }
+
+        function startAuthPoll() {
+            stopAuthPoll();
+            authPollTimer = setInterval(async () => {
+                try {
+                    const res = await fetch(`${apiOrigin}/api/auth/check`);
+                    const data = await res.json();
+                    if (data.license_valid) {
+                        stopAuthPoll();
+                        clearAuthError();
+                        authGate.style.display = 'none';
+                        licenseError.style.display = 'none';
+                    } else if (data.authenticated && data.license) {
+                        showSubscriptionRequired(data.license);
+                    }
+                } catch (_) {}
+            }, 2000);
+        }
+
+        function openBrowserSignIn() {
+            const url = `${apiOrigin}/auth/desktop`;
+            showAuthError('Complete sign-in in Safari or Chrome, then return to this window.');
+            if (window.pywebview?.api?.open_external_browser) {
+                window.pywebview.api.open_external_browser(url);
+            } else {
+                window.open(url, '_blank', 'noopener,noreferrer');
+            }
+            startAuthPoll();
+        }
+
+        function shouldUseBrowserSignIn(err) {
+            if (isDesktopApp) return true;
+            const msg = (err?.message || '').toLowerCase();
+            return POPUP_FALLBACK_CODES.has(err?.code)
+                || msg.includes('disallowed')
+                || msg.includes('embedded')
+                || msg.includes('secure browser');
+        }
+
+        // Google sign-in uses <a href="/auth/desktop" target="_blank"> — Safari opens via pywebview.
+        if (authGoogleBtn && authGoogleBtn.tagName !== 'A') {
+            authGoogleBtn.addEventListener('click', async () => {
+                clearAuthError();
+                if (isDesktopApp) {
+                    openBrowserSignIn();
+                    return;
+                }
+                try {
+                    await signInWithPopup(auth, google);
+                } catch (e) {
+                    if (shouldUseBrowserSignIn(e)) {
+                        openBrowserSignIn();
+                        return;
+                    }
+                    let msg = (e.message || String(e)).replace('Firebase: ', '');
+                    if (e.code === 'auth/unauthorized-domain') {
+                        msg += ' In Firebase Console, add 127.0.0.1 under Authentication → Authorized domains.';
+                    }
+                    showAuthError(msg);
+                }
+            });
+        }
 
         // ── License activation ───────────────────────────────────────
         licenseActivateBtn.addEventListener('click', async () => {

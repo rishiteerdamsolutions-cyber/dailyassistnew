@@ -20,6 +20,8 @@ def is_expired(expires_at: Any, *, now: Optional[datetime] = None) -> bool:
     exp = parse_expires_at(expires_at)
     if exp is None:
         return False
+    if exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)
     now = now or datetime.now(timezone.utc)
     return exp < now
 
