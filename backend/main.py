@@ -55,7 +55,51 @@ class AgentChatRequest(BaseModel):
 @app.post("/api/agent/chat")
 def agent_chat(req: AgentChatRequest):
     global GLOBAL_GOAL, AGENT_RESPONSE
-    GLOBAL_GOAL = req.text
+    
+    if "instagram" in req.text.lower() or "post" in req.text.lower():
+        import datetime
+        now = datetime.datetime.now()
+        year, month, day = now.year, now.month, now.day
+        
+        slots_dir = get_slots_dir()
+        target_slot = None
+        for entry in slots_dir.iterdir():
+            if entry.is_dir():
+                target_slot = entry.name
+                break
+                
+        caption = "Testing AHA Cloud Brain!"
+        image_url = "https://picsum.photos/400/400" # fallback
+        
+        if target_slot:
+            slot_dir = slots_dir / target_slot / str(year) / str(month)
+            txt_path = slot_dir / "Texts" / f"{day}.txt"
+            if txt_path.exists():
+                try:
+                    caption = txt_path.read_text(encoding="utf-8").strip()
+                except:
+                    pass
+                
+            img_dir = slot_dir / "Images"
+            if img_dir.exists():
+                for ext in [".png", ".jpg", ".jpeg", ".webp", ".gif"]:
+                    if (img_dir / f"{day}{ext}").exists():
+                        image_url = f"https://aha-cloud-brain.onrender.com/api/vault/media/{target_slot}/{year}/{month}/{day}/image"
+                        break
+                        
+        GLOBAL_GOAL = f"""
+        Execute an Instagram Posting Workflow.
+        Step 1: Click the Windows Start Menu, type "Chrome", and press Enter to open the browser.
+        Step 2: Go to https://instagram.com.
+        Step 3: Click the 'Create' (+) button to make a new post.
+        Step 4: To get the image, open a NEW tab and go to: {image_url}. Right click the image and save it to the desktop as 'ig_post.jpg'.
+        Step 5: Go back to the Instagram tab, click 'Select from computer', and select 'ig_post.jpg' from the Desktop.
+        Step 6: Proceed to the caption screen and type exactly this caption: "{caption}"
+        Step 7: Click Share.
+        """
+    else:
+        GLOBAL_GOAL = req.text
+        
     AGENT_RESPONSE = f"Executing: {req.text}"
     return {
         "status": "success", 
@@ -97,14 +141,17 @@ async def websocket_endpoint(websocket: WebSocket):
                         width, height = img.size
                         
                         prompt = f"""
-                        The user's current goal is: "{GLOBAL_GOAL}"
-                        Look at the screen and determine the NEXT STEP to achieve this goal. 
+                        You are an AI agent controlling a Windows computer.
+                        The user's overall goal is: "{GLOBAL_GOAL}"
+                        
+                        Look at the current screen. Determine the SINGLE next step required.
+                        If the target app (e.g. Instagram, Chrome) is not visible, your next step should be clicking the Windows Start Menu or the Search bar so you can type the app name.
                         If you need to click something, return its bounding box in [ymin, xmin, ymax, xmax] format where values are 0-1000.
-                        If you need to type something after clicking, include it as "type_text".
-                        If the goal is achieved or no action is needed, return empty arrays/strings.
-                        Output ONLY a valid JSON object like:
-                        {{"box": [ymin, xmin, ymax, xmax], "type_text": "hello"}}
-                        Do not use markdown formatting like ```json.
+                        If you need to type something AFTER clicking, provide it in "type_text".
+                        If the overall goal has been completely achieved, set "status" to "COMPLETE". Otherwise, set "status" to "IN_PROGRESS".
+                        
+                        Output ONLY a valid JSON object. Do not use markdown blocks. Example:
+                        {{"box": [ymin, xmin, ymax, xmax], "type_text": "instagram", "status": "IN_PROGRESS"}}
                         """
                         
                         logging.info(f"Sending screenshot to Gemini Vision for goal: {GLOBAL_GOAL}...")
@@ -120,6 +167,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         data = json.loads(resp_text)
                         box = data.get("box")
                         type_text = data.get("type_text", "")
+                        status = data.get("status", "IN_PROGRESS")
                         
                         if box and len(box) == 4:
                             ymin, xmin, ymax, xmax = box
@@ -157,7 +205,8 @@ async def websocket_endpoint(websocket: WebSocket):
                             seq = ling_engine.generate_keystroke_sequence(payload)
                             bridge.execute_keystroke_sequence(seq.events)
                             
-                            # After typing, clear the goal to prevent infinite looping
+                        if status == "COMPLETE":
+                            logging.info(f"Goal COMPLETE: {GLOBAL_GOAL}")
                             GLOBAL_GOAL = None
                             
                     except Exception as e:
