@@ -1,0 +1,57 @@
+{
+  "version": "1.0",
+  "workflows": {
+    "linkedin_post": [
+      {"action": "navigate", "target": "https://www.linkedin.com/feed/"},
+      {"action": "click", "target": "T-Start a post"},
+      {"action": "click", "target": "ICON-linkedin_media"},
+      {"action": "upload_native", "target": "$FILE_PATH"},
+      {"action": "click", "target": "B-Next"},
+      {"action": "click", "target": "T-What do you want to talk about?"},
+      {"action": "type", "target": "$CAPTION"},
+      {"action": "click", "target": "B-Post"}
+    ],
+    "facebook_post": [
+      {"action": "navigate", "target": "https://www.facebook.com/"},
+      {"action": "click", "target": "T-What's on your mind"},
+      {"action": "click", "target": "ICON-facebook_media"},
+      {"action": "upload_native", "target": "$FILE_PATH"},
+      {"action": "click", "target": "B-Next"},
+      {"action": "click", "target": "T-What's on your mind"},
+      {"action": "type", "target": "$CAPTION"},
+      {"action": "click", "target": "B-Post"}
+    ],
+    "instagram_post": [
+      {"action": "navigate", "target": "https://www.instagram.com/"},
+      {"action": "click", "target": "ICON-instagram_plus"},
+      {"action": "click", "target": "T-Post"},
+      {"action": "click", "target": "B-Select from computer"},
+      {"action": "upload_native", "target": "$FILE_PATH"},
+      {"action": "click", "target": "ICON-instagram_aspect_ratio"},
+      {"action": "click", "target": "T-Original"},
+      {"action": "click", "target": "B-Next"},
+      {"action": "click", "target": "B-Next"},
+      {"action": "click_offset", "target": "B-Share", "offset_x": -100, "offset_y": -150},
+      {"action": "type", "target": "$CAPTION"},
+      {"action": "click", "target": "B-Share"}
+    ],
+    "x_post": [
+      {"action": "navigate", "target": "https://twitter.com/home"},
+      {"action": "click", "target": "T-What is happening?!"},
+      {"action": "type", "target": "$CAPTION"},
+      {"action": "click", "target": "ICON-x_media"},
+      {"action": "upload_native", "target": "$FILE_PATH"},
+      {"action": "click", "target": "Bup-B-Post"}
+    ],
+    "whatsapp_status": [
+      {"action": "navigate", "target": "https://web.whatsapp.com/"},
+      {"action": "click", "target": "ICON-whatsapp_status"},
+      {"action": "click", "target": "ICON-whatsapp_plus"},
+      {"action": "click", "target": "T-Photos & Videos"},
+      {"action": "upload_native", "target": "$FILE_PATH"},
+      {"action": "click", "target": "T-Add a caption"},
+      {"action": "type", "target": "$CAPTION"},
+      {"action": "click", "target": "ICON-whatsapp_send"}
+    ]
+  }
+}

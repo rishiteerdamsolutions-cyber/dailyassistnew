@@ -1,0 +1,91 @@
+{
+  "timezone": "Asia/Kolkata",
+  "holidays": [
+    {
+      "date": "2026-01-01",
+      "name": "New Year's Day",
+      "region": "US"
+    },
+    {
+      "date": "2026-01-19",
+      "name": "MLK Day",
+      "region": "US"
+    },
+    {
+      "date": "2026-02-16",
+      "name": "Presidents' Day",
+      "region": "US"
+    },
+    {
+      "date": "2026-05-25",
+      "name": "Memorial Day",
+      "region": "US"
+    },
+    {
+      "date": "2026-07-04",
+      "name": "Independence Day",
+      "region": "US"
+    },
+    {
+      "date": "2026-09-07",
+      "name": "Labor Day",
+      "region": "US"
+    },
+    {
+      "date": "2026-11-26",
+      "name": "Thanksgiving",
+      "region": "US"
+    },
+    {
+      "date": "2026-12-25",
+      "name": "Christmas",
+      "region": "US"
+    },
+    {
+      "date": "2026-01-26",
+      "name": "Republic Day",
+      "region": "IN"
+    },
+    {
+      "date": "2026-08-15",
+      "name": "Independence Day",
+      "region": "IN"
+    },
+    {
+      "date": "2026-10-02",
+      "name": "Gandhi Jayanti",
+      "region": "IN"
+    },
+    {
+      "date": "2026-10-31",
+      "name": "Diwali (approx)",
+      "region": "IN"
+    }
+  ],
+  "void_events": [
+    {
+      "start_date": "2026-06-27",
+      "end_date": "2026-06-28",
+      "reason": "vacation",
+      "duration_days": 2
+    },
+    {
+      "start_date": "2026-07-19",
+      "end_date": "2026-07-20",
+      "reason": "weekend_extension",
+      "duration_days": 2
+    },
+    {
+      "start_date": "2026-08-10",
+      "end_date": "2026-08-11",
+      "reason": "weekend_extension",
+      "duration_days": 2
+    }
+  ],
+  "weekend_days": [
+    5,
+    6
+  ],
+  "last_post_date": null,
+  "total_posts": 0
+}

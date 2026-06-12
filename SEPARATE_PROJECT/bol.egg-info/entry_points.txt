@@ -1,0 +1,2 @@
+[console_scripts]
+bol = bol.main:main

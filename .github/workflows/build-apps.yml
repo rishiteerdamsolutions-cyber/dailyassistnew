@@ -1,0 +1,53 @@
+name: Build Client Apps
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        cd client
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Build with PyInstaller
+      run: |
+        cd client
+        pyinstaller --onefile --windowed --name "AHA_Agent_Windows" client.py
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: AHA_Agent_Windows
+        path: client/dist/AHA_Agent_Windows.exe
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        cd client
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Build with PyInstaller
+      run: |
+        cd client
+        pyinstaller --onefile --windowed --name "AHA_Agent_Mac" client.py
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: AHA_Agent_Mac
+        path: client/dist/AHA_Agent_Mac.app

@@ -1,0 +1,392 @@
+# Dictionary of semantic intents for UI elements, symbols, and OS navigation
+# Generated based on Claude's architectural recommendations.
+
+NAVIGATION_SYMBOLS = {
+    "→": "proceed/next/forward",
+    "←": "back/previous/return", 
+    "↑": "up/scroll up/collapse",
+    "↓": "down/scroll down/expand",
+    "↗": "open in new tab/external link",
+    "↙": "back/return",
+    "⇒": "proceed/redirect",
+    "⇐": "go back",
+    ">": "next/expand/drill down",
+    "<": "back/collapse/return",
+    ">>": "skip to end/fast forward",
+    "<<": "skip to start/rewind",
+    "›": "next item/breadcrumb separator",
+    "‹": "previous item",
+    "»": "last page/skip forward",
+    "«": "first page/skip back",
+    "^": "scroll to top/collapse",
+    "v": "expand/dropdown/scroll down",
+}
+
+ACTION_SYMBOLS = {
+    "×": "close/dismiss/remove",
+    "✕": "close/dismiss/remove",
+    "✖": "close/dismiss/remove",
+    "X": "close/dismiss/remove",
+    "x": "close/remove/clear input",
+    "✓": "confirm/done/checked/success",
+    "✔": "confirm/done/checked",
+    "☑": "checked checkbox",
+    "✅": "success/verified/complete",
+    "+": "add/create/expand/zoom in",
+    "➕": "add/create new",
+    "⊕": "add/insert",
+    "−": "remove/subtract/collapse",
+    "➖": "remove/decrease",
+    "🗑": "delete/trash",
+    "⌫": "backspace/delete",
+    "✏": "edit/write/modify",
+    "✎": "edit/annotate",
+    "📝": "edit/notes/write",
+    "🖊": "edit/sign",
+    "💾": "save",
+    "📥": "save/download/import",
+    "📋": "clipboard/paste",
+    "⎘": "copy",
+    "↻": "refresh/reload/retry/rotate right",
+    "↺": "undo/rotate left/reset",
+    "🔄": "refresh/sync/reload",
+    "⟳": "refresh/loading",
+    "📤": "send/upload/share",
+    "📨": "send message",
+    "➤": "send/submit/go",
+}
+
+MEDIA_SYMBOLS = {
+    "▶": "play/start/run",
+    "▷": "play",
+    "⏸": "pause",
+    "⏹": "stop",
+    "⏺": "record",
+    "⏭": "skip next/fast forward",
+    "⏮": "skip previous/rewind",
+    "⏩": "fast forward",
+    "⏪": "rewind",
+    "🔀": "shuffle",
+    "🔁": "repeat/loop",
+    "🔂": "repeat once",
+    "⏏": "eject",
+    "🔇": "mute",
+    "🔈": "low volume",
+    "🔉": "medium volume",
+    "🔊": "high volume/unmute",
+}
+
+STATUS_SYMBOLS = {
+    "⏳": "loading/waiting/pending",
+    "⌛": "loading/timeout",
+    "🔃": "loading/syncing",
+    "⚠": "warning/caution",
+    "⚠️": "warning/caution",
+    "🚨": "critical alert/error",
+    "❗": "important/required",
+    "❕": "note/info",
+    "🔴": "error/offline/stop",
+    "🟡": "warning/pending/slow",
+    "🟢": "success/online/active",
+    "ℹ": "info/help/about",
+    "ℹ️": "info/about",
+    "?": "help/unknown/tooltip",
+    "❓": "help/faq/unknown",
+    "❔": "optional/unknown",
+    "🔒": "locked/secure/private",
+    "🔓": "unlocked/public",
+    "🛡": "security/protection/shield",
+    "🔐": "secured with key",
+    "👁": "show/preview/watch",
+    "👁️": "visible/preview",
+    "🙈": "hide/invisible",
+}
+
+SETTINGS_SYMBOLS = {
+    "⚙": "settings/preferences/config",
+    "⚙️": "settings/gear",
+    "🔧": "settings/tools/fix",
+    "🔨": "build/tools",
+    "🛠": "tools/maintenance",
+    "⛭": "settings/gear",
+    "🔍": "search/find/zoom in",
+    "🔎": "search/inspect/zoom in",
+    "⊟": "filter/minus",
+    "▼": "dropdown/sort descending/expand",
+    "▲": "sort ascending/collapse",
+    "☰": "hamburger menu/sidebar/nav",
+    "≡": "menu/options/list",
+    "⋮": "vertical more options/kebab menu",
+    "⋯": "horizontal more options/ellipsis",
+    "•••": "more options",
+    "...": "more/truncated/loading",
+    "⊞": "grid view/windows",
+    "▦": "grid view",
+    "☷": "list view",
+    "▤": "list view",
+    "⌂": "home/dashboard",
+    "🏠": "home",
+    "🏡": "home",
+    "👤": "profile/account/user",
+    "👥": "team/group/users",
+    "🧑": "user/person",
+    "🔔": "notifications/alerts on",
+    "🔕": "notifications off",
+    "📣": "announcement",
+    "📢": "broadcast/alert",
+}
+
+FILE_SYMBOLS = {
+    "📁": "folder/directory/open",
+    "📂": "open folder",
+    "📄": "document/file/page",
+    "📃": "document with curl",
+    "📑": "multiple documents",
+    "🗂": "file organizer/index",
+    "📊": "chart/analytics/report",
+    "📈": "growth/increase/analytics",
+    "📉": "decrease/loss/analytics",
+    "🗃": "file cabinet/archive",
+    "🗄": "database/server",
+    "💿": "disk/storage",
+    "💽": "minidisk/storage",
+    "📀": "optical disk",
+    "🖨": "print",
+    "📎": "attachment/paperclip",
+    "🖇": "linked/attached files",
+    "✂": "cut/clip",
+}
+
+COMMUNICATION_SYMBOLS = {
+    "✉": "email/message/compose",
+    "📧": "email",
+    "📩": "incoming message",
+    "📨": "envelope incoming",
+    "💬": "comment/chat/message",
+    "💭": "thought/draft",
+    "🗨": "speech bubble/comment",
+    "📞": "call/phone",
+    "📱": "mobile/SMS",
+    "📲": "incoming call/mobile",
+    "🖥": "desktop/screen",
+    "💻": "laptop/computer",
+    "⌨": "keyboard/type",
+    "🖱": "mouse/click",
+    "📡": "network/broadcast/signal",
+    "🔗": "link/URL/chain",
+    "🌐": "website/internet/global",
+    "📶": "signal strength/wifi bars",
+    "📵": "no signal/offline",
+}
+
+ECOMMERCE_SYMBOLS = {
+    "🛒": "shopping cart/add to cart",
+    "🛍": "shopping/purchase/bag",
+    "💳": "payment/card/checkout",
+    "💰": "price/money/cost",
+    "💵": "cash/payment",
+    "🏷": "price tag/label/discount",
+    "🎁": "gift/promo/reward",
+    "⭐": "rating/favorite/featured",
+    "★": "rating/star/favorite",
+    "☆": "empty rating/unfavorited",
+    "❤": "wishlist/like/favorite",
+    "♡": "unfavorited/empty like",
+    "👍": "like/approve/upvote",
+    "👎": "dislike/downvote",
+    "🔖": "bookmark/save for later",
+    "📌": "pin/save/important",
+}
+
+KEYBOARD_SYMBOLS = {
+    "⌘": "Command key (Mac)",
+    "⌃": "Control key",
+    "⌥": "Option/Alt key (Mac)",
+    "⇧": "Shift key",
+    "⇪": "Caps Lock",
+    "⏎": "Enter/Return",
+    "↵": "Enter/Return",
+    "⇥": "Tab",
+    "⎋": "Escape/Cancel",
+    "⌫": "Backspace/Delete",
+    "⌦": "Forward Delete",
+    "⇱": "Home",
+    "⇲": "End",
+    "⇞": "Page Up",
+    "⇟": "Page Down",
+    "␣": "Space",
+    "▤": "Menu key",
+}
+
+MASTER_SYMBOL_MAP = {
+    **NAVIGATION_SYMBOLS,
+    **ACTION_SYMBOLS,
+    **MEDIA_SYMBOLS,
+    **STATUS_SYMBOLS,
+    **SETTINGS_SYMBOLS,
+    **FILE_SYMBOLS,
+    **COMMUNICATION_SYMBOLS,
+    **ECOMMERCE_SYMBOLS,
+    **KEYBOARD_SYMBOLS,
+}
+
+UI_SEMANTIC_MAP = {
+    "Submit": "FORM_CONFIRM", "Save": "FORM_CONFIRM", "Apply": "FORM_CONFIRM", "Confirm": "FORM_CONFIRM", "Done": "FORM_CONFIRM", "Finish": "FORM_CONFIRM", "Complete": "FORM_CONFIRM", "Update": "FORM_CONFIRM", "Create": "FORM_CONFIRM",
+    "Next": "PROCEED", "Continue": "PROCEED", "Proceed": "PROCEED", "Forward": "PROCEED", "Go": "PROCEED", "Start": "PROCEED", "Begin": "PROCEED", "Launch": "PROCEED",
+    "Back": "GO_BACK", "Previous": "GO_BACK", "Return": "GO_BACK", "Undo": "GO_BACK", "Restore": "GO_BACK",
+    "Login": "AUTH_LOGIN", "Log In": "AUTH_LOGIN", "Sign In": "AUTH_LOGIN", "Enter": "AUTH_LOGIN", "Access": "AUTH_LOGIN",
+    "Sign Up": "AUTH_REGISTER", "Register": "AUTH_REGISTER", "Create Account": "AUTH_REGISTER", "Join": "AUTH_REGISTER", "Get Started": "AUTH_REGISTER",
+    "Delete": "DESTRUCTIVE", "Remove": "DESTRUCTIVE", "Deactivate": "DESTRUCTIVE", "Uninstall": "DESTRUCTIVE", "Wipe": "DESTRUCTIVE", "Purge": "DESTRUCTIVE", "Reset": "DESTRUCTIVE",
+    "Cancel": "CANCEL", "Discard": "CANCEL", "Abandon": "CANCEL", "No": "CANCEL", "Nope": "CANCEL", "Not Now": "CANCEL",
+    "Close": "DISMISS", "Exit": "DISMISS", "Skip": "DISMISS", "Later": "DISMISS", "Maybe Later": "DISMISS", "Remind Me Later": "DISMISS",
+    "Search": "SEARCH", "Find": "SEARCH", "Look Up": "SEARCH", "Query": "SEARCH", "Browse": "SEARCH", "Explore": "SEARCH", "Filter": "SEARCH",
+    "Buy": "PURCHASE", "Checkout": "PURCHASE", "Order": "PURCHASE", "Pay Now": "PURCHASE", "Purchase": "PURCHASE", "Add to Cart": "PURCHASE", "Proceed to Pay": "PURCHASE",
+    "More": "EXPAND", "Show More": "EXPAND", "See All": "EXPAND", "Expand": "EXPAND", "Load More": "EXPAND", "View All": "EXPAND",
+    "Upload": "UPLOAD", "Attach": "UPLOAD", "Browse Files": "UPLOAD", "Choose File": "UPLOAD", "Import": "UPLOAD", "Add File": "UPLOAD",
+    "Download": "DOWNLOAD", "Export": "DOWNLOAD", "Save As": "DOWNLOAD", "Get": "DOWNLOAD", "Fetch": "DOWNLOAD",
+    "Accept": "AGREE", "Agree": "AGREE", "Allow": "AGREE", "OK": "AGREE", "Yes": "AGREE", "Got It": "AGREE", "Understood": "AGREE", "I Agree": "AGREE",
+}
+
+LOCATION_WORDS = {
+    "Use current location": "AUTO_DETECT_GPS",
+    "Use my location": "AUTO_DETECT_GPS",
+    "Detect my location": "AUTO_DETECT_GPS",
+    "Locate me": "AUTO_DETECT_GPS",
+    "Current location": "AUTO_DETECT_GPS",
+    "Enable location": "GRANT_GPS_PERMISSION",
+    "Allow location access": "GRANT_GPS_PERMISSION",
+    "Share location": "GRANT_GPS_PERMISSION",
+    "Search for area, street name...": "ADDRESS_SEARCH_INPUT",
+    "Enter your area": "ADDRESS_SEARCH_INPUT",
+    "Add new address": "ADD_ADDRESS_ACTION",
+    "Add address": "ADD_ADDRESS_ACTION",
+    "Save address": "SAVE_ADDRESS_ACTION",
+    "Confirm location": "CONFIRM_LOCATION_BUTTON",
+    "Set location": "CONFIRM_LOCATION_BUTTON",
+    "Confirm & proceed": "CONFIRM_AND_PROCEED",
+    "Deliver here": "CONFIRM_LOCATION_BUTTON",
+    "Select this location": "CONFIRM_LOCATION_BUTTON",
+    "Home": "SAVED_ADDRESS_TYPE",
+    "Work": "SAVED_ADDRESS_TYPE",
+    "Other": "SAVED_ADDRESS_TYPE",
+    "Allow while using": "GRANT_PERMISSION_FOREGROUND",
+    "Only this time": "GRANT_PERMISSION_ONCE",
+    "Don't allow": "DENY_PERMISSION",
+    "While using app": "GRANT_PERMISSION_FOREGROUND",
+}
+
+MACOS_WORDS = {
+    "About This Mac": "SYSTEM_INFO",
+    "System Settings": "OPEN_SETTINGS",
+    "System Preferences": "OPEN_SETTINGS",
+    "App Store": "OPEN_APPSTORE",
+    "Recent Items": "RECENT_FILES_APPS",
+    "Force Quit": "FORCE_CLOSE_APP",
+    "Sleep": "SLEEP_MODE",
+    "Restart": "RESTART_SYSTEM",
+    "Shut Down": "SHUTDOWN_SYSTEM",
+    "Lock Screen": "LOCK_SESSION",
+    "Log Out": "LOGOUT_USER",
+    "Finder": "FILE_MANAGER",
+    "Launchpad": "APP_GRID",
+    "Mission Control": "WINDOW_OVERVIEW",
+    "Siri": "VOICE_ASSISTANT",
+    "New Finder Window": "OPEN_FILE_BROWSER",
+    "New Folder": "CREATE_FOLDER",
+    "Get Info": "FILE_PROPERTIES",
+    "Move to Trash": "DELETE_FILE",
+    "Empty Trash": "PERMANENT_DELETE",
+    "AirDrop": "WIRELESS_TRANSFER",
+    "iCloud Drive": "CLOUD_STORAGE",
+    "Applications": "INSTALLED_APPS_FOLDER",
+    "Downloads": "DOWNLOADS_FOLDER",
+    "Documents": "DOCUMENTS_FOLDER",
+    "Desktop": "DESKTOP_FOLDER",
+    "Notification Centre": "OPEN_NOTIFICATIONS_PANEL",
+    "Do Not Disturb": "MUTE_NOTIFICATIONS",
+    "Focus": "FOCUS_MODE",
+    "Clear All": "DISMISS_ALL_NOTIFICATIONS",
+}
+
+WINDOWS_WORDS = {
+    "Task View": "VIRTUAL_DESKTOPS_OVERVIEW",
+    "Widgets": "NEWS_WEATHER_PANEL",
+    "All apps": "FULL_APP_LIST",
+    "Hibernate": "DEEP_SLEEP_MODE",
+    "Sign out": "LOGOUT_USER",
+    "Switch user": "CHANGE_ACCOUNT",
+    "Taskbar settings": "OPEN_TASKBAR_CONFIG",
+    "Show desktop": "MINIMIZE_ALL_WINDOWS",
+    "Snap layouts": "WINDOW_TILING_OPTIONS",
+    "File Explorer": "FILE_MANAGER",
+    "Quick access": "PINNED_FREQUENT_FOLDERS",
+    "This PC": "LOCAL_DRIVES_VIEW",
+    "Recycle Bin": "DELETED_FILES_RECOVERY",
+    "Pin to Quick access": "BOOKMARK_FOLDER",
+    "Pin to Start": "ADD_TO_START_MENU",
+    "Extract All": "UNZIP_ARCHIVE",
+    "Compress": "CREATE_ZIP",
+    "Show hidden icons": "EXPAND_SYSTEM_TRAY",
+    "Airplane mode": "TOGGLE_AIRPLANE_MODE",
+    "Night light": "WARM_SCREEN_MODE",
+    "Nearby sharing": "WIRELESS_FILE_TRANSFER",
+    "Mobile hotspot": "SHARE_INTERNET",
+    "Windows Security": "ANTIVIRUS_FIREWALL",
+    "Virus & threat protection": "ANTIVIRUS_SCAN",
+}
+
+SOCIAL_MEDIA_WORDS = {
+    "Post": "SOCIAL_PUBLISH",
+    "Publish": "SOCIAL_PUBLISH",
+    "Tweet": "SOCIAL_PUBLISH",
+    "Share": "SOCIAL_SHARE",
+    "Send": "SOCIAL_SEND",
+    "Direct Message": "SOCIAL_DM",
+    "Message": "SOCIAL_DM",
+    "Chat": "SOCIAL_DM",
+    "Like": "SOCIAL_LIKE",
+    "Love": "SOCIAL_LIKE",
+    "Comment": "SOCIAL_COMMENT",
+    "Reply": "SOCIAL_COMMENT",
+    "Retweet": "SOCIAL_REPOST",
+    "Repost": "SOCIAL_REPOST",
+    "Follow": "SOCIAL_FOLLOW",
+    "Connect": "SOCIAL_FOLLOW",
+    "Add Friend": "SOCIAL_FOLLOW",
+    "Subscribe": "SOCIAL_FOLLOW",
+    "Create Post": "SOCIAL_CREATE",
+    "What's on your mind?": "SOCIAL_CREATE",
+    "Write something...": "SOCIAL_CREATE",
+    "Start a post": "SOCIAL_CREATE",
+    "What is happening?!": "SOCIAL_CREATE",
+}
+
+from typing import Optional
+
+def get_semantic_intent(word: str) -> Optional[str]:
+    """Check all dictionaries for a semantic meaning for a word or symbol."""
+    if not word: return None
+    
+    # Check exact symbol matches
+    if word in MASTER_SYMBOL_MAP:
+        return MASTER_SYMBOL_MAP[word]
+        
+    # Check word maps (case insensitive)
+    word_lower = word.lower()
+    
+    for k, v in UI_SEMANTIC_MAP.items():
+        if k.lower() == word_lower: return v
+        
+    for k, v in LOCATION_WORDS.items():
+        if k.lower() == word_lower: return v
+        
+    for k, v in MACOS_WORDS.items():
+        if k.lower() == word_lower: return v
+        
+    for k, v in WINDOWS_WORDS.items():
+        if k.lower() == word_lower: return v
+        
+    for k, v in SOCIAL_MEDIA_WORDS.items():
+        if k.lower() == word_lower: return v
+        
+    return None
