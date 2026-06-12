@@ -11,7 +11,7 @@ from PyQt6.QtCore import Qt, QUrl, QTimer, pyqtSignal, QObject
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage, QWebEngineScript
 
-SERVER_URL = "http://127.0.0.1:8000"
+SERVER_URL = "https://aha-cloud-brain.onrender.com"
 
 class WorkerSignals(QObject):
     response_received = pyqtSignal(dict)
