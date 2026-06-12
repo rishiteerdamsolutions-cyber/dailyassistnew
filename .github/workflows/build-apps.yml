@@ -22,7 +22,7 @@ jobs:
     - name: Build with PyInstaller
       run: |
         cd client
-        pyinstaller --onefile --windowed --name "AHA_Agent_Windows" client.py
+        pyinstaller --onefile --console --name "AHA_Agent_Windows" client.py
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
@@ -45,7 +45,7 @@ jobs:
     - name: Build with PyInstaller
       run: |
         cd client
-        pyinstaller --onefile --windowed --name "AHA_Agent_Mac" client.py
+        pyinstaller --onefile --console --name "AHA_Agent_Mac" client.py
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:

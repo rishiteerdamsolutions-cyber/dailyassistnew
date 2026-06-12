@@ -117,45 +117,48 @@ def execute_command(command):
         logging.warning(f"Unknown command action: {action}")
 
 async def run_client():
-    logging.info(f"Connecting to Cloud Brain at {SERVER_URI}...")
-    try:
-        async with websockets.connect(SERVER_URI) as websocket:
-            logging.info("Connected successfully. Starting agent loop.")
+    while True:
+        logging.info(f"Connecting to Cloud Brain at {SERVER_URI}...")
+        try:
+            async with websockets.connect(SERVER_URI) as websocket:
+                logging.info("Connected successfully. Starting agent loop.")
+                
+                while True:
+                    logging.info("Capturing screen...")
+                    b64_img = capture_screen()
+                    
+                    # Get current physical cursor position
+                    cursor_x, cursor_y = mouse.position
+                    
+                    payload = {
+                        "type": "screenshot",
+                        "token": SUBSCRIPTION_TOKEN,
+                        "image": b64_img,
+                        "cursor_x": cursor_x,
+                        "cursor_y": cursor_y
+                    }
+                    await websocket.send(json.dumps(payload))
+                    logging.info("Screenshot sent. Waiting for brain to process...")
+                    
+                    response = await websocket.recv()
+                    commands = json.loads(response)
+                    
+                    if isinstance(commands, list):
+                        for cmd in commands:
+                            execute_command(cmd)
+                    else:
+                        execute_command(commands)
+                    
+                    await asyncio.sleep(2)
+                    
+        except websockets.exceptions.ConnectionClosed:
+            logging.error("Connection closed by server. Retrying in 5s...")
+        except ConnectionRefusedError:
+            logging.error("Could not connect to the server. Is the Cloud Brain running? Retrying in 5s...")
+        except Exception as e:
+            logging.error(f"An error occurred: {e}. Retrying in 5s...")
             
-            while True:
-                logging.info("Capturing screen...")
-                b64_img = capture_screen()
-                
-                # Get current physical cursor position
-                cursor_x, cursor_y = mouse.position
-                
-                payload = {
-                    "type": "screenshot",
-                    "token": SUBSCRIPTION_TOKEN,
-                    "image": b64_img,
-                    "cursor_x": cursor_x,
-                    "cursor_y": cursor_y
-                }
-                await websocket.send(json.dumps(payload))
-                logging.info("Screenshot sent. Waiting for brain to process...")
-                
-                response = await websocket.recv()
-                commands = json.loads(response)
-                
-                if isinstance(commands, list):
-                    for cmd in commands:
-                        execute_command(cmd)
-                else:
-                    execute_command(commands)
-                
-                await asyncio.sleep(2)
-                
-    except websockets.exceptions.ConnectionClosed:
-        logging.error("Connection closed by server.")
-    except ConnectionRefusedError:
-        logging.error("Could not connect to the server. Is the Cloud Brain running?")
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
+        await asyncio.sleep(5)
 
 if __name__ == "__main__":
     asyncio.run(run_client())
