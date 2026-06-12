@@ -11,7 +11,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 # Configuration
-SERVER_URI = "ws://localhost:8000/ws/agent"
+SERVER_URI = "wss://aha-cloud-brain.onrender.com/ws/agent"
 # In production, ask the user to input this, or load from config
 SUBSCRIPTION_TOKEN = "your_token_here"
 
