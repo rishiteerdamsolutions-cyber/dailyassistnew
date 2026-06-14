@@ -12,8 +12,8 @@
  */
 
 // ─── Configuration ────────────────────────────────────────────────────────────
-let BACKEND_WS_URL      = 'wss://aha-backend.onrender.com/ws/agent';
-let LICENSE_API_URL     = 'https://aha-backend.onrender.com/api/validate-license';
+let BACKEND_WS_URL      = 'wss://aha-cloud-brain.onrender.com/ws/agent';
+let LICENSE_API_URL     = 'https://aha-cloud-brain.onrender.com/api/validate-license';
 const WS_MAX_BACKOFF_MS = 30_000;
 const ALARM_KEEPALIVE   = 'aha-keepalive';
 const ALARM_LICENSE     = 'aha-license-check';

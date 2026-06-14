@@ -804,7 +804,7 @@
 
     try {
       /* Step 1: Ask backend to create a Razorpay order */
-      const res = await fetch('/api/create-order', {
+      const res = await fetch('https://aha-cloud-brain.onrender.com/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: PLAN_AMOUNT_PAISE, currency: CURRENCY })

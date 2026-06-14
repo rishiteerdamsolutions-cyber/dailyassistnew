@@ -4,7 +4,7 @@
     { "src": "web/**", "use": "@vercel/static" }
   ],
   "routes": [
-    { "src": "^/api/(.*)", "dest": "https://aha-backend.onrender.com/api/$1" },
+    { "src": "^/api/(.*)", "dest": "https://aha-cloud-brain.onrender.com/api/$1" },
     { "src": "^/AHA-extension.zip$", "dest": "/web/AHA-extension.zip" },
     { "src": "^/AHA-Storage-Vault.zip$", "dest": "/web/AHA-Storage-Vault.zip" },
     { "src": "^/$", "dest": "/web/landing.html" },
