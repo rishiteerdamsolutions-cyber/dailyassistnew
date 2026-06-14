@@ -532,7 +532,7 @@ async function callLicenseApi(licenseKey) {
     }
 
     const data = await response.json();
-    return { valid: data.valid === true, error: data.error };
+    return { valid: data.is_valid === true, error: data.reason };
   } catch (err) {
     console.error('[AHA BG] License API error:', err);
     // Network error: keep existing valid status (don't lock out on network failure)

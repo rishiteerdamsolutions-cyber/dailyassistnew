@@ -139,6 +139,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_get_allowed_origins(),   # Never allow_origins=["*"] in production
+    allow_origin_regex=r"^chrome-extension://.*$",
     allow_credentials=False,
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "Authorization", "X-Razorpay-Signature"],
