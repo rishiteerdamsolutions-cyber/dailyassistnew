@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AHA - Artificial Human Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --panel-bg: #18181b;
+            --border-color: #27272a;
+            --text-primary: #ececf1;
+            --text-secondary: #71717a;
+            --accent-primary: #64748b;
+            --accent-glow: rgba(100, 116, 139, 0.3);
+            --user-msg-bg: #27272a;
+            --agent-msg-bg: #1f1f22;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Flat dark panel */
+        .glass {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+
+        /* Layout */
+        .app-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            gap: 0;
+        }
+
+        /* Left Panel - Chat */
+        .chat-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 480px;
+            background: #121212;
+            border: 1px solid #27272a;
+            border-radius: 6px;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        .chat-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #27272a;
+            background: #18181b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header h2 {
+            font-size: 0.95rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ececf1;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #64748b;
+        }
+
+        .chat-history {
+            flex: 1;
+            padding: 24px 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .message-container {
+            display: flex;
+            gap: 16px;
+            max-width: 100%;
+            padding: 14px 24px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .message-container.user {
+            background: transparent;
+        }
+        
+        .message-container.agent {
+            background: var(--agent-msg-bg);
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .avatar.agent {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .avatar.user {
+            background: #27272a;
+            color: #ffffff;
+        }
+
+        .message {
+            flex: 1;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #ececf1;
+            word-wrap: break-word;
+        }
+
+        .msg-user {
+            
+        }
+
+        .msg-agent {
+            
+        }
+
+        .msg-system {
+            align-self: flex-start;
+            background: transparent;
+            color: #71717a;
+            font-size: 0.85rem;
+            font-style: italic;
+            padding: 8px 24px;
+            margin: 0;
+            max-width: 100%;
+            text-align: left;
+        }
+
+        .chat-input-area {
+            padding: 24px;
+            background: #121212;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 5;
+            border-top: 1px solid #27272a;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            background: #121212;
+            border: 1px solid #27272a;
+            border-radius: 6px;
+            padding: 8px 12px;
+            transition: border-color 0.2s;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: #64748b;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #ececf1;
+            font-size: 0.95rem;
+            resize: none;
+            outline: none;
+            padding: 6px 0;
+            min-height: 24px;
+            max-height: 150px;
+            line-height: 1.5;
+            font-family: inherit;
+        }
+
+        .chat-input::placeholder {
+            color: #52525b;
+        }
+
+        button {
+            background: #27272a;
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #3f3f46;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        button.send-btn {
+            background: transparent;
+            color: #ececf1;
+            box-shadow: none;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2px;
+            margin-left: 10px;
+            flex-shrink: 0;
+            border-radius: 4px;
+        }
+        
+        button.send-btn:hover {
+            background: #27272a;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        button.send-btn:disabled {
+            background: transparent;
+            color: #3f3f46;
+            cursor: not-allowed;
+            opacity: 1;
+        }
+        
+        button.send-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Action Buttons Area */
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-resume {
+            background: var(--warning);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+            display: none; /* Hidden by default */
+            width: 100%;
+            padding: 12px;
+        }
+        
+        .btn-resume:hover {
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.8);
+        }
+
+        .vision-panel {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-left: 1px solid var(--border-color);
+        }
+
+        .vision-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .vision-content {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .vision-content img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .empty-vision {
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top-color: var(--accent-primary);
+            animation: spin 1s ease-in-out infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        /* Vault UI */
+        .tabs-header {
+            display: flex;
+            gap: 15px;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .tab-btn {
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-bottom: 2px solid transparent;
+            box-shadow: none;
+        }
+        
+        .tab-btn.active {
+            color: var(--text-primary);
+            border-bottom-color: var(--accent-primary);
+        }
+        
+        .tab-btn:hover {
+            color: var(--text-primary);
+            box-shadow: none;
+            transform: none;
+        }
+        
+        .vault-content {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .vault-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        .platform-select {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            outline: none;
+            font-size: 1rem;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .cal-day {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .cal-day:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--accent-primary);
+        }
+        
+        .cal-day-num {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .cal-indicators {
+            display: flex;
+            gap: 5px;
+            margin-top: auto;
+        }
+        
+        .cal-ind {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            opacity: 0.3;
+        }
+        
+        .cal-ind.active.text { background: #3b82f6; opacity: 1; }
+        .cal-ind.active.img { background: #10b981; opacity: 1; }
+        .cal-ind.active.vid { background: #8b5cf6; opacity: 1; }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            width: 500px;
+            max-width: 90%;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        
+        .modal h3 {
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        
+        .upload-section {
+            margin-bottom: 15px;
+        }
+        
+        .upload-section label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        textarea.vault-textarea {
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            min-height: 80px;
+            outline: none;
+            font-family: inherit;
+        }
+        
+        .file-input {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: white;
+        }
+        /* License Gate */
+        .license-gate {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #121212;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .license-gate-box {
+            text-align: center;
+            max-width: 400px;
+            padding: 40px;
+        }
+        .license-gate-box h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+        .license-gate-box p {
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            font-size: 0.95rem;
+        }
+        .license-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            letter-spacing: 1px;
+            text-align: center;
+            outline: none;
+            margin-bottom: 16px;
+        }
+        .license-input:focus {
+            border-color: var(--accent-primary);
+        }
+        .license-input::placeholder {
+            color: #3f3f46;
+            letter-spacing: 2px;
+        }
+        .license-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .license-btn:hover {
+            background: #475569;
+        }
+        .license-error {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 12px;
+            display: none;
+        }
+        /* Settings Modal */
+        .settings-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .settings-box {
+            background: #18181b;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: 480px;
+            max-width: 90%;
+            padding: 24px;
+        }
+        .settings-box h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .settings-section {
+            margin-bottom: 20px;
+        }
+        .settings-section label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .settings-section select,
+        .settings-section input[type="text"],
+        .settings-section input[type="password"] {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            outline: none;
+            font-family: inherit;
+        }
+        .settings-section select:focus,
+        .settings-section input:focus {
+            border-color: var(--accent-primary);
+        }
+        .settings-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .settings-row button {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+        }
+        .key-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            margin-top: 8px;
+        }
+        .key-status.set { color: var(--success); }
+        .key-status.unset { color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+
+    <!-- License Gate Overlay -->
+    <div class="license-gate" id="license-gate" style="display: none;">
+        <div class="license-gate-box">
+            <h1>AHA</h1>
+            <p>Enter your license key to activate</p>
+            <input type="text" class="license-input" id="license-key-input" placeholder="AHA-XXXX-XXXX-XXXX" maxlength="19">
+            <button class="license-btn" id="license-activate-btn">Activate</button>
+            <div class="license-error" id="license-error">Invalid license key. Please check and try again.</div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="settings-overlay" id="settings-overlay">
+        <div class="settings-box">
+            <h3>Settings</h3>
+            <div class="settings-section">
+                <label>API Provider</label>
+                <select id="settings-provider">
+                    <option value="google">Google Gemini</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                </select>
+            </div>
+            <div class="settings-section">
+                <label>API Key</label>
+                <input type="password" id="settings-api-key" placeholder="Paste your API key here...">
+                <div class="settings-row">
+                    <button id="settings-save-key">Save Key</button>
+                    <button id="settings-delete-key" style="background: #7f1d1d;">Remove</button>
+                </div>
+                <div class="key-status unset" id="settings-key-status">No key configured</div>
+            </div>
+            <div class="settings-section" style="margin-bottom: 0;">
+                <label>License</label>
+                <div class="key-status set" id="settings-license-info">Loading...</div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                <button id="settings-close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Chat Panel -->
+        <aside class="chat-panel">
+            <header class="chat-header">
+                <h2><div class="status-dot"></div> AHA</h2>
+                <div style="display: flex; gap: 8px;">
+                    <button id="chat-refresh-btn" style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px;" title="Refresh Chat">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.92-10.24l-3.42 3.42"/></svg>
+                    </button>
+                    <button id="settings-btn" style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px;" title="Settings">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    </button>
+                </div>
+            </header>
+            
+            <div class="chat-history" id="chat-history">
+                <div class="message msg-system">AHA initialized. Ready to execute intents.</div>
+                
+                <div class="message-container agent">
+                    <div class="avatar agent">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"></path><rect x="4" y="8" width="16" height="12" rx="2"></rect><path d="M2 14h2"></path><path d="M20 14h2"></path><path d="M15 13v2"></path><path d="M9 13v2"></path></svg>
+                    </div>
+                    <div class="message msg-agent">Hello! Where would you like to go today? Tell me a website and what you want to do.</div>
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <div class="action-bar">
+                    <button class="btn-resume" id="resume-btn">I'm done with manual steps, Resume AHA!</button>
+                </div>
+                <div class="input-wrapper">
+                    <textarea id="chat-input" class="chat-input" placeholder="e.g. Open MakeMyTrip and book a flight to Delhi..." rows="1"></textarea>
+                    <button id="send-btn" class="send-btn" title="Send">
+                        <svg viewBox="0 0 24 24"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Panel (Vision + Vault) -->
+        <main class="vision-panel glass">
+            <header class="tabs-header">
+                <button class="tab-btn active" id="tab-vision">Live Vision Feed</button>
+                <button class="tab-btn" id="tab-vault">Content Vault</button>
+                
+                <!-- Vision controls, shown only in Vision tab -->
+                <div id="vision-controls" style="display: flex; gap: 8px; margin-left: auto; align-items: center;">
+                    <button id="refresh-vision-btn" style="padding: 6px 12px; font-size: 0.85rem; background: var(--success); color: white; border: none; border-radius: 4px; cursor: pointer; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);">Refresh Feed</button>
+                </div>
+            </header>
+            
+            <!-- Vision Tab Content -->
+            <div class="vision-content" id="content-vision">
+                <div class="empty-vision" id="empty-vision">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    <p>Waiting for AHA to capture screen...</p>
+                    <div class="loader" id="vision-loader"></div>
+                </div>
+                <img id="vision-image" style="display: none; cursor: crosshair;" src="" alt="AHA Vision Feed">
+            </div>
+            
+            <!-- Vault Tab Content -->
+            <div class="vault-content" id="content-vault">
+                <div class="vault-controls" style="flex-wrap: wrap;">
+                    <div style="display: flex; gap: 10px; align-items: center; margin-right: 20px;">
+                        <span style="font-weight: 600;">Slot:</span>
+                        <select class="platform-select" id="vault-platform">
+                            <!-- Populated via JS -->
+                        </select>
+                        <select class="platform-select" id="vault-year" style="width: 100px;">
+                            <!-- Populated via JS -->
+                        </select>
+                        <select class="platform-select" id="vault-month" style="width: 120px;">
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                    
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" id="new-slot-input" placeholder="New slot name..." style="padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: white; font-size: 0.85rem; width: 140px; outline: none;">
+                        <button id="create-slot-btn" style="padding: 6px 12px; font-size: 0.85rem; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 4px; cursor: pointer;">Create Slot</button>
+                    </div>
+                <div class="calendar-grid" id="vault-calendar">
+                    <!-- Days generated by JS -->
+                </div>
+            </div>
+            
+            <footer style="margin-top: auto; padding: 15px; text-align: center; font-size: 0.85rem; border-top: 1px solid var(--border-color);">
+                <a href="/legal.html" style="color: var(--text-secondary); text-decoration: none; margin: 0 10px;">Terms of Service</a>
+                <a href="/legal.html#privacy" style="color: var(--text-secondary); text-decoration: none; margin: 0 10px;">Privacy Policy</a>
+                <a href="/legal.html#refund" style="color: var(--text-secondary); text-decoration: none; margin: 0 10px;">Refund Policy</a>
+                <a href="/legal.html#shipping" style="color: var(--text-secondary); text-decoration: none; margin: 0 10px;">Shipping Policy</a>
+            </footer>
+        </main>
+    </div>
+    
+    <!-- Vault Upload Modal -->
+    <div class="modal-overlay" id="vault-modal">
+        <div class="modal">
+            <h3 id="modal-title">Upload Content for Day 1</h3>
+            
+            <form id="vault-upload-form" onsubmit="return false;">
+                <input type="hidden" id="modal-day" value="">
+                
+                <div class="upload-section">
+                    <label>Caption Text (.txt)</label>
+                    <textarea class="vault-textarea" id="modal-text" placeholder="Paste your caption/tweet here..."></textarea>
+                </div>
+                
+                <div class="upload-section">
+                    <label>Image (.png, .jpg)</label>
+                    <input type="file" id="modal-image" class="file-input" accept="image/*">
+                    <img id="preview-image" src="" style="display:none; max-width: 100%; margin-top: 10px; border-radius: 8px; border: 1px solid var(--border-color);" />
+                </div>
+                
+                <div class="upload-section">
+                    <label>Video (.mp4, .mov)</label>
+                    <input type="file" id="modal-video" class="file-input" accept="video/*">
+                    <video id="preview-video" src="" controls style="display:none; max-width: 100%; margin-top: 10px; border-radius: 8px; border: 1px solid var(--border-color);"></video>
+                </div>
+                
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button type="button" id="modal-cancel" style="background: rgba(255,255,255,0.1); box-shadow: none;">Cancel</button>
+                    <button type="button" id="modal-save" style="background: var(--success); box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);">Save to Vault</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const chatHistory = document.getElementById('chat-history');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const resumeBtn = document.getElementById('resume-btn');
+        const visionImage = document.getElementById('vision-image');
+        const emptyVision = document.getElementById('empty-vision');
+        const visionLoader = document.getElementById('vision-loader');
+        
+        const refreshVisionBtn = document.getElementById('refresh-vision-btn');
+
+        let isAgentPaused = false;
+
+        function addMessage(text, type) {
+            if (type === 'system') {
+                const msg = document.createElement('div');
+                msg.className = `message msg-system`;
+                msg.textContent = text;
+                chatHistory.appendChild(msg);
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+                return;
+            }
+
+            const container = document.createElement('div');
+            container.className = `message-container ${type === 'user' ? 'user' : 'agent'}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = `avatar ${type}`;
+            
+            if (type === 'agent') {
+                avatar.innerHTML = '<span style="font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">AHA</span>';
+            } else {
+                avatar.innerHTML = '<span style="font-size: 11px; font-weight: bold;">US</span>';
+            }
+
+            const msg = document.createElement('div');
+            msg.className = `message msg-${type}`;
+            
+            if (typeof text === 'string' && text.includes('[COLLAPSE:')) {
+                let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                html = html.replace(/\[COLLAPSE:([^:]+):([^\]]+)\]/g, (match, title, content) => {
+                    return `<details style="cursor: pointer; margin-top: 5px; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);"><summary style="font-weight: 600; opacity: 0.9; user-select: none; color: #3b82f6;">${title}</summary><div style="margin-top: 8px; opacity: 0.9; font-size: 0.9em; line-height: 1.5;">${content}</div></details>`;
+                });
+                msg.innerHTML = html;
+            } else {
+                msg.textContent = text;
+            }
+            
+            container.appendChild(avatar);
+            container.appendChild(msg);
+            
+            chatHistory.appendChild(container);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        // Auto-resize textarea
+        chatInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            if(this.value.trim() === '') {
+                this.style.height = 'auto';
+            }
+        });
+
+        function showLoader(show) {
+            if (show) {
+                emptyVision.style.display = 'flex';
+                visionImage.style.display = 'none';
+                visionLoader.style.display = 'block';
+                emptyVision.querySelector('p').textContent = "AHA is analyzing screen...";
+            } else {
+                visionLoader.style.display = 'none';
+            }
+        }
+
+        function updateVision(base64Data) {
+            if (base64Data) {
+                visionImage.src = base64Data;
+                visionImage.style.display = 'block';
+                emptyVision.style.display = 'none';
+            }
+        }
+
+        async function sendIntent(intentText, isResume = false, hideMessage = false) {
+            // Append user message if not just a hidden resume ping
+            if (!hideMessage) {
+                addMessage(intentText, 'user');
+                chatInput.value = '';
+            }
+
+            chatInput.disabled = true;
+            sendBtn.disabled = true;
+            resumeBtn.style.display = 'none';
+            isAgentPaused = false;
+            showLoader(true);
+
+            try {
+                // Determine endpoint (chat vs resume)
+                const path = isResume ? '/api/agent/resume' : '/api/agent/chat';
+                const endpoint = 'http://127.0.0.1:8000' + path;
+                
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        text: intentText,
+                        is_native_app: !!window.pywebview 
+                    })
+                });
+                
+                const data = await res.json();
+                
+                showLoader(false);
+                
+                if (data.image_data) {
+                    updateVision(data.image_data);
+                }
+
+                if (data.status === 'error') {
+                    const errMsg = data.messages ? data.messages[0] : (data.message || 'Unknown error');
+                    addMessage(`Error: ${errMsg}`, 'system');
+                } else {
+                    // Iterate through agent responses
+                    if (data.messages) {
+                        data.messages.forEach(m => addMessage(m, 'agent'));
+                    }
+                    
+                    // Open in-app browser if requested by backend
+                    if (data.open_browser_url) {
+                        if (window.pywebview && window.pywebview.api) {
+                            window.pywebview.api.open_browser(data.open_browser_url);
+                            addMessage(`Opening in-app browser for ${data.open_browser_url}...`, 'system');
+                        } else {
+                            addMessage(`[Warning] Pywebview API not found. Cannot open in-app browser.`, 'system');
+                        }
+                    }
+                    
+                    if (data.is_paused) {
+                        addMessage("AHA is paused. Complete the manual steps, then click Resume.", 'system');
+                        isAgentPaused = true;
+                        resumeBtn.style.display = 'block';
+                    } else if (data.is_done) {
+                        addMessage("AHA has completed the task!", 'system');
+                    } else if (data.is_asking) {
+                        addMessage("AHA is waiting for your response...", 'system');
+                    } else {
+                        // AUTO-LOOP: Continue to the next step
+                        addMessage("AHA is waiting 10 seconds before the next step...", 'system');
+                        setTimeout(() => {
+                            sendIntent("Please continue to the next step.", false, true);
+                        }, 10000);
+                    }
+                }
+            } catch (err) {
+                showLoader(false);
+                addMessage(`Connection error: ${err.message}`, 'system');
+            } finally {
+                chatInput.disabled = false;
+                sendBtn.disabled = false;
+                chatInput.focus();
+            }
+        }
+
+        sendBtn.addEventListener('click', () => {
+            const text = chatInput.value.trim();
+            if (text) sendIntent(text);
+        });
+
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const text = chatInput.value.trim();
+                if (text) {
+                    sendIntent(text);
+                    chatInput.style.height = 'auto';
+                }
+            }
+        });
+        
+        // Chat Refresh Button
+        const chatRefreshBtn = document.getElementById('chat-refresh-btn');
+        if (chatRefreshBtn) {
+            chatRefreshBtn.addEventListener('click', () => {
+                chatHistory.innerHTML = '';
+                addMessage("Chat history cleared. AHA is ready.", 'system');
+            });
+        }
+        
+        resumeBtn.addEventListener('click', () => {
+            if (isAgentPaused) {
+                addMessage("Resuming AHA workflow...", 'system');
+                sendIntent("USER_RESUMED", true, true);
+            }
+        });
+
+        // Interactive coordinates clicks on streamed page screenshot
+        visionImage.addEventListener('click', async (e) => {
+            const rect = visionImage.getBoundingClientRect();
+            const x_pct = (e.clientX - rect.left) / rect.width;
+            const y_pct = (e.clientY - rect.top) / rect.height;
+            
+            addMessage(`Sending manual click at (${(x_pct*100).toFixed(1)}%, ${(y_pct*100).toFixed(1)}%)`, 'system');
+            
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/agent/click', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ x: x_pct, y: y_pct })
+                });
+                const data = await res.json();
+                if (data.image_data) {
+                    updateVision(data.image_data);
+                }
+            } catch (err) {
+                addMessage(`Click error: ${err.message}`, 'system');
+            }
+        });
+
+
+        // Refresh vision stream feed manually
+        refreshVisionBtn.addEventListener('click', async () => {
+            showLoader(true);
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/browser/screenshot', {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                showLoader(false);
+                if (data.image_data) {
+                    updateVision(data.image_data);
+                }
+            } catch (err) {
+                showLoader(false);
+                console.error("Failed to refresh vision:", err);
+            }
+        });
+
+        // The vision feed will now only update when the AI sends a task response,
+        // preventing infinite mirror loops while the app is idle.
+        // ==========================================
+        // VAULT UI JAVASCRIPT
+        // ==========================================
+        const tabVision = document.getElementById('tab-vision');
+        const tabVault = document.getElementById('tab-vault');
+        const contentVision = document.getElementById('content-vision');
+        const contentVault = document.getElementById('content-vault');
+        const visionControls = document.getElementById('vision-controls');
+        
+        const vaultPlatform = document.getElementById('vault-platform');
+        const vaultYear = document.getElementById('vault-year');
+        const vaultMonth = document.getElementById('vault-month');
+        const vaultCalendar = document.getElementById('vault-calendar');
+        const newSlotInput = document.getElementById('new-slot-input');
+        const createSlotBtn = document.getElementById('create-slot-btn');
+        
+        const vaultModal = document.getElementById('vault-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalDay = document.getElementById('modal-day');
+        const modalText = document.getElementById('modal-text');
+        const modalImage = document.getElementById('modal-image');
+        const modalVideo = document.getElementById('modal-video');
+        const modalCancel = document.getElementById('modal-cancel');
+        const modalSave = document.getElementById('modal-save');
+        
+        // Tab Switching
+        tabVision.addEventListener('click', () => {
+            tabVision.classList.add('active');
+            tabVault.classList.remove('active');
+            contentVision.style.display = 'block';
+            contentVault.style.display = 'none';
+            visionControls.style.display = 'flex';
+        });
+        // Dynamic Slots Logic
+        
+        async function fetchSlots(selectSlot = null) {
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/vault/slots');
+                const data = await res.json();
+                
+                vaultPlatform.innerHTML = '';
+                if (data.slots.length === 0) {
+                    vaultPlatform.innerHTML = '<option value="" disabled selected>No slots created yet</option>';
+                    vaultCalendar.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #94a3b8;">Create a slot above to get started.</div>';
+                    return;
+                }
+                
+                data.slots.forEach(slot => {
+                    const opt = document.createElement('option');
+                    opt.value = slot;
+                    opt.textContent = slot;
+                    vaultPlatform.appendChild(opt);
+                });
+                
+                if (selectSlot && data.slots.includes(selectSlot)) {
+                    vaultPlatform.value = selectSlot;
+                }
+                
+                loadCalendar();
+            } catch (err) {
+                vaultPlatform.innerHTML = `<option value="" disabled>Error loading slots</option>`;
+            }
+        }
+        
+        createSlotBtn.addEventListener('click', async () => {
+            const slotName = newSlotInput.value.trim();
+            if (!slotName) return;
+            
+            const formData = new FormData();
+            formData.append('slot_name', slotName);
+            
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/vault/slots', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    newSlotInput.value = '';
+                    await fetchSlots(data.slot);
+                }
+            } catch (err) {
+                alert(`Error creating slot: ${err.message}`);
+            }
+        });
+        
+        function initVaultControls() {
+            const date = new Date();
+            const currYear = date.getFullYear();
+            const currMonth = date.getMonth() + 1;
+            
+            vaultYear.innerHTML = '';
+            for(let y = currYear - 1; y <= currYear + 5; y++) {
+                vaultYear.innerHTML += `<option value="${y}">${y}</option>`;
+            }
+            vaultYear.value = currYear;
+            
+            vaultMonth.innerHTML = '';
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            for(let m = 1; m <= 12; m++) {
+                vaultMonth.innerHTML += `<option value="${m}">${monthNames[m-1]}</option>`;
+            }
+            vaultMonth.value = currMonth;
+        }
+
+        // Initial fetch when Vault tab is clicked
+        let slotsFetched = false;
+        tabVault.addEventListener('click', () => {
+            tabVault.classList.add('active');
+            tabVision.classList.remove('active');
+            contentVault.style.display = 'flex';
+            contentVision.style.display = 'none';
+            visionControls.style.display = 'none';
+            if (!slotsFetched) {
+                initVaultControls();
+                fetchSlots();
+                slotsFetched = true;
+            }
+        });
+        
+        // Load Calendar Data
+        async function loadCalendar() {
+            const platform = vaultPlatform.value;
+            const year = vaultYear.value;
+            const month = vaultMonth.value;
+            if (!platform || !year || !month) return;
+            
+            vaultCalendar.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #94a3b8;">Loading calendar...</div>';
+            
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/vault/slot/${platform}/${year}/${month}`);
+                const data = await res.json();
+                
+                vaultCalendar.innerHTML = '';
+                data.days.forEach(d => {
+                    const el = document.createElement('div');
+                    el.className = 'cal-day';
+                    el.innerHTML = `
+                        <div class="cal-day-num">${d.day}</div>
+                        <div class="cal-indicators">
+                            <div class="cal-ind text ${d.has_text ? 'active' : ''}" title="Caption"></div>
+                            <div class="cal-ind img ${d.has_image ? 'active' : ''}" title="Image"></div>
+                            <div class="cal-ind vid ${d.has_video ? 'active' : ''}" title="Video"></div>
+                        </div>
+                    `;
+                    el.addEventListener('click', () => openVaultModal(d.day));
+                    vaultCalendar.appendChild(el);
+                });
+            } catch (err) {
+                vaultCalendar.innerHTML = `<div style="grid-column: 1/-1; color: var(--warning);">Error: ${err.message}</div>`;
+            }
+        }
+        vaultPlatform.addEventListener('change', loadCalendar);
+        vaultYear.addEventListener('change', loadCalendar);
+        vaultMonth.addEventListener('change', loadCalendar);
+        
+        // Modal Logic
+        async function openVaultModal(day) {
+            currentUploadDay = day;
+            modalTitle.textContent = `Upload Content for ${vaultPlatform.options[vaultPlatform.selectedIndex].text} - Day ${day}`;
+            modalText.value = 'Loading...';
+            modalImage.value = '';
+            modalVideo.value = '';
+            
+            const previewImg = document.getElementById('preview-image');
+            const previewVid = document.getElementById('preview-video');
+            previewImg.style.display = 'none';
+            previewImg.src = '';
+            previewVid.style.display = 'none';
+            previewVid.src = '';
+            
+            vaultModal.style.display = 'flex';
+            
+            try {
+                const platform = vaultPlatform.value;
+                const year = vaultYear.value;
+                const month = vaultMonth.value;
+                const res = await fetch(`http://127.0.0.1:8000/api/vault/content/${platform}/${year}/${month}/${day}`);
+                const data = await res.json();
+                
+                modalText.value = data.text || '';
+                
+                if (data.has_image && data.image_url) {
+                    previewImg.src = `http://127.0.0.1:8000${data.image_url}?t=${new Date().getTime()}`;
+                    previewImg.style.display = 'block';
+                }
+                
+                if (data.has_video && data.video_url) {
+                    previewVid.src = `http://127.0.0.1:8000${data.video_url}?t=${new Date().getTime()}`;
+                    previewVid.style.display = 'block';
+                }
+            } catch (err) {
+                modalText.value = '';
+                console.warn("Failed to load preview:", err);
+            }
+        }
+        
+        modalCancel.addEventListener('click', () => {
+            vaultModal.style.display = 'none';
+        });
+        
+        modalSave.addEventListener('click', async () => {
+            // we don't have modalDay defined previously, so use currentUploadDay
+            const day = currentUploadDay;
+            const platform = vaultPlatform.value;
+            const year = vaultYear.value;
+            const month = vaultMonth.value;
+            
+            const formData = new FormData();
+            if (modalText.value.trim()) formData.append('text', modalText.value.trim());
+            if (modalImage.files[0]) formData.append('image', modalImage.files[0]);
+            if (modalVideo.files[0]) formData.append('video', modalVideo.files[0]);
+            
+            modalSave.textContent = 'Saving...';
+            modalSave.disabled = true;
+            
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/vault/upload/${platform}/${year}/${month}/${day}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                await res.json();
+                vaultModal.style.display = 'none';
+                loadCalendar();
+            } catch (err) {
+                alert(`Error saving to vault: ${err.message}`);
+            } finally {
+                modalSave.textContent = 'Save to Vault';
+                modalSave.disabled = false;
+            }
+        });
+
+        // ==========================================
+        // LICENSE & SETTINGS
+        // ==========================================
+        const licenseGate = document.getElementById('license-gate');
+        const licenseKeyInput = document.getElementById('license-key-input');
+        const licenseActivateBtn = document.getElementById('license-activate-btn');
+        const licenseError = document.getElementById('license-error');
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsOverlay = document.getElementById('settings-overlay');
+        const settingsClose = document.getElementById('settings-close');
+        const settingsProvider = document.getElementById('settings-provider');
+        const settingsApiKey = document.getElementById('settings-api-key');
+        const settingsSaveKey = document.getElementById('settings-save-key');
+        const settingsDeleteKey = document.getElementById('settings-delete-key');
+        const settingsKeyStatus = document.getElementById('settings-key-status');
+        const settingsLicenseInfo = document.getElementById('settings-license-info');
+
+        // Check license on load
+        async function checkLicense() {
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/license/status');
+                const data = await res.json();
+                if (!data.valid) {
+                    licenseGate.style.display = 'flex';
+                }
+            } catch (err) {
+                // Server not ready yet or no license module — skip gate
+                console.warn('License check skipped:', err.message);
+            }
+        }
+        checkLicense();
+
+        // Activate license
+        licenseActivateBtn.addEventListener('click', async () => {
+            const key = licenseKeyInput.value.trim();
+            if (!key) return;
+            licenseActivateBtn.textContent = 'Activating...';
+            licenseActivateBtn.disabled = true;
+            licenseError.style.display = 'none';
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/license/activate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ license_key: key })
+                });
+                const data = await res.json();
+                if (data.valid) {
+                    licenseGate.style.display = 'none';
+                } else {
+                    licenseError.textContent = data.reason === 'invalid_key' 
+                        ? 'Invalid license key. Please check and try again.' 
+                        : 'Activation failed. Please try again.';
+                    licenseError.style.display = 'block';
+                }
+            } catch (err) {
+                licenseError.textContent = 'Connection error. Please try again.';
+                licenseError.style.display = 'block';
+            } finally {
+                licenseActivateBtn.textContent = 'Activate';
+                licenseActivateBtn.disabled = false;
+            }
+        });
+
+        licenseKeyInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') licenseActivateBtn.click();
+        });
+
+        // Settings modal
+        settingsBtn.addEventListener('click', () => {
+            settingsOverlay.style.display = 'flex';
+            loadKeyStatus();
+            loadLicenseInfo();
+        });
+
+        settingsClose.addEventListener('click', () => {
+            settingsOverlay.style.display = 'none';
+        });
+
+        settingsOverlay.addEventListener('click', (e) => {
+            if (e.target === settingsOverlay) settingsOverlay.style.display = 'none';
+        });
+
+        async function loadKeyStatus() {
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/config/get_api_keys');
+                const data = await res.json();
+                const provider = settingsProvider.value;
+                if (data && data[provider]) {
+                    settingsKeyStatus.className = 'key-status set';
+                    settingsKeyStatus.textContent = `✓ Key configured: ${data[provider]}`;
+                } else {
+                    settingsKeyStatus.className = 'key-status unset';
+                    settingsKeyStatus.textContent = '✗ No key configured for this provider';
+                }
+            } catch (err) {
+                settingsKeyStatus.className = 'key-status unset';
+                settingsKeyStatus.textContent = 'Error loading key status';
+            }
+        }
+
+        async function loadLicenseInfo() {
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/license/status');
+                const data = await res.json();
+                if (data.valid) {
+                    settingsLicenseInfo.className = 'key-status set';
+                    settingsLicenseInfo.textContent = `✓ ${data.plan || 'Active'} — expires ${data.expires || 'never'}`;
+                } else {
+                    settingsLicenseInfo.className = 'key-status unset';
+                    settingsLicenseInfo.textContent = '✗ No active license';
+                }
+            } catch (err) {
+                settingsLicenseInfo.textContent = 'Error loading license info';
+            }
+        }
+
+        settingsProvider.addEventListener('change', loadKeyStatus);
+
+        settingsSaveKey.addEventListener('click', async () => {
+            const provider = settingsProvider.value;
+            const apiKey = settingsApiKey.value.trim();
+            if (!apiKey) return;
+            settingsSaveKey.textContent = 'Saving...';
+            settingsSaveKey.disabled = true;
+            try {
+                await fetch('http://127.0.0.1:8000/api/config/set_api_key', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ provider, api_key: apiKey })
+                });
+                settingsApiKey.value = '';
+                loadKeyStatus();
+            } catch (err) {
+                alert('Error saving key: ' + err.message);
+            } finally {
+                settingsSaveKey.textContent = 'Save Key';
+                settingsSaveKey.disabled = false;
+            }
+        });
+
+        settingsDeleteKey.addEventListener('click', async () => {
+            const provider = settingsProvider.value;
+            try {
+                await fetch('http://127.0.0.1:8000/api/config/delete_api_key', {
+                    method: 'DELETE',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ provider })
+                });
+                loadKeyStatus();
+            } catch (err) {
+                alert('Error removing key: ' + err.message);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AHA Agent</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">AHA</span>
+        <span class="logo-sub">Agent</span>
+      </div>
+      <div class="status-badge" id="statusBadge">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-label" id="statusLabel">Idle</span>
+      </div>
+    </header>
+
+    <!-- License locked section (shown only when locked) -->
+    <section class="license-section" id="licenseSection" hidden>
+      <div class="section-title">🔒 License Required</div>
+      <div class="form-group">
+        <label class="form-label" for="licenseKeyInput">License Key</label>
+        <input
+          type="text"
+          id="licenseKeyInput"
+          class="form-input"
+          placeholder="XXXX-XXXX-XXXX-XXXX"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <div class="field-error" id="licenseError" hidden></div>
+      </div>
+      <button class="btn btn-primary" id="activateLicenseBtn">Activate License</button>
+    </section>
+
+    <!-- Main form (hidden when locked) -->
+    <main class="main-form" id="mainForm">
+
+      <!-- Slot 1: Platform -->
+      <div class="form-group">
+        <label class="form-label" for="platformInput">
+          Platform
+          <span class="required">*</span>
+        </label>
+        <div class="input-wrapper">
+          <input
+            type="text"
+            id="platformInput"
+            class="form-input"
+            placeholder="LinkedIn, Instagram, Facebook, X, WhatsApp"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <span class="input-icon" id="platformIcon"></span>
+        </div>
+        <div class="field-hint">Accepted: LinkedIn · Instagram · Facebook · X · WhatsApp</div>
+        <div class="field-error" id="platformError" hidden></div>
+      </div>
+
+      <!-- Slot 2: Text (optional) -->
+      <div class="form-group">
+        <label class="form-label toggle-label" for="textToggle">
+          <span>Include Text</span>
+          <div class="toggle-switch">
+            <input type="checkbox" id="textToggle" class="toggle-input" />
+            <span class="toggle-slider"></span>
+          </div>
+        </label>
+        <div class="text-slot" id="textSlot" hidden>
+          <div class="vault-info" id="textVaultInfo">
+            Reads <code id="textFilePath">—</code> from vault
+          </div>
+        </div>
+      </div>
+
+      <!-- Slot 3: Media (optional) -->
+      <div class="form-group">
+        <label class="form-label">Media Attachment</label>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="mediaType" value="none" id="mediaNone" checked />
+            <span class="radio-custom"></span>
+            None
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="mediaType" value="Image" id="mediaImage" />
+            <span class="radio-custom"></span>
+            Image
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="mediaType" value="Video" id="mediaVideo" />
+            <span class="radio-custom"></span>
+            Video
+          </label>
+        </div>
+        <div class="vault-info" id="mediaVaultInfo" hidden>
+          Reads <code id="mediaFilePath">—</code> from vault
+        </div>
+      </div>
+
+      <!-- Vault directory picker -->
+      <div class="form-group">
+        <label class="form-label">Vault Directory</label>
+        <div class="vault-picker">
+          <span class="vault-path-display" id="vaultPathDisplay">Not selected</span>
+          <button class="btn btn-secondary btn-sm" id="pickVaultBtn">Browse…</button>
+        </div>
+        <div class="field-hint">Select your <code>~/Downloads/aha/AI Pro/</code> folder</div>
+      </div>
+
+      <!-- Run button -->
+      <button class="btn btn-primary btn-run" id="runBtn" disabled>
+        <span class="btn-icon">▶</span>
+        <span>Run Agent</span>
+      </button>
+
+      <!-- Execution log -->
+      <div class="log-panel" id="logPanel" hidden>
+        <div class="log-title">Execution Log</div>
+        <div class="log-content" id="logContent"></div>
+      </div>
+
+    </main>
+
+    <!-- Connection info footer -->
+    <footer class="footer">
+      <span class="footer-ws" id="footerWs">Backend: —</span>
+    </footer>
+
+  </div>
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

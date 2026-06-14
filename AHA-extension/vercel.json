@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "routes": [
+    { "src": "^/api/(.*)", "dest": "https://aha-backend.onrender.com/api/$1" },
+    { "src": "^/AHA-extension.zip$", "dest": "/web/AHA-extension.zip" },
+    { "src": "^/AHA-Storage-Vault.zip$", "dest": "/web/AHA-Storage-Vault.zip" },
+    { "src": "^/$", "dest": "/web/landing.html" },
+    { "src": "^/web/(.*)", "dest": "/web/$1" },
+    { "src": "^/legal$", "dest": "/web/legal.html" },
+    { "src": "^/companion$", "dest": "/web/companion.html" },
+    { "src": "^/success$", "dest": "/web/success.html" }
+  ]
+}

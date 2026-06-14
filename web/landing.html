@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AHA — Artificial Human Agent | Auto-post like a human</title>
+  <meta name="description" content="AHA posts on LinkedIn, Instagram, Facebook, X, and WhatsApp exactly like a human — real mouse curves, natural typing, local content vault. ₹3,000/month." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+  <!-- Razorpay Checkout SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <style>
+    /* ── Reset & Tokens ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #090b10;
+      --surface:     #0f1117;
+      --surface2:    #161b27;
+      --border:      rgba(255,255,255,0.07);
+      --border2:     rgba(255,255,255,0.12);
+      --text:        #e8eaf0;
+      --muted:       #8890a4;
+      --blue:        #4f8ef7;
+      --blue-dim:    rgba(79,142,247,0.12);
+      --blue-glow:   rgba(79,142,247,0.35);
+      --green:       #22c55e;
+      --radius:      14px;
+      --radius-sm:   8px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Nav ──────────────────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6vw;
+      height: 64px;
+      background: rgba(9,11,16,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-size: 1.2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #fff;
+    }
+
+    .nav-logo span { color: var(--blue); }
+
+    .nav-cta {
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      padding: 9px 22px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+
+    .nav-cta:hover {
+      background: #3b7de8;
+      box-shadow: 0 0 20px var(--blue-glow);
+    }
+
+    /* ── Hero ─────────────────────────────────────────────────────── */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 100px 6vw 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -120px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 500px;
+      background: radial-gradient(ellipse at center, rgba(79,142,247,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--blue-dim);
+      border: 1px solid rgba(79,142,247,0.3);
+      border-radius: 100px;
+      padding: 5px 16px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--blue);
+      margin-bottom: 28px;
+    }
+
+    .hero-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: blink 2s infinite;
+    }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    h1 {
+      font-size: clamp(2.4rem, 5.5vw, 4rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.04em;
+      color: #fff;
+      max-width: 800px;
+      margin-bottom: 20px;
+    }
+
+    h1 .accent { color: var(--blue); }
+
+    .hero-sub {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 560px;
+      line-height: 1.7;
+      margin-bottom: 40px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      padding: 15px 36px;
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.2s, transform 0.1s;
+      letter-spacing: 0.01em;
+    }
+
+    .btn-primary:hover {
+      background: #3b7de8;
+      box-shadow: 0 0 30px var(--blue-glow);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border2);
+      padding: 15px 28px;
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .btn-ghost:hover { border-color: var(--blue); color: var(--blue); }
+
+    /* ── Platforms strip ──────────────────────────────────────────── */
+    .platforms {
+      text-align: center;
+      padding: 16px 6vw 60px;
+    }
+
+    .platforms p {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 18px;
+    }
+
+    .platform-pills {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 7px 20px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    /* ── How it works ─────────────────────────────────────────────── */
+    .section {
+      padding: 80px 6vw;
+    }
+
+    .section-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--blue);
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      font-weight: 800;
+      text-align: center;
+      letter-spacing: -0.03em;
+      color: #fff;
+      margin-bottom: 56px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .step-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      position: relative;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .step-card:hover {
+      border-color: var(--border2);
+      transform: translateY(-2px);
+    }
+
+    .step-num {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--blue);
+      background: var(--blue-dim);
+      border-radius: 6px;
+      padding: 3px 10px;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+
+    .step-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .step-card p {
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ── Features ─────────────────────────────────────────────────── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .feat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      transition: border-color 0.2s;
+    }
+
+    .feat:hover { border-color: var(--border2); }
+
+    .feat-icon {
+      font-size: 1.6rem;
+      margin-bottom: 14px;
+    }
+
+    .feat h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .feat p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ── Pricing ──────────────────────────────────────────────────── */
+    #pricing {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .pricing-card {
+      max-width: 440px;
+      margin: 0 auto;
+      background: var(--bg);
+      border: 1px solid var(--blue);
+      border-radius: 20px;
+      padding: 40px;
+      position: relative;
+      box-shadow: 0 0 60px rgba(79,142,247,0.1);
+    }
+
+    .pricing-badge {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--blue);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 18px;
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+
+    .plan-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+    }
+
+    .price-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .price-currency {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .price-amount {
+      font-size: 3.6rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+
+    .price-period {
+      font-size: 1rem;
+      color: var(--muted);
+    }
+
+    .price-note {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+
+    .price-note strong { color: var(--green); }
+
+    .feature-list {
+      list-style: none;
+      margin-bottom: 32px;
+    }
+
+    .feature-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 7px 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .feature-list li:last-child { border-bottom: none; }
+
+    .check {
+      color: var(--green);
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    #btn-pay {
+      width: 100%;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.2s;
+      letter-spacing: 0.01em;
+    }
+
+    #btn-pay:hover {
+      background: #3b7de8;
+      box-shadow: 0 0 30px var(--blue-glow);
+    }
+
+    #btn-pay:disabled {
+      background: #2d3448;
+      color: var(--muted);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .pay-note {
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 14px;
+    }
+
+    .pay-note span { color: var(--green); }
+
+    /* ── FAQ ──────────────────────────────────────────────────────── */
+    .faq-list {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    details {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    details[open] { border-color: var(--border2); }
+
+    summary {
+      padding: 18px 22px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #fff;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    summary::after {
+      content: '+';
+      font-size: 1.2rem;
+      color: var(--muted);
+      transition: transform 0.2s;
+    }
+
+    details[open] summary::after { transform: rotate(45deg); }
+
+    .faq-body {
+      padding: 0 22px 18px;
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    /* ── Footer ───────────────────────────────────────────────────── */
+    footer {
+      padding: 40px 6vw;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    footer .foot-logo {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    footer .foot-logo span { color: var(--blue); }
+
+    footer nav a {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-left: 24px;
+      transition: color 0.15s;
+    }
+
+    footer nav a:hover { color: #fff; }
+
+    footer .copy {
+      width: 100%;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    /* ── Modal overlay (payment processing) ──────────────────────── */
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #overlay.active { display: flex; }
+
+    .overlay-box {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 40px;
+      text-align: center;
+      max-width: 360px;
+      width: 90%;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border2);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .overlay-box p { color: var(--muted); font-size: 0.9rem; }
+
+    /* ── Responsive ───────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .hero { padding: 72px 5vw 56px; }
+      h1 { font-size: 2rem; }
+      .pricing-card { padding: 32px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ─────────────────────────────────────────── -->
+<nav>
+  <div class="nav-logo">A<span>H</span>A</div>
+  <button class="nav-cta" id="nav-buy-btn">Get Started — ₹3,000/mo</button>
+</nav>
+
+<!-- ── Hero ───────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-badge">Artificial Human Agent · Chrome Extension</div>
+  <h1>Post on social media<br /><span class="accent">exactly like a human.</span></h1>
+  <p class="hero-sub">
+    AHA reads content from your local vault and posts on LinkedIn, Instagram, Facebook, X, and WhatsApp — with real Bezier mouse paths, natural typing cadence, and zero API usage. Undetectable by design.
+  </p>
+  <div class="hero-actions">
+    <button class="btn-primary" id="hero-buy-btn">Start for ₹3,000 / month</button>
+    <button class="btn-ghost" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">See how it works</button>
+  </div>
+</section>
+
+<!-- ── Platform Pills ─────────────────────────────────────── -->
+<div class="platforms">
+  <p>Works on all 5 major platforms</p>
+  <div class="platform-pills">
+    <span class="pill">LinkedIn</span>
+    <span class="pill">Instagram</span>
+    <span class="pill">Facebook</span>
+    <span class="pill">X (Twitter)</span>
+    <span class="pill">WhatsApp</span>
+  </div>
+</div>
+
+<!-- ── How It Works ───────────────────────────────────────── -->
+<section class="section" id="how">
+  <p class="section-label">How it works</p>
+  <h2>Three steps to hands-free posting</h2>
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-num">Step 1</div>
+      <h3>Fill your Content Vault</h3>
+      <p>Use our Content Engine tool to rename and package 30 days of posts (text, images, videos) into one ZIP. Import it once.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">Step 2</div>
+      <h3>Pick Platform &amp; Media</h3>
+      <p>In the AHA Chrome extension, select the platform, choose Text / Image / Video, and click Run. That's the entire UI.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">Step 3</div>
+      <h3>AHA posts for you</h3>
+      <p>AHA moves the mouse on Bezier curves, types with fatigue-modelled delays, and clicks — indistinguishable from a real user.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features ───────────────────────────────────────────── -->
+<section class="section" id="features" style="padding-top:0">
+  <p class="section-label">What's inside</p>
+  <h2>Built to be undetectable</h2>
+  <div class="features">
+    <div class="feat">
+      <div class="feat-icon">🖱️</div>
+      <h3>Human-grade mouse physics</h3>
+      <p>Every click follows a Bezier curve with overshoot, jitter, and randomised landing point within the button bounds.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">⌨️</div>
+      <h3>Fatigue-modelled typing</h3>
+      <p>Typing speed slows mid-session, makes realistic typos, and self-corrects — just like a tired human would.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🗂️</div>
+      <h3>Local Content Vault</h3>
+      <p>All your media lives on your own computer. Zero cloud uploads. Zero media storage fees. AHA reads files directly.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🔑</div>
+      <h3>One license, one Chrome profile</h3>
+      <p>Your license key is locked to a single Chrome profile — enforced server-side. Secure and non-transferrable.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📦</div>
+      <h3>Content Engine included</h3>
+      <p>Your content team exports a ZIP, you import it once. No manual renaming. Supports 30-day schedules per platform.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🔒</div>
+      <h3>No platform APIs used</h3>
+      <p>AHA uses Chrome DevTools Protocol — the same way your browser works. No OAuth, no API keys, no rate limits.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Pricing ─────────────────────────────────────────────── -->
+<section class="section" id="pricing">
+  <p class="section-label">Simple pricing</p>
+  <h2>One plan. Everything included.</h2>
+
+  <div class="pricing-card">
+    <div class="pricing-badge">✦ Only plan available</div>
+    <div class="plan-name">AHA AI Pro</div>
+
+    <div class="price-row">
+      <span class="price-currency">₹</span>
+      <span class="price-amount">3,000</span>
+      <span class="price-period">/ month</span>
+    </div>
+    <p class="price-note">
+      <strong>First month free.</strong> You pay in month 2 for month 1's usage.
+    </p>
+
+    <ul class="feature-list">
+      <li><span class="check">✓</span> All 5 platforms (LinkedIn, Instagram, Facebook, X, WhatsApp)</li>
+      <li><span class="check">✓</span> Unlimited posts from your local vault</li>
+      <li><span class="check">✓</span> Text · Image · Video supported</li>
+      <li><span class="check">✓</span> Content Engine packaging tool</li>
+      <li><span class="check">✓</span> Human-grade mouse &amp; keyboard simulation</li>
+      <li><span class="check">✓</span> 24-hour license validation</li>
+      <li><span class="check">✓</span> Cancel any time</li>
+    </ul>
+
+    <button id="btn-pay">Get AHA — ₹3,000 / month</button>
+    <p class="pay-note">Secured by Razorpay &nbsp;·&nbsp; <span>No card needed for first month</span></p>
+  </div>
+</section>
+
+<!-- ── FAQ ────────────────────────────────────────────────── -->
+<section class="section" id="faq">
+  <p class="section-label">FAQ</p>
+  <h2>Common questions</h2>
+  <div class="faq-list">
+
+    <details>
+      <summary>Do I need any technical skills to use AHA?</summary>
+      <div class="faq-body">No. You install the Chrome extension (one-time, takes 2 minutes), enter your license key, and click Run. Everything else is automated. Your content team handles the Content Engine packaging.</div>
+    </details>
+
+    <details>
+      <summary>Is AHA safe? Will platforms ban my account?</summary>
+      <div class="faq-body">AHA is designed to be undetectable — it uses real mouse curves, natural typing, and actual browser interaction. However, no automation tool provides a 100% guarantee against platform detection. Use it responsibly with realistic posting frequency.</div>
+    </details>
+
+    <details>
+      <summary>Where does my content (photos, videos, text) go?</summary>
+      <div class="faq-body">Nowhere. Everything stays on your own computer in a local folder (~/Downloads/aha/). AHA reads files directly from your disk. We never see or store your content.</div>
+    </details>
+
+    <details>
+      <summary>How does the "first month free" work?</summary>
+      <div class="faq-body">You get access immediately after signing up. Your first payment of ₹3,000 is charged at the start of month 2. If you cancel before then, you owe nothing.</div>
+    </details>
+
+    <details>
+      <summary>Can I use AHA on multiple computers?</summary>
+      <div class="faq-body">One license = one Chrome profile. If you need multiple seats, contact us for a team plan.</div>
+    </details>
+
+    <details>
+      <summary>How do I cancel?</summary>
+      <div class="faq-body">Email us at support@aha-agent.com any time. Subscriptions are cancelled within 24 hours and you will not be charged again.</div>
+    </details>
+
+  </div>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────────────── -->
+<footer>
+  <div class="foot-logo">A<span>H</span>A</div>
+  <nav>
+    <a href="/web/legal.html">Terms</a>
+    <a href="/web/legal.html#privacy">Privacy</a>
+    <a href="/web/legal.html#refund">Refund</a>
+  </nav>
+  <p class="copy">© 2025 AHA — Artificial Human Agent. All rights reserved.</p>
+</footer>
+
+<!-- ── Processing overlay ─────────────────────────────────── -->
+<div id="overlay">
+  <div class="overlay-box">
+    <div class="spinner"></div>
+    <p>Opening secure payment&hellip;</p>
+  </div>
+</div>
+
+<script>
+  /* ── Razorpay configuration ───────────────────────────────
+   *
+   * IMPORTANT: Replace RAZORPAY_KEY_ID below with your actual
+   * Razorpay Key ID (rzp_test_... for test mode).
+   *
+   * The key_id is safe to expose client-side — it is public.
+   * The key_secret must NEVER appear here; it lives on the backend.
+   *
+   ────────────────────────────────────────────────────────── */
+  const RAZORPAY_KEY_ID = 'rzp_test_T1TdaIHRhypafk';
+
+  const PLAN_AMOUNT_PAISE = 300000; // ₹3,000 × 100
+  const PLAN_NAME         = 'AHA AI Pro — Monthly';
+  const PLAN_DESC         = 'Artificial Human Agent Chrome Extension subscription';
+  const CURRENCY          = 'INR';
+
+  /* ── Create Razorpay order on backend, then open checkout ── */
+  async function startPayment() {
+    const overlay = document.getElementById('overlay');
+    overlay.classList.add('active');
+
+    try {
+      /* Step 1: Ask backend to create a Razorpay order */
+      const res = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: PLAN_AMOUNT_PAISE, currency: CURRENCY })
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status}`);
+      }
+
+      const { order_id, amount, currency } = await res.json();
+
+      overlay.classList.remove('active');
+
+      /* Step 2: Open Razorpay checkout */
+      const options = {
+        key:         RAZORPAY_KEY_ID,
+        amount,
+        currency,
+        name:        'AHA — Artificial Human Agent',
+        description: PLAN_DESC,
+        order_id,
+        prefill: {
+          name:  '',
+          email: '',
+          contact: ''
+        },
+        theme: { color: '#4f8ef7' },
+        modal: {
+          ondismiss() {
+            overlay.classList.remove('active');
+          }
+        },
+        handler(response) {
+          /* Payment successful — redirect to success page with payment id */
+          const params = new URLSearchParams({
+            payment_id:  response.razorpay_payment_id,
+            order_id:    response.razorpay_order_id,
+            signature:   response.razorpay_signature
+          });
+          window.location.href = `/web/success.html?${params}`;
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+
+      rzp.on('payment.failed', (response) => {
+        overlay.classList.remove('active');
+        alert(`Payment failed: ${response.error.description}`);
+      });
+
+      rzp.open();
+
+    } catch (err) {
+      overlay.classList.remove('active');
+      alert(`Could not initiate payment: ${err.message}\n\nPlease try again or contact support.`);
+    }
+  }
+
+  /* ── Wire all CTA buttons ─────────────────────────────── */
+  document.getElementById('btn-pay').addEventListener('click', startPayment);
+  document.getElementById('hero-buy-btn').addEventListener('click', startPayment);
+  document.getElementById('nav-buy-btn').addEventListener('click', () => {
+    document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' });
+  });
+</script>
+
+</body>
+</html>

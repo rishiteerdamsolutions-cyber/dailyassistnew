@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment Successful — AHA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#090b10;--surface:#0f1117;--surface2:#161b27;
+      --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+      --text:#e8eaf0;--muted:#8890a4;--blue:#4f8ef7;--green:#22c55e;
+    }
+    body{
+      background:var(--bg);color:var(--text);
+      font-family:'Inter',-apple-system,sans-serif;
+      min-height:100vh;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;padding:40px 20px;
+      -webkit-font-smoothing:antialiased;
+    }
+    .card{
+      background:var(--surface);border:1px solid var(--border2);
+      border-radius:20px;padding:48px 40px;max-width:520px;width:100%;
+      text-align:center;
+    }
+    .tick{
+      width:64px;height:64px;border-radius:50%;
+      background:rgba(34,197,94,0.12);border:2px solid var(--green);
+      display:flex;align-items:center;justify-content:center;
+      font-size:2rem;margin:0 auto 24px;
+    }
+    h1{font-size:1.7rem;font-weight:800;color:#fff;margin-bottom:10px;letter-spacing:-0.03em}
+    .sub{font-size:0.95rem;color:var(--muted);margin-bottom:32px;line-height:1.6}
+
+    .license-box{
+      background:var(--surface2);border:1px solid var(--border2);
+      border-radius:12px;padding:24px;margin-bottom:28px;text-align:left;
+    }
+    .license-label{font-size:0.75rem;font-weight:600;text-transform:uppercase;
+      letter-spacing:0.1em;color:var(--muted);margin-bottom:10px}
+    .license-key{
+      font-family:'Courier New',monospace;font-size:1.05rem;font-weight:700;
+      color:var(--blue);background:rgba(79,142,247,0.08);border:1px solid rgba(79,142,247,0.2);
+      border-radius:8px;padding:14px 16px;letter-spacing:0.05em;word-break:break-all;
+      margin-bottom:12px;
+    }
+    .copy-btn{
+      background:transparent;border:1px solid var(--border2);color:var(--muted);
+      font-size:0.8rem;padding:6px 16px;border-radius:6px;cursor:pointer;
+      transition:border-color .15s,color .15s;font-family:inherit;
+    }
+    .copy-btn:hover{border-color:var(--blue);color:var(--blue)}
+    .copy-btn.copied{border-color:var(--green);color:var(--green)}
+
+    .steps-mini{text-align:left;margin-bottom:28px}
+    .steps-mini h3{font-size:0.85rem;font-weight:600;color:var(--muted);
+      text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px}
+    .step-item{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}
+    .step-dot{
+      width:22px;height:22px;border-radius:50%;background:rgba(79,142,247,0.15);
+      border:1px solid var(--blue);color:var(--blue);font-size:0.7rem;font-weight:700;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
+    }
+    .step-item p{font-size:0.875rem;color:var(--muted);line-height:1.5}
+    .step-item p strong{color:var(--text)}
+
+    .dl-btn{
+      display:block;width:100%;background:var(--blue);color:#fff;border:none;
+      padding:15px;border-radius:10px;font-size:1rem;font-weight:700;
+      cursor:pointer;text-align:center;transition:background .15s;
+      text-decoration:none;margin-bottom:12px;font-family:inherit;
+    }
+    .dl-btn:hover{background:#3b7de8}
+    .dl-btn.disabled{background:#1e2030;color:var(--muted);cursor:default;pointer-events:none}
+
+    .footer-note{font-size:0.78rem;color:var(--muted);line-height:1.6}
+    .footer-note a{color:var(--blue)}
+
+    .error-state{color:#ef4444;font-size:0.9rem;margin-top:16px}
+
+    /* Loading */
+    .spinner{
+      width:40px;height:40px;border:3px solid rgba(255,255,255,0.08);
+      border-top-color:var(--blue);border-radius:50%;
+      animation:spin .8s linear infinite;margin:0 auto 20px;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    #loading-state,#success-state,#error-state{display:none}
+    #loading-state.visible,#success-state.visible,#error-state.visible{display:block}
+  </style>
+</head>
+<body>
+<div class="card">
+
+  <!-- Loading -->
+  <div id="loading-state">
+    <div class="spinner"></div>
+    <p style="color:var(--muted);font-size:.9rem">Verifying payment and generating your license&hellip;</p>
+  </div>
+
+  <!-- Success -->
+  <div id="success-state">
+    <div class="tick">✓</div>
+    <h1>You're in!</h1>
+    <p class="sub">Payment verified. Your AHA license key is below.<br/>Save it — you'll need it to activate the extension.</p>
+
+    <div class="license-box">
+      <div class="license-label">Your License Key</div>
+      <div class="license-key" id="license-display">—</div>
+      <button class="copy-btn" id="copy-btn">Copy key</button>
+    </div>
+
+    <div class="steps-mini">
+      <h3>Next steps</h3>
+      <div class="step-item">
+        <div class="step-dot">1</div>
+        <p><strong>Download the AHA extension</strong> using the button below</p>
+      </div>
+      <div class="step-item">
+        <div class="step-dot">2</div>
+        <p>Open <strong>chrome://extensions</strong> → enable <strong>Developer mode</strong> → click <strong>Load unpacked</strong> → select the extracted folder</p>
+      </div>
+      <div class="step-item">
+        <div class="step-dot">3</div>
+        <p>Click the AHA icon in Chrome's toolbar, paste your license key, and click <strong>Activate</strong></p>
+      </div>
+    </div>
+
+    <a class="dl-btn" id="dl-btn" href="/AHA-extension.zip" download>⬇ Download AHA Chrome Extension</a>
+
+    <p class="footer-note">
+      Receipt sent to your email &nbsp;·&nbsp;
+      Questions? <a href="mailto:support@aha-agent.com">support@aha-agent.com</a>
+    </p>
+  </div>
+
+  <!-- Error -->
+  <div id="error-state">
+    <div class="tick" style="border-color:#ef4444;background:rgba(239,68,68,.1)">✕</div>
+    <h1 style="color:#ef4444">Verification failed</h1>
+    <p class="sub" id="error-msg">We could not verify your payment. Please contact support with your payment ID.</p>
+    <p class="footer-note"><a href="mailto:support@aha-agent.com">support@aha-agent.com</a></p>
+  </div>
+
+</div>
+
+<script>
+  (async () => {
+    const loading = document.getElementById('loading-state');
+    const success = document.getElementById('success-state');
+    const error   = document.getElementById('error-state');
+
+    loading.classList.add('visible');
+
+    const params      = new URLSearchParams(window.location.search);
+    const paymentId   = params.get('payment_id');
+    const orderId     = params.get('order_id');
+    const signature   = params.get('signature');
+
+    if (!paymentId || !orderId || !signature) {
+      loading.classList.remove('visible');
+      error.classList.add('visible');
+      document.getElementById('error-msg').textContent =
+        'Missing payment details. Did you arrive here directly? Please complete a payment first.';
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/verify-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_id: paymentId, order_id: orderId, signature })
+      });
+
+      const data = await res.json();
+
+      loading.classList.remove('visible');
+
+      if (res.ok && data.license_key) {
+        document.getElementById('license-display').textContent = data.license_key;
+        success.classList.add('visible');
+
+        /* Copy button */
+        document.getElementById('copy-btn').addEventListener('click', () => {
+          navigator.clipboard.writeText(data.license_key).then(() => {
+            const btn = document.getElementById('copy-btn');
+            btn.textContent = 'Copied ✓';
+            btn.classList.add('copied');
+            setTimeout(() => {
+              btn.textContent = 'Copy key';
+              btn.classList.remove('copied');
+            }, 2000);
+          });
+        });
+
+      } else {
+        error.classList.add('visible');
+        document.getElementById('error-msg').textContent =
+          data.error || 'Payment verification failed. Please contact support with your payment ID: ' + paymentId;
+      }
+
+    } catch (err) {
+      loading.classList.remove('visible');
+      error.classList.add('visible');
+      document.getElementById('error-msg').textContent =
+        `Network error: ${err.message}. Please contact support with payment ID: ${paymentId}`;
+    }
+  })();
+</script>
+</body>
+</html>
