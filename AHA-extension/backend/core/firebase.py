@@ -33,19 +33,33 @@ def initialise_firebase() -> None:
     if _app is not None:
         return  # Already initialised (e.g. during hot reload)
 
+    import json
+
+    creds_val = os.environ.get("FIREBASE_CREDENTIALS", "")
     creds_path = os.environ.get("FIREBASE_CREDENTIALS_PATH", "")
     project_id = os.environ.get("FIREBASE_PROJECT_ID", "")
 
-    if not creds_path or not project_id:
+    if not creds_val and (not creds_path or not project_id):
         logger.warning(
-            "FIREBASE_CREDENTIALS_PATH or FIREBASE_PROJECT_ID is missing. "
+            "FIREBASE_CREDENTIALS or (FIREBASE_CREDENTIALS_PATH and FIREBASE_PROJECT_ID) is missing. "
             "Firebase is disabled. (This is fine for local UI/payment testing)"
         )
         return
 
-    cred = credentials.Certificate(creds_path)
-    _app = firebase_admin.initialize_app(cred, {"projectId": project_id})
-    logger.info("Firebase Admin SDK initialised (project: %s)", project_id)
+    try:
+        if creds_val:
+            creds_dict = json.loads(creds_val)
+            cred = credentials.Certificate(creds_dict)
+            proj_id = project_id or creds_dict.get("project_id", "")
+        else:
+            cred = credentials.Certificate(creds_path)
+            proj_id = project_id
+
+        _app = firebase_admin.initialize_app(cred, {"projectId": proj_id})
+        logger.info("Firebase Admin SDK initialised (project: %s)", proj_id)
+    except Exception as exc:
+        logger.critical("Firebase initialisation failed: %s", exc)
+        raise
 
 
 def shutdown_firebase() -> None:
