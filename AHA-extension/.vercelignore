@@ -1,0 +1,11 @@
+# Exclude backend python code and local virtual environments
+backend/
+content_engine/
+extension/
+venv/
+.venv/
+__pycache__/
+*.py
+*.pyc
+*.zip
+!web/*.zip

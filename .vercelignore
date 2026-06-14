@@ -1,0 +1,16 @@
+# Exclude all python code, dependencies, and venvs from Vercel
+AHA-extension/backend/
+AHA-extension/content_engine/
+AHA-extension/extension/
+AHA-extension/backend/venv/
+AHA-extension/backend/.venv/
+.venv/
+venv/
+bol/
+aha/
+__pycache__/
+*.py
+*.pyc
+*.zip
+!AHA-extension/web/*.zip
+!web/*.zip
