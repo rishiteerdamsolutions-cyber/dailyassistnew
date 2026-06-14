@@ -9,3 +9,5 @@ __pycache__/
 *.pyc
 *.zip
 !web/*.zip
+requirements.txt
+pyproject.toml
