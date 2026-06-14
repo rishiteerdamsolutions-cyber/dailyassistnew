@@ -220,3 +220,11 @@ AHA-extension/
     manifest_template.csv   ← copy + edit for manifest mode
     README.md               ← this file
 ```
+
+---
+
+## Legal & API Terms of Service
+
+You agree to the following terms when using the AHA Content Engine output and API:
+
+> **"You may not use the output of this API to train machine learning models, reconstruct algorithms, or build competing products."** Under the Indian Contract Act, this is enforceable.
