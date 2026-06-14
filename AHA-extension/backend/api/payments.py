@@ -20,8 +20,10 @@ import secrets
 import string
 import time
 
+from typing import Annotated
 import razorpay
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
+from google.cloud.firestore import AsyncClient
 from pydantic import BaseModel
 
 from core.firebase import get_firestore
@@ -103,7 +105,10 @@ async def create_order(body: CreateOrderRequest):
 
 
 @router.post("/api/verify-payment")
-async def verify_payment(body: VerifyPaymentRequest):
+async def verify_payment(
+    body: VerifyPaymentRequest,
+    db: Annotated[AsyncClient, Depends(get_firestore)],
+):
     """
     1. Verify the Razorpay payment signature.
     2. Generate a license key.
@@ -119,7 +124,6 @@ async def verify_payment(body: VerifyPaymentRequest):
 
     # Step 3 — persist to Firestore
     try:
-        db = await get_firestore()
         await db.collection("licenses").document(license_key).set({
             "license_key":  license_key,
             "payment_id":   body.payment_id,
