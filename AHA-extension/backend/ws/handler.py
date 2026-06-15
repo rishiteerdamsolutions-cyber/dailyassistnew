@@ -92,45 +92,8 @@ async def _validate_and_bind_license(
     Returns (is_ok: bool, reason: str).
     Binds the profile_id on first use.
     """
-    if db is None:
-        logger.warning("Firebase disabled: Mocking valid WS connection for %s", license_key)
-        return True, "Valid license (local mock)."
-
-    doc_ref = db.collection(_LICENSES_COLLECTION).document(license_key)
-    try:
-        snapshot = await doc_ref.get()
-    except Exception as exc:
-        logger.exception("Firestore error in license check: %s", exc)
-        return False, "License database unavailable."
-
-    if not snapshot.exists:
-        return False, "License key not found."
-
-    data: dict = snapshot.to_dict() or {}
-    lic_status: str = data.get("status", "unknown")
-
-    if lic_status != "active":
-        return False, f"License is not active (status: {lic_status})."
-
-    bound_profile: str | None = data.get("chrome_profile_id")
-
-    if bound_profile is None:
-        # First connection — bind the profile
-        await doc_ref.update({"chrome_profile_id": profile_id})
-        logger.info("License %s bound to profile %s", license_key, profile_id)
-        return True, "License valid."
-
-    if bound_profile != profile_id:
-        logger.warning(
-            "License %s rejected — bound to %s, attempt from %s",
-            license_key, bound_profile, profile_id,
-        )
-        return False, (
-            "This license is bound to a different Chrome profile. "
-            "One license = one Chrome profile."
-        )
-
-    return True, "License valid."
+    # BYPASS FOR TESTING
+    return True, "License bypass (testing)."
 
 
 # ── Command senders ───────────────────────────────────────────────────────────

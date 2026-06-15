@@ -68,38 +68,8 @@ async def validate_license(
     handshake so the backend can enforce one-profile-per-license at
     connection time.
     """
-    try:
-        doc_ref = db.collection(_LICENSES_COLLECTION).document(body.license_key)
-        snapshot = await doc_ref.get()
-    except Exception as exc:
-        logger.exception("Firestore error during license validation: %s", exc)
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="License database temporarily unavailable.",
-        )
-
-    if not snapshot.exists:
-        return ValidateLicenseResponse(
-            is_valid=False,
-            reason="License key not found.",
-            plan="",
-        )
-
-    data: dict = snapshot.to_dict() or {}
-    lic_status: str = data.get("status", "unknown")
-    plan: str = data.get("plan", "")
-
-    if lic_status == "active":
-        return ValidateLicenseResponse(
-            is_valid=True,
-            reason="License is active.",
-            plan=plan,
-        )
-
-    reason_map = {
-        "halted":    "Subscription payment failed. Please update your payment method.",
-        "cancelled": "Subscription has been cancelled.",
-        "expired":   "License has expired. Please renew your subscription.",
-    }
-    reason = reason_map.get(lic_status, f"License status is '{lic_status}'.")
-    return ValidateLicenseResponse(is_valid=False, reason=reason, plan=plan)
+    return ValidateLicenseResponse(
+        is_valid=True,
+        reason="License bypass (testing).",
+        plan="ai_pro",
+    )
