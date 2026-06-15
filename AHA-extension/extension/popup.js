@@ -83,7 +83,7 @@ async function refreshStatus() {
     if (!response?.ok) return;
 
     applyStatus(
-      response.licenseValid ? (response.executionStatus ?? 'idle') : 'locked',
+      response.executionStatus ?? 'idle',
       response.wsConnected
     );
   } catch (err) {

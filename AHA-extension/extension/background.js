@@ -404,11 +404,7 @@ function forwardOcrResult(result) {
 // Execution handler
 // ─────────────────────────────────────────────────────────────────────────────
 async function handleStartExecution(payload, sendResponse) {
-  const { licenseValid } = await chrome.storage.local.get('licenseValid');
-  if (!licenseValid) {
-    sendResponse({ ok: false, error: 'License not valid. Please activate a license key.' });
-    return;
-  }
+  // License bypass: always valid
 
   if (!_ws || _ws.readyState !== WebSocket.OPEN) {
     sendResponse({ ok: false, error: 'Backend not connected. Ensure the AHA backend is running.' });
@@ -449,17 +445,15 @@ async function handleStartExecution(payload, sendResponse) {
 // ─────────────────────────────────────────────────────────────────────────────
 async function handleGetStatus(sendResponse) {
   const data = await chrome.storage.local.get([
-    'licenseValid',
     'wsConnected',
-    'executionStatus',
-    'licenseKey'
+    'executionStatus'
   ]);
   sendResponse({
     ok: true,
-    licenseValid:    data.licenseValid    ?? false,
+    licenseValid:    true,
     wsConnected:     data.wsConnected     ?? false,
     executionStatus: data.executionStatus ?? 'idle',
-    hasLicenseKey:   !!data.licenseKey
+    hasLicenseKey:   true
   });
 }
 
