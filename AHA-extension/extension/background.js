@@ -21,6 +21,8 @@ const DEBUGGER_VERSION  = '1.3';
 
 // Dynamic config loader to override URLs (e.g. for local testing)
 async function loadConfig() {
+  // Disabled custom URL overrides to ensure connection to Render backend
+  /*
   const { customWsUrl, customApiUrl } = await chrome.storage.local.get(['customWsUrl', 'customApiUrl']);
   if (customWsUrl) {
     BACKEND_WS_URL = customWsUrl;
@@ -28,6 +30,7 @@ async function loadConfig() {
   if (customApiUrl) {
     LICENSE_API_URL = customApiUrl;
   }
+  */
 }
 
 // ─── WebSocket state (stored in chrome.storage.session to survive SW restart)
