@@ -467,81 +467,26 @@ async function handleGetStatus(sendResponse) {
 // License
 // ─────────────────────────────────────────────────────────────────────────────
 async function handleActivateLicense(licenseKey, sendResponse) {
-  if (!licenseKey || typeof licenseKey !== 'string' || licenseKey.trim().length === 0) {
-    sendResponse({ ok: false, error: 'Invalid license key.' });
-    return;
-  }
-
-  const trimmedKey = licenseKey.trim();
-  const result = await callLicenseApi(trimmedKey);
-
-  if (result.valid) {
-    await chrome.storage.local.set({
-      licenseKey: trimmedKey,
-      licenseValid: true,
-      licenseValidatedAt: Date.now()
-    });
-    sendResponse({ ok: true });
-    notifyPopup({ type: 'STATUS_UPDATE', status: 'idle' });
-    // Now connect WS with new key
-    ensureWebSocket();
-  } else {
-    await chrome.storage.local.set({ licenseValid: false });
-    sendResponse({ ok: false, error: result.error ?? 'License validation failed.' });
-  }
+  const trimmedKey = (licenseKey || 'bypass-active-key').trim();
+  await chrome.storage.local.set({
+    licenseKey: trimmedKey,
+    licenseValid: true,
+    licenseValidatedAt: Date.now()
+  });
+  sendResponse({ ok: true });
+  notifyPopup({ type: 'STATUS_UPDATE', status: 'idle' });
+  ensureWebSocket();
 }
 
 async function validateLicense() {
-  const { licenseKey, licenseValidatedAt } = await chrome.storage.local.get([
-    'licenseKey',
-    'licenseValidatedAt'
-  ]);
-
-  if (!licenseKey) {
-    await chrome.storage.local.set({ licenseValid: false });
-    notifyPopup({ type: 'STATUS_UPDATE', status: 'locked' });
-    return;
-  }
-
-  // Throttle: don't re-validate if done within last 23 hours
-  const twentyThreeHours = 23 * 60 * 60 * 1000;
-  if (licenseValidatedAt && (Date.now() - licenseValidatedAt) < twentyThreeHours) {
-    return; // Still fresh
-  }
-
-  const result = await callLicenseApi(licenseKey);
-  if (result.valid) {
-    await chrome.storage.local.set({
-      licenseValid: true,
-      licenseValidatedAt: Date.now()
-    });
-  } else {
-    await chrome.storage.local.set({ licenseValid: false });
-    notifyPopup({ type: 'STATUS_UPDATE', status: 'locked' });
-  }
+  await chrome.storage.local.set({
+    licenseValid: true,
+    licenseKey: 'bypass-active-key'
+  });
 }
 
 async function callLicenseApi(licenseKey) {
-  await loadConfig();
-  try {
-    const response = await fetch(LICENSE_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ licenseKey })
-    });
-
-    if (!response.ok) {
-      return { valid: false, error: `Server responded with ${response.status}` };
-    }
-
-    const data = await response.json();
-    return { valid: data.is_valid === true, error: data.reason };
-  } catch (err) {
-    console.error('[AHA BG] License API error:', err);
-    // Network error: keep existing valid status (don't lock out on network failure)
-    const { licenseValid } = await chrome.storage.local.get('licenseValid');
-    return { valid: licenseValid ?? false, error: err.message };
-  }
+  return { valid: true };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
