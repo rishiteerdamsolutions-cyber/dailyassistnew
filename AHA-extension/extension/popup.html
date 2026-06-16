@@ -22,25 +22,7 @@
       </div>
     </header>
 
-    <!-- License locked section (shown only when locked) -->
-    <section class="license-section" id="licenseSection" hidden>
-      <div class="section-title">🔒 License Required</div>
-      <div class="form-group">
-        <label class="form-label" for="licenseKeyInput">License Key</label>
-        <input
-          type="text"
-          id="licenseKeyInput"
-          class="form-input"
-          placeholder="XXXX-XXXX-XXXX-XXXX"
-          autocomplete="off"
-          spellcheck="false"
-        />
-        <div class="field-error" id="licenseError" hidden></div>
-      </div>
-      <button class="btn btn-primary" id="activateLicenseBtn">Activate License</button>
-    </section>
-
-    <!-- Main form (hidden when locked) -->
+    <!-- Main form -->
     <main class="main-form" id="mainForm">
 
       <!-- Slot 1: Platform -->
@@ -49,40 +31,36 @@
           Platform
           <span class="required">*</span>
         </label>
-        <div class="input-wrapper">
-          <input
-            type="text"
-            id="platformInput"
-            class="form-input"
-            placeholder="LinkedIn, Instagram, Facebook, X, WhatsApp"
-            autocomplete="off"
-            spellcheck="false"
-          />
-          <span class="input-icon" id="platformIcon"></span>
-        </div>
-        <div class="field-hint">Accepted: LinkedIn · Instagram · Facebook · X · WhatsApp</div>
-        <div class="field-error" id="platformError" hidden></div>
+        <select id="platformInput" class="form-select">
+          <option value="" disabled selected>Choose platform…</option>
+          <option value="LinkedIn">LinkedIn</option>
+          <option value="Instagram">Instagram</option>
+          <option value="Facebook">Facebook</option>
+          <option value="X">X</option>
+          <option value="WhatsApp">WhatsApp</option>
+        </select>
       </div>
 
-      <!-- Slot 2: Text (optional) -->
+      <!-- Slot 2: Text (Yes / No) -->
       <div class="form-group">
-        <label class="form-label toggle-label" for="textToggle">
-          <span>Include Text</span>
-          <div class="toggle-switch">
-            <input type="checkbox" id="textToggle" class="toggle-input" />
-            <span class="toggle-slider"></span>
-          </div>
-        </label>
-        <div class="text-slot" id="textSlot" hidden>
-          <div class="vault-info" id="textVaultInfo">
-            Reads <code id="textFilePath">—</code> from vault
-          </div>
+        <label class="form-label">Include Text</label>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="textChoice" value="yes" id="textYes" />
+            <span class="radio-custom"></span>
+            Yes
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="textChoice" value="no" id="textNo" checked />
+            <span class="radio-custom"></span>
+            No
+          </label>
         </div>
       </div>
 
-      <!-- Slot 3: Media (optional) -->
+      <!-- Slot 3: Media (None / Image / Video) -->
       <div class="form-group">
-        <label class="form-label">Media Attachment</label>
+        <label class="form-label">Media</label>
         <div class="radio-group">
           <label class="radio-label">
             <input type="radio" name="mediaType" value="none" id="mediaNone" checked />
@@ -100,23 +78,10 @@
             Video
           </label>
         </div>
-        <div class="vault-info" id="mediaVaultInfo" hidden>
-          Reads <code id="mediaFilePath">—</code> from vault
-        </div>
-      </div>
-
-      <!-- Vault directory picker -->
-      <div class="form-group">
-        <label class="form-label">Vault Directory</label>
-        <div class="vault-picker">
-          <span class="vault-path-display" id="vaultPathDisplay">Not selected</span>
-          <button class="btn btn-secondary btn-sm" id="pickVaultBtn">Browse…</button>
-        </div>
-        <div class="field-hint">Select your <code>~/Downloads/aha/AI Pro/</code> folder</div>
       </div>
 
       <!-- Run button -->
-      <button class="btn btn-primary btn-run" id="runBtn" disabled>
+      <button class="btn btn-primary btn-run" id="runBtn">
         <span class="btn-icon">▶</span>
         <span>Run Agent</span>
       </button>
@@ -127,15 +92,26 @@
         <div class="log-content" id="logContent"></div>
       </div>
 
+      <!-- Downloads section -->
+      <div class="downloads-section">
+        <div class="section-title">📦 Downloads</div>
+        <a class="btn btn-download" id="dlVault" href="https://aha-cloud-brain.onrender.com/AHA-Storage-Vault.zip" target="_blank">
+          ⬇ Storage Vault Template
+        </a>
+        <a class="btn btn-download" id="dlContent" href="https://aha-cloud-brain.onrender.com/AHA-Content-Engine.zip" target="_blank">
+          ⬇ Content Engine
+        </a>
+      </div>
+
     </main>
 
-    <!-- Connection info footer -->
+    <!-- Footer -->
     <footer class="footer">
       <span class="footer-ws" id="footerWs">Backend: —</span>
-      <a href="https://aha-cloud-brain.onrender.com/legal" target="_blank" class="footer-terms">Terms of Service</a>
+      <a href="https://aha-cloud-brain.onrender.com/legal" target="_blank" class="footer-terms">Terms</a>
     </footer>
 
   </div>
-  <script src="popup.js" type="module"></script>
+  <script src="popup.js"></script>
 </body>
 </html>
