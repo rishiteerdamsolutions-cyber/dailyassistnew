@@ -83,6 +83,18 @@ def serve_companion():
 def serve_legal():
     return FileResponse("web/legal.html")
 
+@app.get("/AHA-Content-Engine.zip")
+def download_content_engine():
+    return FileResponse("web/AHA-Content-Engine.zip", filename="AHA-Content-Engine.zip")
+
+@app.get("/AHA-Storage-Vault.zip")
+def download_storage_vault():
+    return FileResponse("web/AHA-Storage-Vault.zip", filename="AHA-Storage-Vault.zip")
+
+@app.get("/AHA-extension.zip")
+def download_extension():
+    return FileResponse("web/AHA-extension.zip", filename="AHA-extension.zip")
+
 @app.get("/api/timing")
 def get_timing():
     config = TimingConfig(
