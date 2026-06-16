@@ -75,10 +75,10 @@ function handleBackgroundMessage(message) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Run button enable/disable — only needs platform selected + not executing
 // ─────────────────────────────────────────────────────────────────────────────
-platformInput.addEventListener('change', updateRunButton);
+platformInput.addEventListener('input', updateRunButton);
 
 function updateRunButton() {
-  const platformSelected = platformInput.value !== '';
+  const platformSelected = platformInput.value.trim() !== '';
   const notBusy = currentStatus !== 'executing';
   runBtn.disabled = !(platformSelected && notBusy);
 }
@@ -104,7 +104,7 @@ function getCurrentDaySlot() {
 // Run Agent
 // ─────────────────────────────────────────────────────────────────────────────
 runBtn.addEventListener('click', async () => {
-  const platform = platformInput.value;
+  const platform = platformInput.value.trim();
   if (!platform) return;
 
   runBtn.disabled = true;
