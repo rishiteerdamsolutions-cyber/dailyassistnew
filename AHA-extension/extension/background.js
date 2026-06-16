@@ -418,6 +418,37 @@ async function handleStartExecution(payload, sendResponse) {
     return;
   }
 
+  // ─── Fetch Content from Local Storage Vault ───
+  try {
+    const { platform, daySlot, includeText, mediaType } = payload;
+    let url = `http://127.0.0.1:8123/api/content?platform=${encodeURIComponent(platform)}&day=${daySlot}`;
+    if (includeText) url += '&text=yes';
+    if (mediaType && mediaType !== 'none') url += `&media=${mediaType.toLowerCase()}`;
+    
+    const vaultRes = await fetch(url);
+    if (!vaultRes.ok) {
+      throw new Error(`Local Storage Vault returned ${vaultRes.status}`);
+    }
+    
+    const vaultData = await vaultRes.json();
+    
+    // Inject the fetched data into the payload so the backend can use it
+    if (vaultData.textContent) payload.fetchedText = vaultData.textContent;
+    if (vaultData.mediaDataUrl) {
+      payload.fetchedMedia = vaultData.mediaDataUrl;
+      payload.mediaMimeType = vaultData.mediaMimeType;
+    }
+    
+  } catch (err) {
+    console.error('[AHA BG] Storage Vault fetch error:', err);
+    sendResponse({ 
+      ok: false, 
+      error: 'Cannot connect to Local Storage Vault on port 8123. Make sure the Storage Vault App is running. Error: ' + err.message 
+    });
+    return;
+  }
+  // ─────────────────────────────────────────────
+
   await chrome.storage.local.set({ executionStatus: 'executing' });
   notifyPopup({ type: 'STATUS_UPDATE', status: 'executing' });
 
