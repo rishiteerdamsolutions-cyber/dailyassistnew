@@ -44,11 +44,13 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 
 chrome.runtime.onInstalled.addListener(async () => {
+  await chrome.storage.local.set({ executionStatus: 'idle' });
   // Set up alarms on install/update
   await setupAlarms();
 });
 
 chrome.runtime.onStartup.addListener(async () => {
+  await chrome.storage.local.set({ executionStatus: 'idle' });
   await setupAlarms();
 });
 
@@ -420,23 +422,28 @@ async function handleStartExecution(payload, sendResponse) {
   await chrome.storage.local.set({ executionStatus: 'executing' });
   notifyPopup({ type: 'STATUS_UPDATE', status: 'executing' });
 
-  // Attach debugger to active tab
-  await attachDebugger(tab.id);
+  try {
+    // Attach debugger to active tab
+    await attachDebugger(tab.id);
 
-  // Send execution command to backend
-  const sent = safeSend({
-    type:    'START_EXECUTION',
-    tabId:   tab.id,
-    tabUrl:  tab.url,
-    payload
-  });
+    // Send execution command to backend
+    const sent = safeSend({
+      type:    'START_EXECUTION',
+      tabId:   tab.id,
+      tabUrl:  tab.url,
+      payload
+    });
 
-  if (!sent) {
-    sendResponse({ ok: false, error: 'Failed to send to backend.' });
-    return;
+    if (!sent) {
+      throw new Error('Failed to send to backend. Ensure backend is connected.');
+    }
+
+    sendResponse({ ok: true, tabId: tab.id });
+  } catch (err) {
+    await chrome.storage.local.set({ executionStatus: 'idle' });
+    notifyPopup({ type: 'STATUS_UPDATE', status: 'idle' });
+    throw err;
   }
-
-  sendResponse({ ok: true, tabId: tab.id });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
