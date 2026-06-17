@@ -439,34 +439,20 @@ async function handleStartExecution(payload, sendResponse) {
     // Attach debugger to active tab
     await attachDebugger(tab.id);
 
-    // Use DOM extraction instead of OCR for 100% text accuracy
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: () => {
-        const els = [];
-        // Walk all elements, grab text of leaf nodes or specific elements
-        document.querySelectorAll('span, p, div, button, a, h1, h2, h3, h4, input, textarea, [role="textbox"], [contenteditable="true"]').forEach(el => {
-          const rect = el.getBoundingClientRect();
-          if (rect.width === 0 || rect.height === 0 || rect.x < 0 || rect.y < 0) return;
-          
-          let text = el.innerText || el.textContent || el.value || el.placeholder || el.getAttribute('aria-label') || '';
-          text = text.replace(/\s+/g, ' ').trim();
-          if (!text) return;
-
-          els.push({
-            text: text,
-            x: rect.x,
-            y: rect.y,
-            width: rect.width,
-            height: rect.height,
-            tag: el.tagName.toLowerCase(),
-            role: el.getAttribute('role') || ''
-          });
-        });
-        return els;
-      }
+    // Run OCR first to get elements for the backend
+    const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png', quality: 100 });
+    await ensureOffscreenDocument();
+    
+    const elements = await new Promise((resolve) => {
+      const listener = (m) => {
+        if (m.type === 'OCR_RESULT') {
+          chrome.runtime.onMessage.removeListener(listener);
+          resolve(m.result);
+        }
+      };
+      chrome.runtime.onMessage.addListener(listener);
+      chrome.runtime.sendMessage({ type: 'RUN_OCR', target: 'offscreen', dataUrl });
     });
-    const elements = results[0].result;
 
     // Send execution command to backend
     const sent = safeSend({
