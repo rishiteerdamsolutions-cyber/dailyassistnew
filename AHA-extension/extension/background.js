@@ -68,11 +68,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case 'GET_STATUS':
           await handleGetStatus(sendResponse);
           break;
-        case 'OCR_RESULT':
-          // Result from offscreen document — forward to WS
-          forwardOcrResult(message.result);
-          sendResponse({ ok: true });
-          break;
         default:
           sendResponse({ ok: false, error: `Unknown message type: ${message.type}` });
       }
@@ -378,9 +373,7 @@ async function ensureOffscreenDocument() {
   });
 }
 
-function forwardOcrResult(result) {
-  safeSend({ type: 'OCR_RESULT', result });
-}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Execution handler

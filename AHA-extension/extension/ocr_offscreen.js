@@ -62,20 +62,18 @@ async function runOcr(dataUrl) {
   for (const block of data.blocks) {
     for (const paragraph of block.paragraphs) {
       for (const line of paragraph.lines) {
-        for (const word of line.words) {
-          const { text, bbox, confidence } = word;
-          const cleanText = text.trim();
-          if (!cleanText || confidence < 30) continue;
+        const { text, bbox, confidence } = line;
+        const cleanText = text.trim();
+        if (!cleanText || confidence < 20) continue;
 
-          results.push({
-            text:       cleanText,
-            confidence: Math.round(confidence),
-            x:          bbox.x0,
-            y:          bbox.y0,
-            width:      bbox.x1 - bbox.x0,
-            height:     bbox.y1 - bbox.y0
-          });
-        }
+        results.push({
+          text:       cleanText,
+          confidence: Math.round(confidence),
+          x:          bbox.x0,
+          y:          bbox.y0,
+          width:      bbox.x1 - bbox.x0,
+          height:     bbox.y1 - bbox.y0
+        });
       }
     }
   }
