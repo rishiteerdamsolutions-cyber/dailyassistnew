@@ -294,17 +294,28 @@ class StorageEngineApp(QMainWindow):
         layout.addWidget(media_label)
         
         btn_layout = QHBoxLayout()
-        attach_btn = QPushButton("Attach Media")
-        attach_btn.setStyleSheet("padding: 8px; background-color: #475569; color: white; border-radius: 4px;")
         
-        def do_attach():
+        attach_img_btn = QPushButton("Attach Image")
+        attach_img_btn.setStyleSheet("padding: 8px; background-color: #475569; color: white; border-radius: 4px;")
+        def do_attach_img():
             nonlocal existing_media
-            path, _ = QFileDialog.getOpenFileName(modal, "Select Media", "", "Media (*.png *.jpg *.jpeg *.mp4 *.mov *.webp *.gif)")
+            path, _ = QFileDialog.getOpenFileName(modal, "Select Image", "", "Image (*.png *.jpg *.jpeg *.webp *.gif)")
             if path:
                 existing_media = Path(path)
-                media_label.setText(f"Selected: {existing_media.name} (Will be saved on confirm)")
+                media_label.setText(f"Selected Image: {existing_media.name} (Will be saved on confirm)")
                 media_label.setStyleSheet("color: #3b82f6; font-weight: bold;")
-        attach_btn.clicked.connect(do_attach)
+        attach_img_btn.clicked.connect(do_attach_img)
+
+        attach_vid_btn = QPushButton("Attach Video")
+        attach_vid_btn.setStyleSheet("padding: 8px; background-color: #475569; color: white; border-radius: 4px;")
+        def do_attach_vid():
+            nonlocal existing_media
+            path, _ = QFileDialog.getOpenFileName(modal, "Select Video", "", "Video (*.mp4 *.mov *.webm)")
+            if path:
+                existing_media = Path(path)
+                media_label.setText(f"Selected Video: {existing_media.name} (Will be saved on confirm)")
+                media_label.setStyleSheet("color: #3b82f6; font-weight: bold;")
+        attach_vid_btn.clicked.connect(do_attach_vid)
         
         clear_btn = QPushButton("Clear Content")
         clear_btn.setStyleSheet("padding: 8px; background-color: #ef4444; color: white; border-radius: 4px;")
@@ -322,7 +333,8 @@ class StorageEngineApp(QMainWindow):
             self.load_calendar()
         clear_btn.clicked.connect(do_clear)
         
-        btn_layout.addWidget(attach_btn)
+        btn_layout.addWidget(attach_img_btn)
+        btn_layout.addWidget(attach_vid_btn)
         btn_layout.addWidget(clear_btn)
         layout.addLayout(btn_layout)
         
