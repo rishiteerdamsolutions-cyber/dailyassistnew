@@ -104,8 +104,15 @@ class StorageEngineApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("AHA Storage Engine")
-        self.setMinimumSize(900, 700)
-        self.setStyleSheet("background-color: #0f172a; color: white; font-family: -apple-system, system-ui, sans-serif;")
+        self.setMinimumSize(1000, 750)
+        self.setStyleSheet("""
+            QWidget { background-color: #0f172a; color: white; font-family: -apple-system, system-ui, sans-serif; font-size: 14px; }
+            QComboBox { padding: 8px 12px; min-width: 140px; border-radius: 4px; background-color: #1e293b; border: 1px solid #334155; }
+            QComboBox QAbstractItemView { background-color: #1e293b; color: white; selection-background-color: #3b82f6; }
+            QLineEdit { background-color: #1e293b; color: white; padding: 8px; border: 1px solid #334155; border-radius: 4px; }
+            QPushButton { font-weight: bold; font-size: 14px; }
+            QInputDialog { background-color: #0f172a; }
+        """)
         
         self.vault_root = get_vault_root()
         self.vault_root.mkdir(parents=True, exist_ok=True)
@@ -140,35 +147,33 @@ class StorageEngineApp(QMainWindow):
         controls_layout = QHBoxLayout()
         
         self.platform_dropdown = QComboBox()
-        self.platform_dropdown.setStyleSheet("padding: 8px; border-radius: 4px; background-color: #1e293b; border: 1px solid #334155;")
         self.load_platforms()
         self.platform_dropdown.currentTextChanged.connect(self.load_calendar)
         
-        add_platform_btn = QPushButton("+ New")
-        add_platform_btn.setStyleSheet("padding: 8px; background-color: #475569; color: white; border-radius: 4px;")
+        add_platform_btn = QPushButton("+ New Platform")
+        add_platform_btn.setFixedSize(140, 36)
+        add_platform_btn.setStyleSheet("background-color: #475569; color: white; border-radius: 4px;")
         add_platform_btn.clicked.connect(self.add_new_platform)
         
         self.year_dropdown = QComboBox()
         current_year = datetime.date.today().year
         self.year_dropdown.addItems([str(y) for y in range(current_year - 1, current_year + 3)])
         self.year_dropdown.setCurrentText(str(current_year))
-        self.year_dropdown.setStyleSheet("padding: 8px; border-radius: 4px; background-color: #1e293b; border: 1px solid #334155;")
         self.year_dropdown.currentTextChanged.connect(self.load_calendar)
         
         self.month_dropdown = QComboBox()
         self.month_dropdown.addItems([str(m).zfill(2) for m in range(1, 13)])
         self.month_dropdown.setCurrentText(str(datetime.date.today().month).zfill(2))
-        self.month_dropdown.setStyleSheet("padding: 8px; border-radius: 4px; background-color: #1e293b; border: 1px solid #334155;")
         self.month_dropdown.currentTextChanged.connect(self.load_calendar)
         
-        controls_layout.addWidget(QLabel("Platform:"))
+        controls_layout.addWidget(QLabel("<b>Platform:</b>"))
         controls_layout.addWidget(self.platform_dropdown)
         controls_layout.addWidget(add_platform_btn)
-        controls_layout.addSpacing(20)
-        controls_layout.addWidget(QLabel("Year:"))
+        controls_layout.addSpacing(40)
+        controls_layout.addWidget(QLabel("<b>Year:</b>"))
         controls_layout.addWidget(self.year_dropdown)
-        controls_layout.addSpacing(20)
-        controls_layout.addWidget(QLabel("Month:"))
+        controls_layout.addSpacing(40)
+        controls_layout.addWidget(QLabel("<b>Month:</b>"))
         controls_layout.addWidget(self.month_dropdown)
         controls_layout.addStretch()
         
@@ -207,12 +212,6 @@ class StorageEngineApp(QMainWindow):
             platforms = [d.name for d in self.vault_root.iterdir() if d.is_dir() and not d.name.startswith('.')]
             if platforms:
                 self.platform_dropdown.addItems(sorted(platforms))
-            else:
-                # Add defaults if completely empty
-                defaults = ["LinkedIn", "Instagram", "Facebook", "X", "WhatsApp"]
-                for p in defaults:
-                    (self.vault_root / p).mkdir(parents=True, exist_ok=True)
-                self.platform_dropdown.addItems(sorted(defaults))
                 
     def add_new_platform(self):
         name, ok = QInputDialog.getText(self, "New Platform", "Enter Platform Name:")
