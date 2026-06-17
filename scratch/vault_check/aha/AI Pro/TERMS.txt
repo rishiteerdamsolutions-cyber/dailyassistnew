@@ -1,0 +1,5 @@
+AHA Storage Vault - Terms of Service
+-----------------------------------
+You may not use the output of this API to train machine learning models,
+reconstruct algorithms, or build competing products. Under the Indian
+Contract Act, this is enforceable.

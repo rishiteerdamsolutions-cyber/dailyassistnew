@@ -4,7 +4,12 @@ import shutil
 import datetime
 import calendar
 import zipfile
+import json
+import base64
+import threading
 from pathlib import Path
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs
 
 try:
     from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -18,11 +23,85 @@ except ImportError:
 
 PLATFORMS = ["LinkedIn", "Instagram", "Facebook", "X", "WhatsApp"]
 PLAN_SUFFIX = "AI"
+PORT = 8123
 
-class ContentEngineApp(QMainWindow):
+# --- Local HTTP Server ---
+class VaultHandler(BaseHTTPRequestHandler):
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+
+    def do_GET(self):
+        parsed = urlparse(self.path)
+        if parsed.path != '/api/content':
+            self.send_error(404)
+            return
+            
+        qs = parse_qs(parsed.query)
+        platform = qs.get('platform', [''])[0]
+        day = qs.get('day', [''])[0]
+        text_choice = qs.get('text', ['no'])[0].lower()
+        media_choice = qs.get('media', ['none'])[0].lower()
+        
+        if not platform or not day:
+            self.send_error(400, "Missing platform or day")
+            return
+            
+        vault_dir = Path.home() / "Downloads" / "aha" / "AI Pro" / platform
+        
+        response_data = {
+            "platform": platform,
+            "day": day,
+            "textContent": None,
+            "mediaDataUrl": None,
+            "mediaMimeType": None
+        }
+        
+        # Read Text
+        if text_choice == 'yes':
+            txt_path = vault_dir / "Texts" / f"{day}{PLAN_SUFFIX}.txt"
+            if txt_path.exists():
+                response_data["textContent"] = txt_path.read_text(encoding="utf-8")
+                
+        # Read Media
+        if media_choice in ['image', 'video']:
+            subfolder = "Images" if media_choice == 'image' else "Videos"
+            media_dir = vault_dir / subfolder
+            if media_dir.exists():
+                # Find the first matching file
+                for p in media_dir.glob(f"{day}{PLAN_SUFFIX}.*"):
+                    ext = p.suffix.lower()
+                    mime_type = "application/octet-stream"
+                    if ext in [".png", ".jpg", ".jpeg", ".webp", ".gif"]:
+                        mime_type = f"image/{ext[1:]}"
+                        if ext == ".jpg": mime_type = "image/jpeg"
+                    elif ext in [".mp4", ".mov", ".webm"]:
+                        mime_type = f"video/{ext[1:]}"
+                        
+                    with open(p, "rb") as f:
+                        b64 = base64.b64encode(f.read()).decode('utf-8')
+                        response_data["mediaDataUrl"] = f"data:{mime_type};base64,{b64}"
+                        response_data["mediaMimeType"] = mime_type
+                    break
+                    
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(json.dumps(response_data).encode('utf-8'))
+
+def run_server():
+    server = HTTPServer(('127.0.0.1', PORT), VaultHandler)
+    server.serve_forever()
+
+# --- PyQt Application ---
+class StorageVaultApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("AHA Content Engine - Manager Dashboard")
+        self.setWindowTitle(f"AHA Storage Vault - Running on Port {PORT}")
         self.setMinimumSize(800, 600)
         self.setStyleSheet("background-color: #0f172a; color: white; font-family: -apple-system, system-ui, sans-serif;")
         
@@ -33,14 +112,14 @@ class ContentEngineApp(QMainWindow):
         
         # Header
         header_layout = QHBoxLayout()
-        title = QLabel("<h2>Content Engine</h2>")
+        title = QLabel("<h2>Storage Vault (Local Server Active)</h2>")
         header_layout.addWidget(title)
         
-        self.export_btn = QPushButton("Export as ZIP")
-        self.export_btn.setFixedSize(140, 40)
-        self.export_btn.setStyleSheet("background-color: #10b981; color: white; border: none; border-radius: 6px; font-weight: bold;")
-        self.export_btn.clicked.connect(self.export_zip)
-        header_layout.addWidget(self.export_btn)
+        self.import_btn = QPushButton("Import ZIP")
+        self.import_btn.setFixedSize(140, 40)
+        self.import_btn.setStyleSheet("background-color: #3b82f6; color: white; border: none; border-radius: 6px; font-weight: bold;")
+        self.import_btn.clicked.connect(self.import_zip)
+        header_layout.addWidget(self.import_btn)
         
         self.main_layout.addLayout(header_layout)
         
@@ -77,7 +156,7 @@ class ContentEngineApp(QMainWindow):
         self.main_layout.addSpacing(20)
         
         # Calendar Grid
-        self.main_layout.addWidget(QLabel("<h3>Select a day to upload content:</h3>"))
+        self.main_layout.addWidget(QLabel("<h3>Select a day to view/edit local content:</h3>"))
         
         self.calendar_grid = QGridLayout()
         self.calendar_grid.setSpacing(10)
@@ -97,9 +176,12 @@ class ContentEngineApp(QMainWindow):
         self.main_layout.addStretch()
         
         self.load_calendar()
+        
+        # Start server in background thread
+        self.server_thread = threading.Thread(target=run_server, daemon=True)
+        self.server_thread.start()
 
     def get_vault_dir(self):
-        # The target structure: ~/Downloads/aha/AI Pro
         vault_dir = Path.home() / "Downloads" / "aha" / "AI Pro"
         vault_dir.mkdir(parents=True, exist_ok=True)
         return vault_dir
@@ -168,7 +250,7 @@ class ContentEngineApp(QMainWindow):
         target_dir = self.get_target_dir()
             
         dialog = QDialog(self)
-        dialog.setWindowTitle(f"Upload Content for {platform} - Day {day}")
+        dialog.setWindowTitle(f"View/Upload Content for {platform} - Day {day}")
         dialog.setMinimumWidth(500)
         dialog.setStyleSheet("background-color: #1e293b; color: white;")
         
@@ -287,7 +369,6 @@ class ContentEngineApp(QMainWindow):
             # Save Image
             if selected_img[0]:
                 img_dir.mkdir(parents=True, exist_ok=True)
-                # Remove old
                 for p in img_dir.glob(f"{day}{PLAN_SUFFIX}.*"): p.unlink()
                 ext = os.path.splitext(selected_img[0])[1] or ".png"
                 shutil.copy2(selected_img[0], img_dir / f"{day}{PLAN_SUFFIX}{ext}")
@@ -295,7 +376,6 @@ class ContentEngineApp(QMainWindow):
             # Save Video
             if selected_vid[0]:
                 vid_dir.mkdir(parents=True, exist_ok=True)
-                # Remove old
                 for p in vid_dir.glob(f"{day}{PLAN_SUFFIX}.*"): p.unlink()
                 ext = os.path.splitext(selected_vid[0])[1] or ".mp4"
                 shutil.copy2(selected_vid[0], vid_dir / f"{day}{PLAN_SUFFIX}{ext}")
@@ -310,34 +390,27 @@ class ContentEngineApp(QMainWindow):
         layout.addLayout(btn_layout)
         dialog.exec()
 
-    def export_zip(self):
-        root_dir = Path.home() / "Downloads" / "aha"
-        if not root_dir.exists():
-            QMessageBox.warning(self, "Error", "No content found. Please add content first.")
+    def import_zip(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Import AHA Export ZIP", "", "ZIP Archives (*.zip)")
+        if not path:
             return
             
-        export_path = Path.home() / "Desktop" / "AHA_Export.zip"
+        root_dir = Path.home() / "Downloads"
         
         try:
-            with zipfile.ZipFile(export_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                # Only walk AI Pro directory
-                ai_pro_dir = root_dir / "AI Pro"
-                if ai_pro_dir.exists():
-                    for root, dirs, files in os.walk(ai_pro_dir):
-                        for file in files:
-                            if file == ".DS_Store": continue
-                            file_path = os.path.join(root, file)
-                            # Store it as 'aha/AI Pro/...'
-                            arcname = os.path.relpath(file_path, root_dir.parent)
-                            zipf.write(file_path, arcname)
+            with zipfile.ZipFile(path, 'r') as zipf:
+                # Extract directly into Downloads folder. 
+                # Since the zip contains "aha/AI Pro/...", it will merge nicely.
+                zipf.extractall(root_dir)
                             
-            QMessageBox.information(self, "Export Complete", f"Content exported to:\n{export_path}")
+            QMessageBox.information(self, "Import Complete", f"Content successfully imported and organized!")
+            self.load_calendar()
         except Exception as e:
-            QMessageBox.critical(self, "Export Error", f"Failed to export: {str(e)}")
+            QMessageBox.critical(self, "Import Error", f"Failed to import: {str(e)}")
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = ContentEngineApp()
+    window = StorageVaultApp()
     window.show()
     sys.exit(app.exec())
