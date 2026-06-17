@@ -155,6 +155,11 @@ class StorageEngineApp(QMainWindow):
         add_platform_btn.setStyleSheet("background-color: #475569; color: white; border-radius: 4px;")
         add_platform_btn.clicked.connect(self.add_new_platform)
         
+        delete_platform_btn = QPushButton("- Delete Platform")
+        delete_platform_btn.setFixedSize(150, 36)
+        delete_platform_btn.setStyleSheet("background-color: #ef4444; color: white; border-radius: 4px;")
+        delete_platform_btn.clicked.connect(self.delete_platform)
+        
         self.year_dropdown = QComboBox()
         current_year = datetime.date.today().year
         self.year_dropdown.addItems([str(y) for y in range(current_year - 1, current_year + 3)])
@@ -169,6 +174,7 @@ class StorageEngineApp(QMainWindow):
         controls_layout.addWidget(QLabel("<b>Platform:</b>"))
         controls_layout.addWidget(self.platform_dropdown)
         controls_layout.addWidget(add_platform_btn)
+        controls_layout.addWidget(delete_platform_btn)
         controls_layout.addSpacing(40)
         controls_layout.addWidget(QLabel("<b>Year:</b>"))
         controls_layout.addWidget(self.year_dropdown)
@@ -220,6 +226,21 @@ class StorageEngineApp(QMainWindow):
             (self.vault_root / name).mkdir(parents=True, exist_ok=True)
             self.load_platforms()
             self.platform_dropdown.setCurrentText(name)
+
+    def delete_platform(self):
+        current = self.platform_dropdown.currentText()
+        if not current: return
+        
+        text, ok = QInputDialog.getText(self, "Delete Platform", 
+            f"WARNING: All your content saved for this platform will be deleted.\n\nType 'Delete {current}' to confirm:")
+        
+        if ok and text == f"Delete {current}":
+            try:
+                shutil.rmtree(self.vault_root / current)
+                QMessageBox.information(self, "Deleted", f"Platform '{current}' deleted successfully.")
+                self.load_platforms()
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to delete platform:\n{str(e)}")
 
     def load_calendar(self):
         year = int(self.year_dropdown.currentText())
