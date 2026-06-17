@@ -297,55 +297,88 @@ class StorageEngineApp(QMainWindow):
             text_edit.setPlainText(txt_path.read_text(encoding="utf-8"))
         layout.addWidget(text_edit)
         
-        # Media Preview
-        layout.addWidget(QLabel("Media Attachment:"))
-        media_label = QLabel("No media attached")
-        media_label.setStyleSheet("color: #94a3b8;")
+        # Media Previews
+        previews_layout = QHBoxLayout()
         
-        existing_media = None
-        for d in [images_dir, videos_dir]:
-            if d.exists():
-                files = list(d.glob(f"{day}{PLAN_SUFFIX}.*"))
-                if files:
-                    existing_media = files[0]
-                    media_label.setText(f"Attached: {existing_media.name}")
-                    media_label.setStyleSheet("color: #10b981; font-weight: bold;")
-                    break
-                    
-        layout.addWidget(media_label)
+        image_preview_label = QLabel("No image attached")
+        image_preview_label.setStyleSheet("color: #94a3b8; border: 1px dashed #475569; padding: 10px;")
+        image_preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        image_preview_label.setFixedSize(150, 150)
         
+        video_label = QLabel("No video attached")
+        video_label.setStyleSheet("color: #94a3b8; border: 1px dashed #475569; padding: 10px;")
+        video_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        video_label.setFixedSize(150, 150)
+        
+        previews_layout.addWidget(image_preview_label)
+        previews_layout.addWidget(video_label)
+        previews_layout.addStretch()
+        
+        layout.addWidget(QLabel("Media Attachments:"))
+        layout.addLayout(previews_layout)
+        
+        existing_image = None
+        existing_video = None
+        
+        def update_image_preview(path_obj):
+            pixmap = QPixmap(str(path_obj))
+            if not pixmap.isNull():
+                image_preview_label.setPixmap(pixmap.scaled(140, 140, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+            else:
+                image_preview_label.setText(f"Image:\n{path_obj.name}")
+        
+        if images_dir.exists():
+            files = list(images_dir.glob(f"{day}{PLAN_SUFFIX}.*"))
+            if files:
+                existing_image = files[0]
+                update_image_preview(existing_image)
+                
+        if videos_dir.exists():
+            files = list(videos_dir.glob(f"{day}{PLAN_SUFFIX}.*"))
+            if files:
+                existing_video = files[0]
+                video_label.setText(f"Video Attached:\n{existing_video.name}")
+                video_label.setStyleSheet("color: #10b981; font-weight: bold; border: 1px dashed #475569; padding: 10px;")
+                
         btn_layout = QHBoxLayout()
         
         attach_img_btn = QPushButton("Attach Image")
         attach_img_btn.setStyleSheet("padding: 8px; background-color: #475569; color: white; border-radius: 4px;")
         def do_attach_img():
-            nonlocal existing_media
+            nonlocal existing_image
             path, _ = QFileDialog.getOpenFileName(modal, "Select Image", "", "Image (*.png *.jpg *.jpeg *.webp *.gif)")
             if path:
-                existing_media = Path(path)
-                media_label.setText(f"Selected Image: {existing_media.name} (Will be saved on confirm)")
-                media_label.setStyleSheet("color: #3b82f6; font-weight: bold;")
+                existing_image = Path(path)
+                update_image_preview(existing_image)
+                image_preview_label.setStyleSheet("border: 2px solid #3b82f6; padding: 8px;")
         attach_img_btn.clicked.connect(do_attach_img)
 
         attach_vid_btn = QPushButton("Attach Video")
         attach_vid_btn.setStyleSheet("padding: 8px; background-color: #475569; color: white; border-radius: 4px;")
         def do_attach_vid():
-            nonlocal existing_media
+            nonlocal existing_video
             path, _ = QFileDialog.getOpenFileName(modal, "Select Video", "", "Video (*.mp4 *.mov *.webm)")
             if path:
-                existing_media = Path(path)
-                media_label.setText(f"Selected Video: {existing_media.name} (Will be saved on confirm)")
-                media_label.setStyleSheet("color: #3b82f6; font-weight: bold;")
+                existing_video = Path(path)
+                video_label.setText(f"Selected Video:\n{existing_video.name}")
+                video_label.setStyleSheet("color: #3b82f6; font-weight: bold; border: 2px solid #3b82f6; padding: 8px;")
         attach_vid_btn.clicked.connect(do_attach_vid)
         
         clear_btn = QPushButton("Clear Content")
         clear_btn.setStyleSheet("padding: 8px; background-color: #ef4444; color: white; border-radius: 4px;")
         def do_clear():
-            nonlocal existing_media
+            nonlocal existing_image, existing_video
             text_edit.clear()
-            existing_media = None
-            media_label.setText("No media attached")
-            media_label.setStyleSheet("color: #94a3b8;")
+            existing_image = None
+            existing_video = None
+            
+            image_preview_label.clear()
+            image_preview_label.setText("No image attached")
+            image_preview_label.setStyleSheet("color: #94a3b8; border: 1px dashed #475569; padding: 10px;")
+            
+            video_label.setText("No video attached")
+            video_label.setStyleSheet("color: #94a3b8; border: 1px dashed #475569; padding: 10px;")
+            
             if txt_path.exists(): txt_path.unlink()
             for d in [images_dir, videos_dir]:
                 if d.exists():
@@ -370,21 +403,23 @@ class StorageEngineApp(QMainWindow):
             elif txt_path.exists():
                 txt_path.unlink()
                 
-            # Save Media
-            if existing_media and existing_media.parent not in [images_dir, videos_dir]:
-                ext = existing_media.suffix.lower()
-                is_video = ext in ['.mp4', '.mov', '.webm']
-                target_dir = videos_dir if is_video else images_dir
-                target_dir.mkdir(parents=True, exist_ok=True)
+            # Save Image
+            if existing_image and existing_image.parent != images_dir:
+                images_dir.mkdir(parents=True, exist_ok=True)
+                for f in images_dir.glob(f"{day}{PLAN_SUFFIX}.*"):
+                    f.unlink()
+                ext = existing_image.suffix.lower()
+                target_path = images_dir / f"{day}{PLAN_SUFFIX}{ext}"
+                shutil.copy2(existing_image, target_path)
                 
-                # remove old ones
-                for d in [images_dir, videos_dir]:
-                    if d.exists():
-                        for f in d.glob(f"{day}{PLAN_SUFFIX}.*"):
-                            f.unlink()
-                            
-                target_path = target_dir / f"{day}{PLAN_SUFFIX}{ext}"
-                shutil.copy2(existing_media, target_path)
+            # Save Video
+            if existing_video and existing_video.parent != videos_dir:
+                videos_dir.mkdir(parents=True, exist_ok=True)
+                for f in videos_dir.glob(f"{day}{PLAN_SUFFIX}.*"):
+                    f.unlink()
+                ext = existing_video.suffix.lower()
+                target_path = videos_dir / f"{day}{PLAN_SUFFIX}{ext}"
+                shutil.copy2(existing_video, target_path)
                 
             self.load_calendar()
             modal.accept()
