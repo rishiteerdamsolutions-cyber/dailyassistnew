@@ -6,29 +6,23 @@
  *  - chrome.alarms keepalive (every 0.5 min) to prevent SW termination
  *  - WebSocket connection to backend with exponential backoff
  *  - chrome.debugger CDP command execution
- *  - 24-hour license validation via chrome.alarms
  *  - Screenshot capture via chrome.tabs.captureVisibleTab
  *  - OCR delegation to offscreen document
  */
 
 // ─── Configuration ────────────────────────────────────────────────────────────
 let BACKEND_WS_URL      = 'wss://aha-cloud-brain.onrender.com/ws/agent';
-let LICENSE_API_URL     = 'https://aha-cloud-brain.onrender.com/api/validate-license';
 const WS_MAX_BACKOFF_MS = 30_000;
 const ALARM_KEEPALIVE   = 'aha-keepalive';
-const ALARM_LICENSE     = 'aha-license-check';
 const DEBUGGER_VERSION  = '1.3';
 
 // Dynamic config loader to override URLs (e.g. for local testing)
 async function loadConfig() {
   // Disabled custom URL overrides to ensure connection to Render backend
   /*
-  const { customWsUrl, customApiUrl } = await chrome.storage.local.get(['customWsUrl', 'customApiUrl']);
+  const { customWsUrl } = await chrome.storage.local.get(['customWsUrl']);
   if (customWsUrl) {
     BACKEND_WS_URL = customWsUrl;
-  }
-  if (customApiUrl) {
-    LICENSE_API_URL = customApiUrl;
   }
   */
 }
@@ -40,23 +34,18 @@ let _wsConnecting  = false;
 let _attachedTabId = null;  // current tab being debugged
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ALARM: keepalive + license
+// ALARM: keepalive
 // All listeners registered synchronously at top level.
 // ─────────────────────────────────────────────────────────────────────────────
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === ALARM_KEEPALIVE) {
     ensureWebSocket();
   }
-  if (alarm.name === ALARM_LICENSE) {
-    validateLicense().catch(console.error);
-  }
 });
 
 chrome.runtime.onInstalled.addListener(async () => {
   // Set up alarms on install/update
   await setupAlarms();
-  // Validate license immediately on install
-  await validateLicense().catch(console.error);
 });
 
 chrome.runtime.onStartup.addListener(async () => {
@@ -76,9 +65,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           break;
         case 'GET_STATUS':
           await handleGetStatus(sendResponse);
-          break;
-        case 'ACTIVATE_LICENSE':
-          await handleActivateLicense(message.licenseKey, sendResponse);
           break;
         case 'OCR_RESULT':
           // Result from offscreen document — forward to WS
@@ -106,13 +92,6 @@ async function setupAlarms() {
 
   if (!names.includes(ALARM_KEEPALIVE)) {
     chrome.alarms.create(ALARM_KEEPALIVE, { periodInMinutes: 0.5 });
-  }
-  if (!names.includes(ALARM_LICENSE)) {
-    // Every 24 hours = 1440 minutes
-    chrome.alarms.create(ALARM_LICENSE, {
-      delayInMinutes: 1440,
-      periodInMinutes: 1440
-    });
   }
 }
 
@@ -147,12 +126,6 @@ async function connectWebSocket() {
 
     await chrome.storage.local.set({ wsConnected: true });
     notifyPopup({ type: 'STATUS_UPDATE', status: 'connected' });
-
-    // Send license key on connect for backend auth
-    const { licenseKey } = await chrome.storage.local.get('licenseKey');
-    if (licenseKey) {
-      safeSend({ type: 'AUTH', licenseKey });
-    }
   };
 
   _ws.onmessage = async (event) => {
@@ -231,12 +204,7 @@ async function handleBackendMessage(msg) {
     case 'EXECUTION_COMPLETE':
       notifyPopup({ type: 'EXECUTION_COMPLETE', success: msg.success, message: msg.message });
       break;
-    case 'AUTH_RESULT':
-      if (!msg.valid) {
-        await chrome.storage.local.set({ licenseValid: false });
-        notifyPopup({ type: 'STATUS_UPDATE', status: 'locked' });
-      }
-      break;
+
     default:
       console.warn('[AHA BG] Unknown backend message type:', msg.type);
   }
@@ -481,37 +449,9 @@ async function handleGetStatus(sendResponse) {
   ]);
   sendResponse({
     ok: true,
-    licenseValid:    true,
     wsConnected:     data.wsConnected     ?? false,
-    executionStatus: data.executionStatus ?? 'idle',
-    hasLicenseKey:   true
+    executionStatus: data.executionStatus ?? 'idle'
   });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// License
-// ─────────────────────────────────────────────────────────────────────────────
-async function handleActivateLicense(licenseKey, sendResponse) {
-  const trimmedKey = (licenseKey || 'bypass-active-key').trim();
-  await chrome.storage.local.set({
-    licenseKey: trimmedKey,
-    licenseValid: true,
-    licenseValidatedAt: Date.now()
-  });
-  sendResponse({ ok: true });
-  notifyPopup({ type: 'STATUS_UPDATE', status: 'idle' });
-  ensureWebSocket();
-}
-
-async function validateLicense() {
-  await chrome.storage.local.set({
-    licenseValid: true,
-    licenseKey: 'bypass-active-key'
-  });
-}
-
-async function callLicenseApi(licenseKey) {
-  return { valid: true };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -536,7 +476,6 @@ function sleep(ms) {
 (async () => {
   try {
     await setupAlarms();
-    await validateLicense().catch(console.error);
     ensureWebSocket();
   } catch (err) {
     console.error('[AHA BG] Boot error:', err);
