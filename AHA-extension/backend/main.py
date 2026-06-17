@@ -147,7 +147,6 @@ app.add_middleware(
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 
-app.include_router(license_router)
 app.include_router(webhooks_router)
 app.include_router(payments_router)
 
@@ -208,32 +207,14 @@ async def health_check() -> JSONResponse:
 @app.websocket("/ws/agent")
 async def ws_agent_endpoint(
     websocket: WebSocket,
-    license_key: Annotated[str, Query()] = "",
-    profile_id: Annotated[str, Query()] = "",
     db: AsyncClient = Depends(get_firestore),
 ) -> None:
     """
     WebSocket endpoint for the AHA Chrome Extension agent.
-
-    Query parameters:
-      license_key  — The user's Razorpay subscription license key
-      profile_id   — Unique Chrome profile identifier (enforces 1-license-1-profile)
-
-    The handler validates the license, then runs the posting flow,
-    streaming mouse/keyboard commands back to the extension.
+    Runs the posting flow, streaming mouse/keyboard commands back to the extension.
     """
-    if not license_key or not profile_id:
-        await websocket.accept()
-        await websocket.send_text(
-            '{"action":"error","message":"Missing license_key or profile_id query parameter."}'
-        )
-        await websocket.close(code=4001)
-        return
-
     await handle_agent_session(
         ws=websocket,
-        license_key=license_key,
-        profile_id=profile_id,
         db=db,
     )
 

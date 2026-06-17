@@ -2,7 +2,7 @@
 ws/handler.py — WebSocket session handler for AHA Chrome Extension.
 
 Connection URL:
-  ws://<host>/ws/agent?license_key=<key>&profile_id=<chrome_profile_id>
+  ws://<host>/ws/agent
 
 Message protocol (Extension → Backend):
   {
@@ -34,9 +34,7 @@ Message protocol (Backend → Extension):
   {action: "error",         message: str}
 
 License enforcement:
-  - License must be "active" in Firestore on connect.
-  - chrome_profile_id is recorded in the license doc on first connect.
-  - Subsequent connections with a different profile_id are rejected.
+  - REMOVED.
 """
 
 from __future__ import annotations
@@ -77,23 +75,6 @@ def _get_flow(platform: str, slots: dict) -> SocialFlow | None:
     if cls is None:
         return None
     return cls(slots)
-
-
-# ── License helpers ───────────────────────────────────────────────────────────
-
-async def _validate_and_bind_license(
-    db: AsyncClient,
-    license_key: str,
-    profile_id: str,
-) -> tuple[bool, str]:
-    """
-    Validate the license and enforce the one-profile-per-license rule.
-
-    Returns (is_ok: bool, reason: str).
-    Binds the profile_id on first use.
-    """
-    # BYPASS FOR TESTING
-    return True, "License bypass (testing)."
 
 
 # ── Command senders ───────────────────────────────────────────────────────────
@@ -150,26 +131,16 @@ async def _send_error(ws: WebSocket, message: str) -> None:
 
 async def handle_agent_session(
     ws: WebSocket,
-    license_key: str,
-    profile_id: str,
     db: AsyncClient,
 ) -> None:
     """
     Full lifecycle of a single AHA agent WebSocket session.
 
-    Accepts the WebSocket, validates the license, then processes incoming
+    Accepts the WebSocket, then processes incoming
     'execute' messages until the client disconnects or an error occurs.
     """
     await ws.accept()
-    logger.info("WS connected — profile=%s", profile_id)
-
-    # ── License check ─────────────────────────────────────────────────────────
-    is_ok, reason = await _validate_and_bind_license(db, license_key, profile_id)
-    if not is_ok:
-        await _send_error(ws, reason)
-        await ws.close(code=4003)
-        logger.warning("WS rejected — %s", reason)
-        return
+    logger.info("WS connected")
 
     # ── Session loop ──────────────────────────────────────────────────────────
     try:
@@ -190,9 +161,9 @@ async def handle_agent_session(
             await _process_execute(ws, msg)
 
     except WebSocketDisconnect:
-        logger.info("WS disconnected gracefully — profile=%s", profile_id)
+        logger.info("WS disconnected gracefully")
     except Exception as exc:
-        logger.exception("Unhandled error in WS session (profile=%s): %s", profile_id, exc)
+        logger.exception("Unhandled error in WS session: %s", exc)
         try:
             await _send_error(ws, "Internal server error.")
         except Exception:

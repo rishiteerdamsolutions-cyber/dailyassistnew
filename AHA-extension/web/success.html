@@ -105,19 +105,15 @@
   <div id="success-state">
     <div class="tick">✓</div>
     <h1>You're in!</h1>
-    <p class="sub">Payment verified. Your AHA license key is below.<br/>Save it — you'll need it to activate the extension.</p>
+    <p class="sub">Payment verified. Thank you for your purchase.<br/>Download your applications below to get started.</p>
 
-    <div class="license-box">
-      <div class="license-label">Your License Key</div>
-      <div class="license-key" id="license-display">—</div>
-      <button class="copy-btn" id="copy-btn">Copy key</button>
-    </div>
+
 
     <div class="steps-mini">
       <h3>Next steps</h3>
       <div class="step-item">
         <div class="step-dot">1</div>
-        <p><strong>Download the Storage Vault Template</strong> below and extract it into your <code>Downloads</code> folder (so it becomes <code>Downloads/aha/AI Pro/</code>).</p>
+        <p><strong>Download the Storage Vault App</strong> below, extract the ZIP, and run the app to manage your content.</p>
       </div>
       <div class="step-item">
         <div class="step-dot">2</div>
@@ -129,11 +125,11 @@
       </div>
       <div class="step-item">
         <div class="step-dot">4</div>
-        <p>Click the AHA icon in Chrome's toolbar, paste your license key, and click <strong>Activate</strong></p>
+        <p>Click the AHA icon in Chrome's toolbar, choose your platform and run the agent!</p>
       </div>
     </div>
 
-    <a class="dl-btn" href="/AHA-Storage-Vault.zip" download style="background: #22c55e; margin-bottom: 12px;">⬇ Download Storage Vault Template</a>
+    <a class="dl-btn" href="/AHA-Storage-Vault.zip" download style="background: #22c55e; margin-bottom: 12px;">⬇ Download Storage Vault App</a>
     <a class="dl-btn" id="dl-btn" href="/AHA-extension.zip" download>⬇ Download AHA Chrome Extension</a>
 
     <p class="footer-note">
@@ -185,23 +181,8 @@
 
       loading.classList.remove('visible');
 
-      if (res.ok && data.license_key) {
-        document.getElementById('license-display').textContent = data.license_key;
+      if (res.ok) {
         success.classList.add('visible');
-
-        /* Copy button */
-        document.getElementById('copy-btn').addEventListener('click', () => {
-          navigator.clipboard.writeText(data.license_key).then(() => {
-            const btn = document.getElementById('copy-btn');
-            btn.textContent = 'Copied ✓';
-            btn.classList.add('copied');
-            setTimeout(() => {
-              btn.textContent = 'Copy key';
-              btn.classList.remove('copied');
-            }, 2000);
-          });
-        });
-
       } else {
         error.classList.add('visible');
         document.getElementById('error-msg').textContent =
