@@ -175,27 +175,31 @@ function safeSend(obj) {
 // Backend message handler
 // ─────────────────────────────────────────────────────────────────────────────
 async function handleBackendMessage(msg) {
-  switch (msg.type) {
+  const msgType = msg.type || msg.action;
+  switch (msgType) {
+    case 'move_mouse':
     case 'MOUSE_MOVE':
-      await cdpMouseMove(msg.tabId, msg.x, msg.y);
+      await cdpMouseMove(_attachedTabId, msg.x, msg.y);
       break;
+    case 'click':
     case 'MOUSE_CLICK':
-      await cdpMouseClick(msg.tabId, msg.x, msg.y, msg.button ?? 'left');
+      await cdpMouseClick(_attachedTabId, msg.x, msg.y, msg.button ?? 'left');
       break;
     case 'KEY_DOWN':
-      await cdpKeyDown(msg.tabId, msg.key, msg.text);
+      await cdpKeyDown(_attachedTabId, msg.key, msg.text);
       break;
     case 'KEY_UP':
-      await cdpKeyUp(msg.tabId, msg.key, msg.text);
+      await cdpKeyUp(_attachedTabId, msg.key, msg.text);
       break;
+    case 'type_text':
     case 'TYPE_TEXT':
-      await cdpTypeText(msg.tabId, msg.text);
+      await cdpTypeText(_attachedTabId, msg.keystrokes || msg.text);
       break;
     case 'SCROLL':
-      await cdpScroll(msg.tabId, msg.x, msg.y, msg.deltaX ?? 0, msg.deltaY ?? 0);
+      await cdpScroll(_attachedTabId, msg.x, msg.y, msg.deltaX ?? 0, msg.deltaY ?? 0);
       break;
     case 'TAKE_SCREENSHOT':
-      await handleCaptureAndOcr(msg.tabId);
+      await handleCaptureAndOcr(_attachedTabId);
       break;
     case 'ATTACH_DEBUGGER':
       await attachDebugger(msg.tabId);
@@ -203,12 +207,17 @@ async function handleBackendMessage(msg) {
     case 'DETACH_DEBUGGER':
       await detachDebugger(msg.tabId);
       break;
+    case 'done':
     case 'EXECUTION_COMPLETE':
-      notifyPopup({ type: 'EXECUTION_COMPLETE', success: msg.success, message: msg.message });
+      await chrome.storage.local.set({ executionStatus: 'idle' });
+      notifyPopup({ type: 'EXECUTION_COMPLETE', success: msg.success ?? true, message: msg.message });
       break;
-
+    case 'error':
+      await chrome.storage.local.set({ executionStatus: 'idle' });
+      notifyPopup({ type: 'EXECUTION_COMPLETE', success: false, message: msg.message });
+      break;
     default:
-      console.warn('[AHA BG] Unknown backend message type:', msg.type);
+      console.warn('[AHA BG] Unknown backend message type:', msgType, msg);
   }
 }
 
@@ -290,20 +299,23 @@ async function cdpKeyUp(tabId, key, text) {
 }
 
 /** Type a full string character by character */
-async function cdpTypeText(tabId, text) {
-  for (const char of text) {
-    await cdpSend(tabId, 'Input.dispatchKeyEvent', {
-      type: 'keyDown',
-      key: char,
-      text: char
-    });
-    await cdpSend(tabId, 'Input.dispatchKeyEvent', {
-      type: 'keyUp',
-      key: char,
-      text: char
-    });
-    // Small delay to simulate human typing cadence
-    await sleep(30 + Math.random() * 60);
+async function cdpTypeText(tabId, keystrokes) {
+  if (typeof keystrokes === 'string') {
+    for (const char of keystrokes) {
+      await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'keyDown', key: char, text: char });
+      await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'keyUp', key: char, text: char });
+      await sleep(30 + Math.random() * 60);
+    }
+    return;
+  }
+  for (const ks of keystrokes) {
+    if (ks.delay_before_ms) await sleep(ks.delay_before_ms);
+    if (ks.shift) await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'keyDown', key: 'Shift' });
+    
+    await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'keyDown', key: ks.key, text: ks.text });
+    await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'keyUp', key: ks.key, text: ks.text });
+    
+    if (ks.shift) await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'keyUp', key: 'Shift' });
   }
 }
 
@@ -388,6 +400,14 @@ async function handleStartExecution(payload, sendResponse) {
     return;
   }
 
+  if (tab.url && tab.url.startsWith('chrome://')) {
+    sendResponse({ 
+      ok: false, 
+      error: 'You cannot run the agent on a chrome:// settings page! Please open the actual website (like https://www.facebook.com) in your browser tab first, then click the extension.' 
+    });
+    return;
+  }
+
   // ─── Fetch Content from Local Storage Vault ───
   try {
     const { platform, daySlot, includeText, mediaType } = payload;
@@ -426,12 +446,34 @@ async function handleStartExecution(payload, sendResponse) {
     // Attach debugger to active tab
     await attachDebugger(tab.id);
 
+    // Run OCR first to get elements for the backend
+    const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png', quality: 100 });
+    await ensureOffscreenDocument();
+    
+    const elements = await new Promise((resolve) => {
+      const listener = (m) => {
+        if (m.type === 'OCR_RESULT') {
+          chrome.runtime.onMessage.removeListener(listener);
+          resolve(m.result);
+        }
+      };
+      chrome.runtime.onMessage.addListener(listener);
+      chrome.runtime.sendMessage({ type: 'RUN_OCR', target: 'offscreen', dataUrl });
+    });
+
     // Send execution command to backend
     const sent = safeSend({
-      type:    'START_EXECUTION',
-      tabId:   tab.id,
-      tabUrl:  tab.url,
-      payload
+      type: 'execute',
+      platform: payload.platform,
+      slots: { 
+        text: payload.fetchedText || '', 
+        image: payload.mediaType === 'image', 
+        video: payload.mediaType === 'video' 
+      },
+      day: payload.daySlot,
+      elements: elements,
+      viewport: { width: 1280, height: 800 },
+      currentMouse: { x: 0, y: 0 }
     });
 
     if (!sent) {
