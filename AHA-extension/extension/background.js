@@ -325,54 +325,6 @@ async function cdpScroll(tabId, x, y, deltaX, deltaY) {
   });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Screenshot + OCR
-// ─────────────────────────────────────────────────────────────────────────────
-async function handleCaptureScreenshot(tabId, sendResponse) {
-  try {
-    const dataUrl = await chrome.tabs.captureVisibleTab(
-      null, // current window
-      { format: 'png', quality: 100 }
-    );
-    sendResponse({ ok: true, dataUrl });
-  } catch (err) {
-    console.error('[AHA BG] Screenshot error:', err);
-    sendResponse({ ok: false, error: err.message });
-  }
-}
-
-async function handleCaptureAndOcr(tabId) {
-  try {
-    // Capture screenshot
-    const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png', quality: 100 });
-
-    // Delegate OCR to offscreen document
-    await ensureOffscreenDocument();
-
-    await chrome.runtime.sendMessage({
-      type:   'RUN_OCR',
-      target: 'offscreen',
-      dataUrl
-    });
-    // Result comes back via 'OCR_RESULT' message handler above
-  } catch (err) {
-    console.error('[AHA BG] Capture+OCR error:', err);
-  }
-}
-
-async function ensureOffscreenDocument() {
-  const existingContexts = await chrome.runtime.getContexts({
-    contextTypes: ['OFFSCREEN_DOCUMENT']
-  });
-  if (existingContexts.length > 0) return;
-
-  await chrome.offscreen.createDocument({
-    url:    'ocr_offscreen.html',
-    reasons: ['DOM_PARSER'],
-    justification: 'Run Tesseract.js OCR on captured screenshots to extract text coordinates'
-  });
-}
-
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -439,24 +391,56 @@ async function handleStartExecution(payload, sendResponse) {
     // Attach debugger to active tab
     await attachDebugger(tab.id);
 
-    // Run OCR first to get elements for the backend
-    const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png', quality: 100 });
-    await ensureOffscreenDocument();
-    
-    const elements = await new Promise((resolve) => {
-      const listener = (m) => {
-        if (m.type === 'OCR_RESULT') {
-          chrome.runtime.onMessage.removeListener(listener);
-          resolve(m.result);
+    // Use isolated CDP vision to read screen layout invisibly
+    const injectionResults = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      world: "ISOLATED",
+      func: () => {
+        const elements = [];
+        const addNode = (text, element) => {
+          const cleanText = text ? text.trim() : '';
+          if (!cleanText) return;
+          const style = window.getComputedStyle(element);
+          if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return;
+          const rect = element.getBoundingClientRect();
+          if (rect.width === 0 || rect.height === 0) return;
+          elements.push({
+            text: cleanText,
+            x: rect.left,
+            y: rect.top,
+            width: rect.width,
+            height: rect.height,
+            confidence: 100
+          });
+        };
+
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+        let node;
+        while ((node = walker.nextNode())) {
+          if (node.parentElement) addNode(node.nodeValue, node.parentElement);
         }
-      };
-      chrome.runtime.onMessage.addListener(listener);
-      chrome.runtime.sendMessage({ type: 'RUN_OCR', target: 'offscreen', dataUrl });
+
+        const labeled = document.querySelectorAll('[aria-label], [title], img[alt], input[placeholder], textarea[placeholder], [data-placeholder]');
+        for (const el of labeled) {
+          const text = el.getAttribute('aria-label') || el.getAttribute('title') || el.getAttribute('alt') || el.getAttribute('placeholder') || el.getAttribute('data-placeholder');
+          addNode(text, el);
+        }
+
+        return {
+          elements,
+          viewport: { width: window.innerWidth, height: window.innerHeight }
+        };
+      }
     });
 
-    console.log("\n\n================ OCR RESULTS ================");
-    console.log(JSON.stringify(elements, null, 2));
-    console.log("=============================================\n\n");
+    const visionData = injectionResults[0].result;
+    const elements = visionData.elements;
+    const viewport = visionData.viewport;
+
+    console.log("\n\n================ VISUAL NODES EXTRACTED ================");
+    console.log(`Found ${elements.length} nodes.`);
+    console.log("======================================================\n\n");
+
     // Send execution command to backend
     const sent = safeSend({
       type: 'execute',
@@ -468,7 +452,7 @@ async function handleStartExecution(payload, sendResponse) {
       },
       day: payload.daySlot,
       elements: elements,
-      viewport: { width: 1280, height: 800 },
+      viewport: viewport,
       currentMouse: { x: 0, y: 0 }
     });
 

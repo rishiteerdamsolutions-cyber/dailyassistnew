@@ -12,7 +12,7 @@
     "storage",
     "unlimitedStorage",
     "alarms",
-    "offscreen"
+    "scripting"
   ],
 
   "host_permissions": [
