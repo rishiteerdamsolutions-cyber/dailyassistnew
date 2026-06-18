@@ -125,10 +125,14 @@ async function connectWebSocket() {
     notifyPopup({ type: 'STATUS_UPDATE', status: 'connected' });
   };
 
-  _ws.onmessage = async (event) => {
+  let _wsQueue = Promise.resolve();
+
+  _ws.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
-      await handleBackendMessage(msg);
+      _wsQueue = _wsQueue.then(() => handleBackendMessage(msg)).catch(err => {
+        console.error('[AHA BG] Queue execution error:', err);
+      });
     } catch (err) {
       console.error('[AHA BG] WS message parse error:', err);
     }
