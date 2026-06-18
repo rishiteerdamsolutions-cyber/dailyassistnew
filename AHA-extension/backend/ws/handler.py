@@ -175,6 +175,7 @@ async def _process_execute(ws: WebSocket, msg: dict) -> None:
     platform: str = msg.get("platform", "").lower()
     slots: dict = msg.get("slots", {})
     elements: list[dict] = msg.get("elements", [])
+    logger.info("=== OCR Elements Received ===\n%s", json.dumps(elements, indent=2))
     viewport: dict = msg.get("viewport", {"width": 1280, "height": 800})
     current_mouse: dict = msg.get("currentMouse", {"x": 0.0, "y": 0.0})
 

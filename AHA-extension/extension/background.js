@@ -454,6 +454,9 @@ async function handleStartExecution(payload, sendResponse) {
       chrome.runtime.sendMessage({ type: 'RUN_OCR', target: 'offscreen', dataUrl });
     });
 
+    console.log("\n\n================ OCR RESULTS ================");
+    console.log(JSON.stringify(elements, null, 2));
+    console.log("=============================================\n\n");
     // Send execution command to backend
     const sent = safeSend({
       type: 'execute',
