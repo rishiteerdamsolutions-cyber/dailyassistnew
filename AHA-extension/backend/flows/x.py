@@ -51,8 +51,8 @@ class XFlow(SocialFlow):
                 "what's happening",
                 "post",
                 "compose",
-                min_width=40,
-                min_height=20,
+                min_width=20,
+                min_height=10,
             )
             if el is None:
                 # Sidebar "Post" compose button (large blue button)
@@ -82,8 +82,8 @@ class XFlow(SocialFlow):
             el = self.fuzzy_find(
                 elements,
                 "post",
-                min_width=50,
-                min_height=24,
+                min_width=20,
+                min_height=10,
             )
             # Prefer the button role to avoid matching the textarea placeholder
             if el and el.get("role", "").lower() != "button":

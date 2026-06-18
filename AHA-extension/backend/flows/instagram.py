@@ -71,8 +71,8 @@ class InstagramFlow(SocialFlow):
             el = self.fuzzy_find(
                 elements,
                 "next",
-                min_width=40,
-                min_height=20,
+                min_width=20,
+                min_height=10,
             )
 
         elif step == "type_caption":
@@ -88,8 +88,8 @@ class InstagramFlow(SocialFlow):
             el = self.fuzzy_find(
                 elements,
                 "share",
-                min_width=50,
-                min_height=24,
+                min_width=20,
+                min_height=10,
             )
 
         if el is None:

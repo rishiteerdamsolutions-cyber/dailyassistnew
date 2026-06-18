@@ -58,8 +58,8 @@ class LinkedInFlow(SocialFlow):
                 "write a post",
                 "share an update",
                 "what's on your mind",
-                min_width=80,
-                min_height=20,
+                min_width=20,
+                min_height=10,
             )
 
         elif step == "type_text":
@@ -98,8 +98,8 @@ class LinkedInFlow(SocialFlow):
             el = self.fuzzy_find(
                 elements,
                 "post",
-                min_width=50,
-                min_height=24,
+                min_width=20,
+                min_height=10,
             )
             # Avoid matching the "Start a post" area by preferring buttons
             if el and "start" in str(el.get("text", "")).lower():
@@ -108,7 +108,7 @@ class LinkedInFlow(SocialFlow):
                     e for e in elements
                     if "start" not in str(e.get("text", "")).lower()
                 ]
-                el = self.fuzzy_find(filtered, "post", min_width=50, min_height=24)
+                el = self.fuzzy_find(filtered, "post", min_width=20, min_height=10)
 
         if el is None:
             return None
