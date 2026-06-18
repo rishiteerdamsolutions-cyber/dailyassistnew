@@ -127,6 +127,13 @@ async def _send_error(ws: WebSocket, message: str) -> None:
     await _send(ws, {"action": "error", "message": message})
 
 
+async def _send_rescan(ws: WebSocket) -> list[dict]:
+    await _send(ws, {"action": "scan_screen"})
+    msg_str = await ws.receive_text()
+    msg = json.loads(msg_str)
+    return msg.get("elements", [])
+
+
 # ── Main handler ──────────────────────────────────────────────────────────────
 
 async def handle_agent_session(
@@ -172,6 +179,8 @@ async def handle_agent_session(
 
 async def _process_execute(ws: WebSocket, msg: dict) -> None:
     """Process a single 'execute' message and stream commands back."""
+    import asyncio
+    
     platform: str = msg.get("platform", "").lower()
     slots: dict = msg.get("slots", {})
     elements: list[dict] = msg.get("elements", [])
@@ -203,8 +212,15 @@ async def _process_execute(ws: WebSocket, msg: dict) -> None:
 
         # ── upload_signal: special action, no mouse movement needed ──────────
         if step == "upload_signal":
+            await asyncio.sleep(1.0) # Wait for file picker
             await _send_upload_signal(ws)
             continue
+
+        # ── Sleep briefly to mimic human reaction time and allow UI animations 
+        await asyncio.sleep(1.0)
+
+        # ── Re-scan the screen dynamically to see new modals or buttons ──────
+        elements = await _send_rescan(ws)
 
         # ── Find the target element for this step ─────────────────────────────
         target = flow.find_target(elements, step)
