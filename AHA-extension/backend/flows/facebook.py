@@ -51,8 +51,8 @@ class FacebookFlow(SocialFlow):
                 "what's on your mind",
                 "write something",
                 "create post",
-                min_width=80,
-                min_height=20,
+                min_width=20,
+                min_height=10,
             )
 
         elif step == "type_text":
@@ -78,8 +78,8 @@ class FacebookFlow(SocialFlow):
             el = self.fuzzy_find(
                 elements,
                 "post",
-                min_width=50,
-                min_height=24,
+                min_width=20,
+                min_height=10,
             )
             # Avoid matching "What's on your mind" post area
             if el and str(el.get("text", "")).lower().strip() != "post":
@@ -88,7 +88,7 @@ class FacebookFlow(SocialFlow):
                     if str(e.get("text", "")).lower().strip() == "post":
                         w = float(e.get("width", 0))
                         h = float(e.get("height", 0))
-                        if w >= 50 and h >= 24:
+                        if w >= 20 and h >= 10:
                             el = e
                             break
 
