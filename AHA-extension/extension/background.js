@@ -174,7 +174,15 @@ async function handleBackendMessage(msg) {
   switch (msgType) {
     case 'move_mouse':
     case 'MOUSE_MOVE':
-      await cdpMouseMove(_attachedTabId, msg.x, msg.y);
+      if (msg.path && Array.isArray(msg.path)) {
+        const stepTime = msg.duration_ms ? msg.duration_ms / msg.path.length : 2;
+        for (const [px, py] of msg.path) {
+          await cdpMouseMove(_attachedTabId, px, py);
+          if (stepTime > 0) await sleep(stepTime);
+        }
+      } else if (msg.x !== undefined && msg.y !== undefined) {
+        await cdpMouseMove(_attachedTabId, msg.x, msg.y);
+      }
       break;
     case 'click':
     case 'MOUSE_CLICK':
@@ -193,8 +201,10 @@ async function handleBackendMessage(msg) {
     case 'SCROLL':
       await cdpScroll(_attachedTabId, msg.x, msg.y, msg.deltaX ?? 0, msg.deltaY ?? 0);
       break;
-    case 'TAKE_SCREENSHOT':
-      await handleCaptureAndOcr(_attachedTabId);
+    case 'scan_screen':
+    case 'SCAN_SCREEN':
+      const newElements = await scanScreen(_attachedTabId);
+      safeSend({ type: 'scan_results', elements: newElements });
       break;
     case 'ATTACH_DEBUGGER':
       await attachDebugger(msg.tabId);
@@ -392,54 +402,7 @@ async function handleStartExecution(payload, sendResponse) {
     await attachDebugger(tab.id);
 
     // Use isolated CDP vision to read screen layout invisibly
-    const injectionResults = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      world: "ISOLATED",
-      func: () => {
-        const elements = [];
-        const addNode = (text, element) => {
-          const cleanText = text ? text.trim() : '';
-          if (!cleanText) return;
-          const style = window.getComputedStyle(element);
-          if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return;
-          const rect = element.getBoundingClientRect();
-          if (rect.width === 0 || rect.height === 0) return;
-          elements.push({
-            text: cleanText,
-            x: rect.left,
-            y: rect.top,
-            width: rect.width,
-            height: rect.height,
-            confidence: 100
-          });
-        };
-
-        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
-        let node;
-        while ((node = walker.nextNode())) {
-          if (node.parentElement) addNode(node.nodeValue, node.parentElement);
-        }
-
-        const labeled = document.querySelectorAll('[aria-label], [title], img[alt], input[placeholder], textarea[placeholder], [data-placeholder]');
-        for (const el of labeled) {
-          const text = el.getAttribute('aria-label') || el.getAttribute('title') || el.getAttribute('alt') || el.getAttribute('placeholder') || el.getAttribute('data-placeholder');
-          addNode(text, el);
-        }
-
-        return {
-          elements,
-          viewport: { width: window.innerWidth, height: window.innerHeight }
-        };
-      }
-    });
-
-    const visionData = injectionResults[0].result;
-    const elements = visionData.elements;
-    const viewport = visionData.viewport;
-
-    console.log("\n\n================ VISUAL NODES EXTRACTED ================");
-    console.log(`Found ${elements.length} nodes.`);
-    console.log("======================================================\n\n");
+    const elements = await scanScreen(tab.id);
 
     // Send execution command to backend
     const sent = safeSend({
@@ -452,7 +415,7 @@ async function handleStartExecution(payload, sendResponse) {
       },
       day: payload.daySlot,
       elements: elements,
-      viewport: viewport,
+      viewport: { width: 1280, height: 800 }, // Can be static or grabbed
       currentMouse: { x: 0, y: 0 }
     });
 
@@ -510,3 +473,52 @@ function sleep(ms) {
     console.error('[AHA BG] Boot error:', err);
   }
 })();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Visual Scanning Engine
+// ─────────────────────────────────────────────────────────────────────────────
+async function scanScreen(tabId) {
+  const injectionResults = await chrome.scripting.executeScript({
+    target: { tabId: tabId },
+    world: "ISOLATED",
+    func: () => {
+      const elements = [];
+      const addNode = (text, element) => {
+        const cleanText = text ? text.trim() : '';
+        if (!cleanText) return;
+        const style = window.getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return;
+        const rect = element.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+        elements.push({
+          text: cleanText,
+          x: rect.left,
+          y: rect.top,
+          width: rect.width,
+          height: rect.height,
+          confidence: 100
+        });
+      };
+
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+      let node;
+      while ((node = walker.nextNode())) {
+        if (node.parentElement) addNode(node.nodeValue, node.parentElement);
+      }
+
+      const labeled = document.querySelectorAll('[aria-label], [title], img[alt], input[placeholder], textarea[placeholder], [data-placeholder]');
+      for (const el of labeled) {
+        const text = el.getAttribute('aria-label') || el.getAttribute('title') || el.getAttribute('alt') || el.getAttribute('placeholder') || el.getAttribute('data-placeholder');
+        addNode(text, el);
+      }
+
+      return elements;
+    }
+  });
+  
+  const elements = injectionResults[0].result;
+  console.log("\n\n================ VISUAL NODES EXTRACTED ================");
+  console.log(`Found ${elements.length} nodes.`);
+  console.log("======================================================\n\n");
+  return elements;
+}
