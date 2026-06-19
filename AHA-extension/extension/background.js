@@ -341,6 +341,7 @@ async function cdpTypeText(tabId, keystrokes) {
   if (typeof keystrokes === 'string') {
     for (const char of keystrokes) {
       await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'keyDown', key: char, text: char });
+      await sleep(20 + Math.random() * 20);
       await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'keyUp', key: char, text: char });
       await sleep(30 + Math.random() * 60);
     }
@@ -351,6 +352,7 @@ async function cdpTypeText(tabId, keystrokes) {
     if (ks.shift) await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'keyDown', key: 'Shift' });
     
     await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'keyDown', key: ks.key, text: ks.text });
+    await sleep(20 + Math.random() * 20); // 20-40ms mechanical key press delay
     await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'keyUp', key: ks.key, text: ks.text });
     
     if (ks.shift) await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'keyUp', key: 'Shift' });
