@@ -57,15 +57,16 @@ class InstagramFlow(SocialFlow):
             el = self.fuzzy_find(
                 elements,
                 "create",
+                "new post",
                 min_width=10,
                 min_height=10,
             )
             if el is None:
-                el = self.role_find(elements, "button", "create")
+                el = self.role_find(elements, "button", "new post")
             if el is None:
-                el = self.role_find(elements, "link", "create")
+                el = self.role_find(elements, "link", "new post")
             if el is None:
-                el = self.role_find(elements, "menuitem", "create")
+                el = self.role_find(elements, "menuitem", "new post")
 
         elif step == "select_post_type":
             el = self.fuzzy_find(

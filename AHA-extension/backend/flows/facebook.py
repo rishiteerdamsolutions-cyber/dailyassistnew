@@ -33,7 +33,7 @@ class FacebookFlow(SocialFlow):
         if has_text:
             steps.append("type_text")
         if has_image or has_video:
-            steps.extend(["add_media", "click_dropzone", "upload_signal"])
+            steps.extend(["add_media", "upload_signal"])
 
         steps.append("submit_post")
         steps.append("close_modal")
@@ -65,17 +65,9 @@ class FacebookFlow(SocialFlow):
         elif step == "add_media":
             el = self.fuzzy_find(
                 elements,
-                "photo/video",
+                "add photos or videos",
                 min_width=16,
                 min_height=16,
-            )
-
-        elif step == "click_dropzone":
-            el = self.fuzzy_find(
-                elements,
-                "add photos or videos",
-                min_width=40,
-                min_height=40,
             )
 
         elif step == "upload_signal":

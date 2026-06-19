@@ -471,8 +471,8 @@ async function handleStartExecution(payload, sendResponse) {
       platform: payload.platform,
       slots: { 
         text: payload.fetchedText || '', 
-        image: payload.mediaType === 'image', 
-        video: payload.mediaType === 'video' 
+        image: payload.mediaType.toLowerCase() === 'image', 
+        video: payload.mediaType.toLowerCase() === 'video' 
       },
       day: payload.daySlot,
       elements: elements,
