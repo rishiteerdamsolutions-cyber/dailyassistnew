@@ -48,39 +48,25 @@ class XFlow(SocialFlow):
         if step == "open_composer":
             el = self.fuzzy_find(
                 elements,
+                "what is happening",
                 "what's happening",
-                "post",
-                "compose",
-                "tweet",
-                "create",
                 min_width=20,
                 min_height=10,
             )
-            if el is None:
-                # Sidebar "Post" compose button (large blue button)
-                el = self.role_find(elements, "button", "post")
 
         elif step == "type_text":
-            el = self.role_find(elements, "textbox", min_width=100, min_height=20)
+            el = self.role_find(elements, "textbox", min_width=100, min_height=30)
             if el is None:
                 el = self.fuzzy_find(
                     elements, 
-                    "what's happening",
-                    "post your reply",
-                    "tweet your reply",
-                    "type here",
-                    "add another post"
+                    "what is happening",
+                    "what's happening"
                 )
 
         elif step == "add_media":
             el = self.fuzzy_find(
                 elements,
-                "add photos or video",
                 "media",
-                "image",
-                "photo",
-                "video",
-                "upload",
                 min_width=16,
                 min_height=16,
             )
@@ -89,13 +75,9 @@ class XFlow(SocialFlow):
             return None
 
         elif step == "submit_post":
-            # X has a "Post" button inside the compose modal
             el = self.fuzzy_find(
                 elements,
                 "post",
-                "tweet",
-                "reply",
-                "send",
                 min_width=20,
                 min_height=10,
             )

@@ -41,62 +41,49 @@ class WhatsAppFlow(SocialFlow):
     ) -> Optional[tuple[float, float, float, float]]:
         el = None
 
-        if step == "open_status":
+        if step == "click_status_tab":
             el = self.fuzzy_find(
                 elements,
                 "status",
-                "statuses",
                 min_width=20,
-                min_height=20,
+                min_height=10,
             )
-            if el is None:
-                # Often WhatsApp icons are just SVG buttons with aria-label="Status"
-                el = self.role_find(elements, "button", "status")
 
-        elif step == "click_add_status":
-            # The "+" icon or "My status" row
+        elif step == "click_new_status":
             el = self.fuzzy_find(
                 elements,
-                "my status",
-                "add status",
                 "new status",
-                "add",
                 min_width=16,
                 min_height=16,
             )
+            if el is None:
+                el = self.role_find(elements, "button", "status")
 
         elif step == "select_photos_videos":
             el = self.fuzzy_find(
                 elements,
                 "photos & videos",
-                "photos and videos",
-                "photos",
-                "videos",
-                min_width=16,
-                min_height=16,
+                min_width=20,
+                min_height=10,
             )
 
         elif step == "upload_signal":
             return None
 
         elif step == "type_caption":
-            el = self.fuzzy_find(
-                elements,
-                "type a caption",
-                "add a caption",
-                "caption",
-                "type here",
-            )
+            el = self.role_find(elements, "textbox", min_width=50, min_height=20)
             if el is None:
-                el = self.role_find(elements, "textbox", min_width=50, min_height=20)
+                el = self.fuzzy_find(
+                    elements,
+                    "type a caption",
+                )
 
-        elif step == "submit_status":
+        elif step == "send_status":
             el = self.fuzzy_find(
                 elements,
                 "send",
-                "submit",
                 min_width=20,
-                min_height=20,
+                min_height=10,
             )
             if el is None:
                 el = self.role_find(elements, "button", "send")

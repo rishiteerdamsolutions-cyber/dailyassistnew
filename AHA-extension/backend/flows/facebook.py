@@ -50,7 +50,6 @@ class FacebookFlow(SocialFlow):
             el = self.fuzzy_find(
                 elements,
                 "what's on your mind",
-                "write something",
                 min_width=20,
                 min_height=10,
             )
@@ -60,20 +59,13 @@ class FacebookFlow(SocialFlow):
             if el is None:
                 el = self.fuzzy_find(
                     elements, 
-                    "what's on your mind",
-                    "write something",
-                    "create post"
+                    "what's on your mind"
                 )
 
         elif step == "add_media":
             el = self.fuzzy_find(
                 elements,
                 "photo/video",
-                "photo",
-                "video",
-                "add photos",
-                "image",
-                "media",
                 min_width=16,
                 min_height=16,
             )
@@ -82,13 +74,6 @@ class FacebookFlow(SocialFlow):
             el = self.fuzzy_find(
                 elements,
                 "add photos or videos",
-                "add photos/videos",
-                "add photos",
-                "add video",
-                "drag and drop",
-                "choose file",
-                "browser",
-                "upload",
                 min_width=40,
                 min_height=40,
             )
@@ -100,9 +85,6 @@ class FacebookFlow(SocialFlow):
             el = self.fuzzy_find(
                 elements,
                 "post",
-                "share",
-                "publish",
-                "done",
                 min_width=20,
                 min_height=10,
             )
@@ -112,8 +94,6 @@ class FacebookFlow(SocialFlow):
                 elements,
                 "close",
                 "x",
-                "cancel",
-                "dismiss",
                 min_width=10,
                 min_height=10,
             )

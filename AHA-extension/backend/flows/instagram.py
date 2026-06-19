@@ -56,17 +56,11 @@ class InstagramFlow(SocialFlow):
         if step == "open_new_post":
             el = self.fuzzy_find(
                 elements,
-                "new post",
                 "create",
-                "new",
-                "add",
-                "upload",
-                "post",
                 min_width=10,
                 min_height=10,
             )
             if el is None:
-                # Try SVG "+" button by role or generic link
                 el = self.role_find(elements, "button", "create")
             if el is None:
                 el = self.role_find(elements, "link", "create")
@@ -85,46 +79,33 @@ class InstagramFlow(SocialFlow):
             el = self.fuzzy_find(
                 elements,
                 "select from computer",
-                "drag photos and videos here",
-                "choose file",
-                "browse",
-                "upload",
                 min_width=20,
                 min_height=10,
             )
 
         elif step == "upload_signal":
-            return None  # Handled by WS handler as a special action
+            return None
 
         elif step == "next_step":
             el = self.fuzzy_find(
                 elements,
                 "next",
-                "continue",
-                "forward",
-                "arrow",
                 min_width=20,
                 min_height=10,
             )
 
         elif step == "type_caption":
-            el = self.fuzzy_find(
-                elements,
-                "write a caption",
-                "caption",
-                "type here",
-                "add a description",
-                "description",
-            )
+            el = self.role_find(elements, "textbox", min_width=50, min_height=20)
             if el is None:
-                el = self.role_find(elements, "textbox", min_width=50, min_height=20)
+                el = self.fuzzy_find(
+                    elements,
+                    "write a caption",
+                )
 
         elif step == "share_post":
             el = self.fuzzy_find(
                 elements,
                 "share",
-                "post",
-                "publish",
                 min_width=20,
                 min_height=10,
             )
@@ -133,9 +114,6 @@ class InstagramFlow(SocialFlow):
             el = self.fuzzy_find(
                 elements,
                 "done",
-                "close",
-                "x",
-                "finish",
                 min_width=10,
                 min_height=10,
             )

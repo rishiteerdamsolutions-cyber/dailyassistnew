@@ -52,42 +52,26 @@ class LinkedInFlow(SocialFlow):
         el = None
 
         if step == "open_composer":
-            # LinkedIn renders this as a placeholder text or a button
             el = self.fuzzy_find(
                 elements,
                 "start a post",
-                "write a post",
-                "share an update",
-                "what's on your mind",
-                "create a post",
-                "post",
                 min_width=20,
                 min_height=10,
             )
 
         elif step == "type_text":
-            # The modal textarea — look for contenteditable or role="textbox"
             el = self.role_find(elements, "textbox", min_width=100, min_height=30)
             if el is None:
                 el = self.fuzzy_find(
                     elements, 
-                    "what do you want to talk about", 
-                    "write here", 
-                    "add a comment",
                     "start a post",
-                    "type your text"
                 )
 
         elif step == "open_media":
-            # Photo / camera icon button
             el = self.fuzzy_find(
                 elements,
-                "add a photo",
                 "photo",
                 "image",
-                "camera",
-                "add media",
-                "media",
                 min_width=16,
                 min_height=16,
             )
@@ -95,36 +79,26 @@ class LinkedInFlow(SocialFlow):
         elif step == "open_video":
             el = self.fuzzy_find(
                 elements,
-                "add a video",
                 "video",
-                "movie",
-                "upload video",
                 min_width=16,
                 min_height=16,
             )
 
         elif step == "upload_signal":
-            # upload_signal is handled by the WS handler directly — no DOM target needed
             return None
 
         elif step == "next_step":
             el = self.fuzzy_find(
                 elements,
                 "next",
-                "done",
-                "apply",
-                "continue",
                 min_width=20,
                 min_height=10,
             )
 
         elif step == "submit_post":
-            # The blue Post button inside the compose modal
             el = self.fuzzy_find(
                 elements,
                 "post",
-                "publish",
-                "share",
                 min_width=20,
                 min_height=10,
             )
