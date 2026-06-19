@@ -27,13 +27,14 @@ from flows.base import Element, SocialFlow
 class InstagramFlow(SocialFlow):
 
     def get_steps(self) -> list[str]:
-        steps: list[str] = ["open_new_post"]
+        steps: list[str] = ["open_new_post", "select_post_type"]
 
         has_image = bool(self.slots.get("image", False))
         has_video = bool(self.slots.get("video", False))
         has_text = bool(self.slots.get("text", "").strip())
 
         if has_image or has_video:
+            steps.append("select_from_computer")
             steps.append("upload_signal")
             steps.append("next_step")    # crop panel → filter panel
             steps.append("next_step")    # filter panel → caption panel
@@ -66,6 +67,26 @@ class InstagramFlow(SocialFlow):
                 # Try SVG "+" button by role
                 el = self.role_find(elements, "button", "create")
 
+        elif step == "select_post_type":
+            el = self.fuzzy_find(
+                elements,
+                "post",
+                min_width=20,
+                min_height=10,
+            )
+
+        elif step == "select_from_computer":
+            el = self.fuzzy_find(
+                elements,
+                "select from computer",
+                "drag photos and videos here",
+                "choose file",
+                "browse",
+                "upload",
+                min_width=20,
+                min_height=10,
+            )
+
         elif step == "upload_signal":
             return None  # Handled by WS handler as a special action
 
@@ -90,7 +111,7 @@ class InstagramFlow(SocialFlow):
                 "description",
             )
             if el is None:
-                el = self.role_find(elements, "textbox")
+                el = self.role_find(elements, "textbox", min_width=50, min_height=20)
 
         elif step == "share_post":
             el = self.fuzzy_find(
