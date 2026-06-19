@@ -61,7 +61,7 @@ class XFlow(SocialFlow):
                 el = self.role_find(elements, "button", "post")
 
         elif step == "type_text":
-            el = self.role_find(elements, "textbox", "what's happening")
+            el = self.role_find(elements, "textbox", min_width=100, min_height=20)
             if el is None:
                 el = self.fuzzy_find(
                     elements, 
