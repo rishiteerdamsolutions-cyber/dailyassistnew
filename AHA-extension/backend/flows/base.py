@@ -118,9 +118,15 @@ class SocialFlow(ABC):
                 if q == el_text:
                     score = 1.0
                 elif q in el_text:
-                    # It's a substring. Score based on how much of the string it occupies
-                    # e.g. "post" in "post" = 1.0, "post" in "createpost" = 0.4
-                    score = 0.8 * (len(q) / len(el_text))
+                    # It's a substring.
+                    if len(q) >= 8:
+                        # If the query is substantial (>8 chars) and it's an exact substring, 
+                        # it's a very confident match. (e.g. "what's on your mind" inside "what's on your mind, John")
+                        score = 0.9
+                    else:
+                        # For short queries, penalize based on string occupation to avoid false positives
+                        # e.g. "post" in "createpost" = 0.4
+                        score = 0.8 * (len(q) / len(el_text))
                 else:
                     ratio = SequenceMatcher(None, q, el_text).ratio()
                     if ratio >= 0.8:
