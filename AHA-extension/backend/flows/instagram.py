@@ -43,6 +43,7 @@ class InstagramFlow(SocialFlow):
             steps.append("type_caption")
 
         steps.append("share_post")
+        steps.append("close_modal")
         return steps
 
     def find_target(
@@ -119,10 +120,22 @@ class InstagramFlow(SocialFlow):
                 "share",
                 "post",
                 "publish",
-                "done",
                 min_width=20,
                 min_height=10,
             )
+
+        elif step == "close_modal":
+            el = self.fuzzy_find(
+                elements,
+                "done",
+                "close",
+                "x",
+                "finish",
+                min_width=10,
+                min_height=10,
+            )
+            if el is None:
+                el = self.role_find(elements, "button", "done")
 
         if el is None:
             return None
