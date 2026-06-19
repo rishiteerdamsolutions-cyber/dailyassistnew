@@ -128,12 +128,13 @@ def _generate_cubic_bezier(
 
 def _calculate_duration_ms(distance: float) -> float:
     """
-    Duration formula: 200ms base + 2ms per pixel, ±15% jitter.
-    Minimum: 100ms.
+    Duration formula: 600ms base + 2.5ms per pixel, ±20% jitter.
+    A full screen movement (1000px) will take ~2.5s - 3.8s.
+    Minimum: 500ms.
     """
-    base = 200.0 + 2.0 * distance
-    jitter_pct = (secrets.randbelow(31) - 15) / 100.0   # −0.15 → +0.15
-    return max(base * (1.0 + jitter_pct), 100.0)
+    base = 600.0 + 2.5 * distance
+    jitter_pct = (secrets.randbelow(41) - 20) / 100.0   # −0.20 → +0.20
+    return max(base * (1.0 + jitter_pct), 500.0)
 
 
 # ── Overshoot Engine ──────────────────────────────────────────────────────────

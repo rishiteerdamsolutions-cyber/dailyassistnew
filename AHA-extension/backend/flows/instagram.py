@@ -61,12 +61,17 @@ class InstagramFlow(SocialFlow):
                 "new",
                 "add",
                 "upload",
-                min_width=16,
-                min_height=16,
+                "post",
+                min_width=10,
+                min_height=10,
             )
             if el is None:
-                # Try SVG "+" button by role
+                # Try SVG "+" button by role or generic link
                 el = self.role_find(elements, "button", "create")
+            if el is None:
+                el = self.role_find(elements, "link", "create")
+            if el is None:
+                el = self.role_find(elements, "menuitem", "create")
 
         elif step == "select_post_type":
             el = self.fuzzy_find(
