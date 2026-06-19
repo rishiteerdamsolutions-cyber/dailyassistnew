@@ -36,6 +36,7 @@ class FacebookFlow(SocialFlow):
             steps.extend(["add_media", "click_dropzone", "upload_signal"])
 
         steps.append("submit_post")
+        steps.append("close_modal")
         return steps
 
     def find_target(
@@ -84,6 +85,7 @@ class FacebookFlow(SocialFlow):
         elif step == "click_dropzone":
             el = self.fuzzy_find(
                 elements,
+                "add photos or videos",
                 "add photos/videos",
                 "add photos",
                 "add video",
@@ -99,17 +101,28 @@ class FacebookFlow(SocialFlow):
             return None
 
         elif step == "submit_post":
-            # For submit, exact matches are safer to avoid clicking "posts" in the feed
-            for e in elements:
-                text_val = str(e.get("text", "")).lower().strip()
-                if text_val in ("post", "next", "publish", "share"):
-                    w = float(e.get("width", 0))
-                    h = float(e.get("height", 0))
-                    if w >= 20 and h >= 10:
-                        return self.bbox(e)
-            
-            # Absolute fallback if exact match fails
-            el = self.fuzzy_find(elements, "post", "publish", "share", min_width=20, min_height=10)
+            el = self.fuzzy_find(
+                elements,
+                "post",
+                "share",
+                "publish",
+                "done",
+                min_width=20,
+                min_height=10,
+            )
+
+        elif step == "close_modal":
+            el = self.fuzzy_find(
+                elements,
+                "close",
+                "x",
+                "cancel",
+                "dismiss",
+                min_width=10,
+                min_height=10,
+            )
+            if el is None:
+                el = self.role_find(elements, "button", "close")
 
         if el is None:
             return None
