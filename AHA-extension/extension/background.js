@@ -86,13 +86,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 chrome.debugger.onEvent.addListener(async (source, method, params) => {
   if (method === 'Page.fileChooserOpened') {
     if (_activeMediaAbsolutePath) {
-      console.log('[AHA BG] Intercepted file chooser, injecting:', _activeMediaAbsolutePath);
+      console.log('[AHA BG] Intercepted file chooser. Simulating human searching for file...');
+      
+      // CRITICAL HUMAN ABILITIES RULE: A human takes 2.5 to 5 seconds to navigate folders and double click a file!
+      await sleep(2500 + Math.random() * 2500); 
+      
+      console.log('[AHA BG] Injecting file:', _activeMediaAbsolutePath);
       await chrome.debugger.sendCommand({ tabId: source.tabId }, 'Page.handleFileChooser', {
         action: 'accept',
         files: [_activeMediaAbsolutePath]
       });
     } else {
       console.log('[AHA BG] File chooser opened but no media available. Canceling.');
+      await sleep(1000 + Math.random() * 1000); // 1-2 seconds to realize mistake and click cancel
       await chrome.debugger.sendCommand({ tabId: source.tabId }, 'Page.handleFileChooser', {
         action: 'cancel'
       });
