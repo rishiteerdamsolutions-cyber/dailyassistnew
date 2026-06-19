@@ -147,60 +147,72 @@ def _should_overshoot(distance: float) -> bool:
     return secrets.randbelow(1000) / 1000.0 < prob
 
 
-def _apply_overshoot(
+def _apply_human_hesitations(
+    trajectory: list[tuple[float, float]],
+) -> list[tuple[float, float]]:
+    """
+    Injects realistic 'installments' into the path by forcing the cursor to hover 
+    at certain points, creating natural hesitations.
+    """
+    if len(trajectory) < 10:
+        return trajectory
+        
+    result = []
+    # Pick 1-2 random points in the path to hesitate at
+    num_hesitations = 1 + secrets.randbelow(2)
+    hesitation_indices = set()
+    for _ in range(num_hesitations):
+        # Hesitate somewhere in the middle 60% of the movement
+        idx = int(len(trajectory) * _rand_float(0.2, 0.8))
+        hesitation_indices.add(idx)
+
+    for i, pt in enumerate(trajectory):
+        result.append(pt)
+        if i in hesitation_indices:
+            # Repeat the coordinate 20-40 times. At ~10ms per step, this is a 200-400ms pause.
+            pause_frames = 20 + secrets.randbelow(21)
+            for _ in range(pause_frames):
+                result.append(pt)
+                
+    return result
+
+def _apply_nearby_stop_and_correct(
     trajectory: list[tuple[float, float]],
     target_x: float,
     target_y: float,
 ) -> list[tuple[float, float]]:
     """
-    Extend trajectory with damped spring correction after overshoot.
-
-    1. Cursor overshoots target by 3–12px in approach direction.
-    2. 1–3 damped oscillation corrections settle on exact target.
+    Simulates a human stopping just short of the target ("nearby"), hesitating, 
+    and then carefully closing the final distance.
     """
     if len(trajectory) < 2:
         return trajectory
 
     result = list(trajectory)
+    
+    # Pause near the end
+    pause_frames = 15 + secrets.randbelow(15)
+    last_pt = result[-1]
+    for _ in range(pause_frames):
+        result.append(last_pt)
+        
+    # Micro-correction to the exact final target
+    # Generate a slow, short straight line or slight curve to the exact target
+    dx = target_x - last_pt[0]
+    dy = target_y - last_pt[1]
+    dist = math.sqrt(dx*dx + dy*dy)
+    
+    # 5 to 15 frames for the final correction
+    correction_steps = 5 + secrets.randbelow(11)
+    for i in range(1, correction_steps + 1):
+        t = i / float(correction_steps)
+        # ease-out
+        t = 1.0 - (1.0 - t) * (1.0 - t)
+        result.append((
+            last_pt[0] + dx * t,
+            last_pt[1] + dy * t
+        ))
 
-    last = trajectory[-1]
-    prev = trajectory[-2]
-    dx = last[0] - prev[0]
-    dy = last[1] - prev[1]
-    speed = math.sqrt(dx * dx + dy * dy)
-
-    if speed < 0.5:
-        return result
-
-    dir_x = dx / speed
-    dir_y = dy / speed
-
-    overshoot_base = 3 + secrets.randbelow(10)             # 3–12 px
-    overshoot_scale = min(speed / 5.0, 2.0)
-    overshoot_dist = overshoot_base * max(overshoot_scale, 0.5)
-
-    overshoot_pt = (
-        target_x + dir_x * overshoot_dist,
-        target_y + dir_y * overshoot_dist,
-    )
-    result.append(overshoot_pt)
-
-    num_corrections = 1 + secrets.randbelow(3)
-    zeta = 0.5 + secrets.randbelow(31) / 100.0             # 0.5–0.8 damping
-    omega = 2.0 * math.pi / 4.0
-
-    current = overshoot_pt
-    for i in range(1, num_corrections + 1):
-        t = float(i) / (num_corrections + 1)
-        decay = math.exp(-zeta * omega * t)
-        oscillation = math.cos(omega * t)
-
-        cx = target_x + (current[0] - target_x) * decay * oscillation * 0.3
-        cy = target_y + (current[1] - target_y) * decay * oscillation * 0.3
-        result.append((cx, cy))
-        current = (cx, cy)
-
-    result.append((target_x, target_y))
     return result
 
 
@@ -229,33 +241,56 @@ def generate_mouse_path(
     TrajectoryResult
         .path              — ordered list of (x, y) float tuples
         .total_duration_ms — realistic movement duration
-        .includes_overshoot
     """
-    # Off-centre click randomisation within 80% of the bounding box interior
-    margin_x = target_w * 0.10
-    margin_y = target_h * 0.10
-    inner_w = max(target_w - 2 * margin_x, 1.0)
-    inner_h = max(target_h - 2 * margin_y, 1.0)
-
-    click_x = target_x + margin_x + _rand_float(0.0, inner_w)
-    click_y = target_y + margin_y + _rand_float(0.0, inner_h)
+    # Guarantee we NEVER click the mathematical center
+    # Split the target into 4 quadrants, pick a random quadrant, and pick a point strictly inside it
+    # leaving a dead-zone in the exact middle.
+    mid_x = target_x + target_w / 2.0
+    mid_y = target_y + target_h / 2.0
+    
+    quadrant_x = 1 if secrets.randbelow(2) == 0 else -1
+    quadrant_y = 1 if secrets.randbelow(2) == 0 else -1
+    
+    # Minimum offset from center is 10% of width/height, max is 40% (keeping away from extreme edge)
+    offset_x = (target_w / 2.0) * _rand_float(0.1, 0.4) * quadrant_x
+    offset_y = (target_h / 2.0) * _rand_float(0.1, 0.4) * quadrant_y
+    
+    click_x = mid_x + offset_x
+    click_y = mid_y + offset_y
 
     distance = math.sqrt((click_x - start_x) ** 2 + (click_y - start_y) ** 2)
     duration_ms = _calculate_duration_ms(distance)
 
-    # More steps for longer distances; minimum 30
-    num_steps = max(int(distance / 8), 30)
-    path = _generate_cubic_bezier(start_x, start_y, click_x, click_y, num_steps)
+    # 1. We stop "nearby" instead of going all the way to click_x, click_y immediately.
+    # We aim for a point 10-30 pixels away from the final target
+    approach_angle = math.atan2(click_y - start_y, click_x - start_x)
+    stop_short_dist = _rand_float(10.0, 30.0)
+    
+    # If the total distance is tiny, don't stop short
+    if distance > 40.0:
+        nearby_x = click_x - math.cos(approach_angle) * stop_short_dist
+        nearby_y = click_y - math.sin(approach_angle) * stop_short_dist
+    else:
+        nearby_x, nearby_y = click_x, click_y
 
-    includes_overshoot = False
-    if _should_overshoot(distance):
-        path = _apply_overshoot(path, click_x, click_y)
-        includes_overshoot = True
+    num_steps = max(int(distance / 8), 30)
+    
+    # Generate the main fast curve to the "nearby" point
+    path = _generate_cubic_bezier(start_x, start_y, nearby_x, nearby_y, num_steps)
+    
+    # 2. Add "installments" (hesitations mid-flight)
+    path = _apply_human_hesitations(path)
+    
+    # 3. Stop nearby, hesitate, and do the final micro-correction to the real target
+    if distance > 40.0:
+        path = _apply_nearby_stop_and_correct(path, click_x, click_y)
+    else:
+        path.append((click_x, click_y))
 
     return TrajectoryResult(
         path=path,
         total_duration_ms=duration_ms,
-        includes_overshoot=includes_overshoot,
+        includes_overshoot=True
     )
 
 
