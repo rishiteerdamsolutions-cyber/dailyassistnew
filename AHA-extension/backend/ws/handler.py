@@ -214,8 +214,8 @@ async def _process_execute(ws: WebSocket, msg: dict) -> None:
         if step == "upload_signal":
             await asyncio.sleep(1.0) # Wait for file picker
             await _send_upload_signal(ws)
-            logger.info("Upload signal sent. Waiting 4 seconds for UI to update...")
-            await asyncio.sleep(4.0) # Wait for the image/video to actually attach in the DOM
+            logger.info("Upload signal sent. Waiting 12 seconds for media to upload and UI to update...")
+            await asyncio.sleep(12.0) # Wait for large video files to actually attach and enable the Post button
             continue
 
         # ── Sleep briefly to mimic human reaction time and allow UI animations 
@@ -245,11 +245,18 @@ async def _process_execute(ws: WebSocket, msg: dict) -> None:
         if traj.path:
             cursor_x, cursor_y = traj.path[-1]
 
+        # Human micro-pause before clicking (150ms - 400ms)
+        import random
+        await asyncio.sleep(0.15 + random.random() * 0.25)
+
         # ── Click ─────────────────────────────────────────────────────────────
         await _send_click(ws, cursor_x, cursor_y)
 
         # ── If this is a text-entry step, also generate keystrokes ────────────
         if step == "type_text" or step == "type_caption":
+            # Human pause to position hands on keyboard after clicking (800ms - 1500ms)
+            await asyncio.sleep(0.8 + random.random() * 0.7)
+            
             text_content: str = slots.get("text", "")
             if text_content:
                 keystrokes = generate_keystrokes(text_content, personality)
