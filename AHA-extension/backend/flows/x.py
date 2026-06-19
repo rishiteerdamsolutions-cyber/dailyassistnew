@@ -51,6 +51,8 @@ class XFlow(SocialFlow):
                 "what's happening",
                 "post",
                 "compose",
+                "tweet",
+                "create",
                 min_width=20,
                 min_height=10,
             )
@@ -61,7 +63,14 @@ class XFlow(SocialFlow):
         elif step == "type_text":
             el = self.role_find(elements, "textbox", "what's happening")
             if el is None:
-                el = self.fuzzy_find(elements, "what's happening")
+                el = self.fuzzy_find(
+                    elements, 
+                    "what's happening",
+                    "post your reply",
+                    "tweet your reply",
+                    "type here",
+                    "add another post"
+                )
 
         elif step == "add_media":
             el = self.fuzzy_find(
@@ -70,6 +79,8 @@ class XFlow(SocialFlow):
                 "media",
                 "image",
                 "photo",
+                "video",
+                "upload",
                 min_width=16,
                 min_height=16,
             )
@@ -82,6 +93,9 @@ class XFlow(SocialFlow):
             el = self.fuzzy_find(
                 elements,
                 "post",
+                "tweet",
+                "reply",
+                "send",
                 min_width=20,
                 min_height=10,
             )

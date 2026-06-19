@@ -58,6 +58,8 @@ class LinkedInFlow(SocialFlow):
                 "write a post",
                 "share an update",
                 "what's on your mind",
+                "create a post",
+                "post",
                 min_width=20,
                 min_height=10,
             )
@@ -66,7 +68,14 @@ class LinkedInFlow(SocialFlow):
             # The modal textarea — look for contenteditable or role="textbox"
             el = self.role_find(elements, "textbox")
             if el is None:
-                el = self.fuzzy_find(elements, "write here", "add a comment")
+                el = self.fuzzy_find(
+                    elements, 
+                    "what do you want to talk about", 
+                    "write here", 
+                    "add a comment",
+                    "start a post",
+                    "type your text"
+                )
 
         elif step == "open_media":
             # Photo / camera icon button
@@ -76,6 +85,8 @@ class LinkedInFlow(SocialFlow):
                 "photo",
                 "image",
                 "camera",
+                "add media",
+                "media",
                 min_width=16,
                 min_height=16,
             )
@@ -85,6 +96,8 @@ class LinkedInFlow(SocialFlow):
                 elements,
                 "add a video",
                 "video",
+                "movie",
+                "upload video",
                 min_width=16,
                 min_height=16,
             )
@@ -98,6 +111,9 @@ class LinkedInFlow(SocialFlow):
             el = self.fuzzy_find(
                 elements,
                 "post",
+                "publish",
+                "share",
+                "done",
                 min_width=20,
                 min_height=10,
             )

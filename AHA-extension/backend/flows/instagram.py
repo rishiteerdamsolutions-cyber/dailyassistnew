@@ -57,6 +57,8 @@ class InstagramFlow(SocialFlow):
                 "new post",
                 "create",
                 "new",
+                "add",
+                "upload",
                 min_width=16,
                 min_height=16,
             )
@@ -71,6 +73,9 @@ class InstagramFlow(SocialFlow):
             el = self.fuzzy_find(
                 elements,
                 "next",
+                "continue",
+                "forward",
+                "arrow",
                 min_width=20,
                 min_height=10,
             )
@@ -80,6 +85,9 @@ class InstagramFlow(SocialFlow):
                 elements,
                 "write a caption",
                 "caption",
+                "type here",
+                "add a description",
+                "description",
             )
             if el is None:
                 el = self.role_find(elements, "textbox")
@@ -88,6 +96,9 @@ class InstagramFlow(SocialFlow):
             el = self.fuzzy_find(
                 elements,
                 "share",
+                "post",
+                "publish",
+                "done",
                 min_width=20,
                 min_height=10,
             )
