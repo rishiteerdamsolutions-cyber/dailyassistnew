@@ -54,6 +54,7 @@ from flows.base import SocialFlow
 from flows.linkedin import LinkedInFlow
 from flows.instagram import InstagramFlow
 from flows.facebook import FacebookFlow
+from flows.whatsapp import WhatsAppFlow
 from flows.x import XFlow
 
 logger = logging.getLogger(__name__)
@@ -68,6 +69,7 @@ def _get_flow(platform: str, slots: dict) -> SocialFlow | None:
         "linkedin":  LinkedInFlow,
         "instagram": InstagramFlow,
         "facebook":  FacebookFlow,
+        "whatsapp":  WhatsAppFlow,
         "x":         XFlow,
         "twitter":   XFlow,
     }
