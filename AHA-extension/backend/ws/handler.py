@@ -182,6 +182,7 @@ async def handle_agent_session(
 async def _process_execute(ws: WebSocket, msg: dict) -> None:
     """Process a single 'execute' message and stream commands back."""
     import asyncio
+    import random
     
     platform: str = msg.get("platform", "").lower()
     slots: dict = msg.get("slots", {})
@@ -214,15 +215,19 @@ async def _process_execute(ws: WebSocket, msg: dict) -> None:
 
         # ── upload_signal: special action, no mouse movement needed ──────────
         if step == "upload_signal":
-            await asyncio.sleep(1.0) # Wait for file picker
+            await asyncio.sleep(random.uniform(0.8, 1.5)) # Wait for file picker
             await _send_upload_signal(ws)
-            logger.info("Upload signal sent. Waiting 12 seconds for media to upload and UI to update...")
-            await asyncio.sleep(12.0) # Wait for large video files to actually attach and enable the Post button
+            
+            # Random wait between 10.5 and 14.5 seconds for media upload processing
+            upload_wait = random.uniform(10.5, 14.5)
+            logger.info("Upload signal sent. Waiting %.2f seconds for media to upload and UI to update...", upload_wait)
+            await asyncio.sleep(upload_wait) 
             continue
 
         # ── Sleep briefly to mimic human reaction time and allow UI animations 
         # SPAs like Facebook can take 2-4 seconds to fully render a modal popup
-        await asyncio.sleep(3.0)
+        # We randomize this delay so it never repeats the exact same millisecond pattern
+        await asyncio.sleep(random.uniform(2.2, 4.3))
 
         # ── Re-scan the screen dynamically to see new modals or buttons ──────
         elements = await _send_rescan(ws)
@@ -248,7 +253,6 @@ async def _process_execute(ws: WebSocket, msg: dict) -> None:
             cursor_x, cursor_y = traj.path[-1]
 
         # Human micro-pause before clicking (150ms - 400ms)
-        import random
         await asyncio.sleep(0.15 + random.random() * 0.25)
 
         # ── Click ─────────────────────────────────────────────────────────────
