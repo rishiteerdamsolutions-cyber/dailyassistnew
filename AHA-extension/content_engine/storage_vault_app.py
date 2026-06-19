@@ -88,6 +88,7 @@ class VaultHandler(BaseHTTPRequestHandler):
                         b64 = base64.b64encode(f.read()).decode('utf-8')
                         response_data["mediaDataUrl"] = f"data:{mime_type};base64,{b64}"
                         response_data["mediaMimeType"] = mime_type
+                        response_data["mediaAbsolutePath"] = str(p.resolve())
                     break
                     
         self.send_response(200)

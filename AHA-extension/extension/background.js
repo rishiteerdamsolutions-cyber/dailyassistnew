@@ -55,11 +55,14 @@ chrome.runtime.onStartup.addListener(async () => {
 });
 
 // Message listener from popup.js
+let _activeMediaAbsolutePath = null;
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     try {
       switch (message.type) {
         case 'START_EXECUTION':
+          _activeMediaAbsolutePath = message.payload.mediaAbsolutePath || null;
           await handleStartExecution(message.payload, sendResponse);
           break;
         case 'CAPTURE_SCREENSHOT':
@@ -77,6 +80,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   })();
   return true; // keep message channel open for async sendResponse
+});
+
+// CDP Event listener to bypass OS File Chooser Dialogs
+chrome.debugger.onEvent.addListener(async (source, method, params) => {
+  if (method === 'Page.fileChooserOpened') {
+    if (_activeMediaAbsolutePath) {
+      console.log('[AHA BG] Intercepted file chooser, injecting:', _activeMediaAbsolutePath);
+      await chrome.debugger.sendCommand({ tabId: source.tabId }, 'Page.handleFileChooser', {
+        action: 'accept',
+        files: [_activeMediaAbsolutePath]
+      });
+    } else {
+      console.log('[AHA BG] File chooser opened but no media available. Canceling.');
+      await chrome.debugger.sendCommand({ tabId: source.tabId }, 'Page.handleFileChooser', {
+        action: 'cancel'
+      });
+    }
+  }
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -244,6 +265,10 @@ async function attachDebugger(tabId) {
     await chrome.debugger.attach({ tabId }, DEBUGGER_VERSION);
     _attachedTabId = tabId;
     console.log('[AHA BG] Debugger attached to tab', tabId);
+    
+    // Enable Page domain and intercept file choosers to bypass OS dialogs
+    await chrome.debugger.sendCommand({ tabId }, 'Page.enable');
+    await chrome.debugger.sendCommand({ tabId }, 'Page.setInterceptFileChooserDialog', { enabled: true });
   } catch (err) {
     console.error('[AHA BG] attachDebugger error:', err);
     throw err;
@@ -290,7 +315,11 @@ async function cdpMouseClick(tabId, x, y, button = 'left') {
     clickCount: 1
   };
   await cdpSend(tabId, 'Input.dispatchMouseEvent', baseParams);
-  await cdpSend(tabId, 'Input.dispatchMouseEvent', { ...baseParams, type: 'mouseReleased' });
+  
+  await sleep(40 + Math.random() * 60); // 40-100ms realistic click hold
+  
+  baseParams.type = 'mouseReleased';
+  await cdpSend(tabId, 'Input.dispatchMouseEvent', baseParams);
 }
 
 /** Key down */
@@ -386,6 +415,7 @@ async function handleStartExecution(payload, sendResponse) {
     if (vaultData.mediaDataUrl) {
       payload.fetchedMedia = vaultData.mediaDataUrl;
       payload.mediaMimeType = vaultData.mediaMimeType;
+      payload.mediaAbsolutePath = vaultData.mediaAbsolutePath;
     }
     
   } catch (err) {
