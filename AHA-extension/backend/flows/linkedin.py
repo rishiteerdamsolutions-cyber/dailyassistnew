@@ -35,10 +35,11 @@ class LinkedInFlow(SocialFlow):
 
         if has_text:
             steps.append("type_text")
+        
         if has_image:
-            steps.extend(["open_media", "upload_signal"])
-        if has_video:
-            steps.extend(["open_video", "upload_signal"])
+            steps.extend(["open_media", "upload_signal", "next_step"])
+        elif has_video:
+            steps.extend(["open_video", "upload_signal", "next_step"])
 
         steps.append("submit_post")
         return steps
@@ -66,7 +67,7 @@ class LinkedInFlow(SocialFlow):
 
         elif step == "type_text":
             # The modal textarea — look for contenteditable or role="textbox"
-            el = self.role_find(elements, "textbox")
+            el = self.role_find(elements, "textbox", min_width=100, min_height=30)
             if el is None:
                 el = self.fuzzy_find(
                     elements, 
@@ -106,6 +107,17 @@ class LinkedInFlow(SocialFlow):
             # upload_signal is handled by the WS handler directly — no DOM target needed
             return None
 
+        elif step == "next_step":
+            el = self.fuzzy_find(
+                elements,
+                "next",
+                "done",
+                "apply",
+                "continue",
+                min_width=20,
+                min_height=10,
+            )
+
         elif step == "submit_post":
             # The blue Post button inside the compose modal
             el = self.fuzzy_find(
@@ -113,7 +125,6 @@ class LinkedInFlow(SocialFlow):
                 "post",
                 "publish",
                 "share",
-                "done",
                 min_width=20,
                 min_height=10,
             )
