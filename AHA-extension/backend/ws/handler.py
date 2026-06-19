@@ -219,7 +219,8 @@ async def _process_execute(ws: WebSocket, msg: dict) -> None:
             continue
 
         # ── Sleep briefly to mimic human reaction time and allow UI animations 
-        await asyncio.sleep(1.0)
+        # SPAs like Facebook can take 2-4 seconds to fully render a modal popup
+        await asyncio.sleep(3.0)
 
         # ── Re-scan the screen dynamically to see new modals or buttons ──────
         elements = await _send_rescan(ws)
