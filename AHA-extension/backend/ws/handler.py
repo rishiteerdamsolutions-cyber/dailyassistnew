@@ -214,6 +214,8 @@ async def _process_execute(ws: WebSocket, msg: dict) -> None:
         if step == "upload_signal":
             await asyncio.sleep(1.0) # Wait for file picker
             await _send_upload_signal(ws)
+            logger.info("Upload signal sent. Waiting 4 seconds for UI to update...")
+            await asyncio.sleep(4.0) # Wait for the image/video to actually attach in the DOM
             continue
 
         # ── Sleep briefly to mimic human reaction time and allow UI animations 

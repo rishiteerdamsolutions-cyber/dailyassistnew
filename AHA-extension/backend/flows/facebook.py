@@ -85,7 +85,8 @@ class FacebookFlow(SocialFlow):
             if el and str(el.get("text", "")).lower().strip() != "post":
                 el = None
                 for e in elements:
-                    if str(e.get("text", "")).lower().strip() == "post":
+                    text_val = str(e.get("text", "")).lower().strip()
+                    if text_val in ("post", "next"):
                         w = float(e.get("width", 0))
                         h = float(e.get("height", 0))
                         if w >= 20 and h >= 10:
