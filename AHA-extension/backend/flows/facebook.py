@@ -51,10 +51,6 @@ class FacebookFlow(SocialFlow):
                 elements,
                 "what's on your mind",
                 "write something",
-                "create post",
-                "post",
-                "share",
-                "status",
                 min_width=20,
                 min_height=10,
             )
