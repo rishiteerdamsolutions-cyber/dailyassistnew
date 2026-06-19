@@ -209,15 +209,34 @@ async function handleBackendMessage(msg) {
         const stepTime = msg.duration_ms ? msg.duration_ms / msg.path.length : 2;
         for (const [px, py] of msg.path) {
           await cdpMouseMove(_attachedTabId, px, py);
+          await injectFakeCursor(_attachedTabId, px, py);
           if (stepTime > 0) await sleep(stepTime);
         }
       } else if (msg.x !== undefined && msg.y !== undefined) {
         await cdpMouseMove(_attachedTabId, msg.x, msg.y);
+        await injectFakeCursor(_attachedTabId, msg.x, msg.y);
       }
       break;
     case 'click':
     case 'MOUSE_CLICK':
       await cdpMouseClick(_attachedTabId, msg.x, msg.y, msg.button ?? 'left');
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: _attachedTabId },
+          world: "MAIN",
+          func: () => {
+            const cursor = document.getElementById('aha-fake-cursor');
+            if (cursor) {
+              cursor.style.transform = 'scale(0.5)';
+              cursor.style.backgroundColor = 'rgba(0, 255, 0, 0.8)';
+              setTimeout(() => {
+                cursor.style.transform = 'scale(1)';
+                cursor.style.backgroundColor = 'rgba(255, 0, 0, 0.8)';
+              }, 150);
+            }
+          }
+        });
+      } catch (e) {}
       break;
     case 'KEY_DOWN':
       await cdpKeyDown(_attachedTabId, msg.key, msg.text);
@@ -502,6 +521,38 @@ function notifyPopup(message) {
 // ─────────────────────────────────────────────────────────────────────────────
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function injectFakeCursor(tabId, x, y) {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      world: "MAIN",
+      func: (px, py) => {
+        let cursor = document.getElementById('aha-fake-cursor');
+        if (!cursor) {
+          cursor = document.createElement('div');
+          cursor.id = 'aha-fake-cursor';
+          cursor.style.position = 'fixed';
+          cursor.style.width = '12px';
+          cursor.style.height = '12px';
+          cursor.style.backgroundColor = 'rgba(255, 0, 0, 0.8)';
+          cursor.style.border = '2px solid white';
+          cursor.style.borderRadius = '50%';
+          cursor.style.pointerEvents = 'none'; // so it doesn't block clicks
+          cursor.style.zIndex = '999999999';
+          cursor.style.boxShadow = '0 0 4px rgba(0,0,0,0.5)';
+          cursor.style.transition = 'top 0.05s linear, left 0.05s linear';
+          document.body.appendChild(cursor);
+        }
+        cursor.style.left = (px - 6) + 'px';
+        cursor.style.top = (py - 6) + 'px';
+      },
+      args: [x, y]
+    });
+  } catch (err) {
+    // Ignore errors if script injection fails
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
