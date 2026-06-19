@@ -139,27 +139,35 @@ class SocialFlow(ABC):
         return None
 
     @staticmethod
+    @staticmethod
     def role_find(
         elements: list[Element],
         role: str,
         text_hint: str = "",
+        min_width: float = 0.0,
+        min_height: float = 0.0,
     ) -> Optional[Element]:
-        """
-        Find an element by ARIA role, optionally filtered by text hint.
-
-        Parameters
-        ----------
-        elements   Page element list.
-        role       ARIA role string (e.g. "textbox", "button").
-        text_hint  Optional substring to further narrow the match.
-        """
         role_lower = role.lower()
         hint_lower = text_hint.lower()
+        
+        best_el = None
+        max_area = -1.0
+
         for el in elements:
             if str(el.get("role", "")).lower() == role_lower:
+                w = float(el.get("width", 0))
+                h = float(el.get("height", 0))
+                
+                if w < min_width or h < min_height:
+                    continue
+                    
                 if not hint_lower or hint_lower in str(el.get("text", "")).lower():
-                    return el
-        return None
+                    area = w * h
+                    if area > max_area:
+                        max_area = area
+                        best_el = el
+
+        return best_el
 
     @staticmethod
     def bbox(el: Element) -> tuple[float, float, float, float]:

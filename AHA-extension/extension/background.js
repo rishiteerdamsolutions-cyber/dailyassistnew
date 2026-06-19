@@ -526,14 +526,26 @@ async function scanScreen(tabId) {
     func: () => {
       const elements = [];
       const addNode = (text, element) => {
+        let role = element.getAttribute('role') || '';
+        if (element.tagName.toLowerCase() === 'textarea' || element.tagName.toLowerCase() === 'input') {
+            role = 'textbox';
+        }
+        if (element.getAttribute('contenteditable') === 'true') {
+            role = 'textbox';
+        }
+
         const cleanText = text ? text.trim() : '';
-        if (!cleanText) return;
+        // Drop empty nodes unless they are textboxes
+        if (!cleanText && role !== 'textbox' && role !== 'button') return;
+
         const style = window.getComputedStyle(element);
         if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return;
         const rect = element.getBoundingClientRect();
         if (rect.width === 0 || rect.height === 0) return;
+        
         elements.push({
           text: cleanText,
+          role: role,
           x: rect.left,
           y: rect.top,
           width: rect.width,

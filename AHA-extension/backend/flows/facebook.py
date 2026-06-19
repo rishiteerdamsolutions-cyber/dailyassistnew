@@ -51,14 +51,22 @@ class FacebookFlow(SocialFlow):
                 "what's on your mind",
                 "write something",
                 "create post",
+                "post",
+                "share",
+                "status",
                 min_width=20,
                 min_height=10,
             )
 
         elif step == "type_text":
-            el = self.role_find(elements, "textbox")
+            el = self.role_find(elements, "textbox", min_width=100, min_height=30)
             if el is None:
-                el = self.fuzzy_find(elements, "what's on your mind")
+                el = self.fuzzy_find(
+                    elements, 
+                    "what's on your mind",
+                    "write something",
+                    "create post"
+                )
 
         elif step == "add_media":
             el = self.fuzzy_find(
@@ -67,6 +75,8 @@ class FacebookFlow(SocialFlow):
                 "photo",
                 "video",
                 "add photos",
+                "image",
+                "media",
                 min_width=16,
                 min_height=16,
             )
@@ -76,8 +86,11 @@ class FacebookFlow(SocialFlow):
                 elements,
                 "add photos/videos",
                 "add photos",
+                "add video",
                 "drag and drop",
                 "choose file",
+                "browser",
+                "upload",
                 min_width=40,
                 min_height=40,
             )
@@ -86,23 +99,17 @@ class FacebookFlow(SocialFlow):
             return None
 
         elif step == "submit_post":
-            el = self.fuzzy_find(
-                elements,
-                "post",
-                min_width=20,
-                min_height=10,
-            )
-            # Avoid matching "What's on your mind" post area
-            if el and str(el.get("text", "")).lower().strip() != "post":
-                el = None
-                for e in elements:
-                    text_val = str(e.get("text", "")).lower().strip()
-                    if text_val in ("post", "next"):
-                        w = float(e.get("width", 0))
-                        h = float(e.get("height", 0))
-                        if w >= 20 and h >= 10:
-                            el = e
-                            break
+            # For submit, exact matches are safer to avoid clicking "posts" in the feed
+            for e in elements:
+                text_val = str(e.get("text", "")).lower().strip()
+                if text_val in ("post", "next", "publish", "share"):
+                    w = float(e.get("width", 0))
+                    h = float(e.get("height", 0))
+                    if w >= 20 and h >= 10:
+                        return self.bbox(e)
+            
+            # Absolute fallback if exact match fails
+            el = self.fuzzy_find(elements, "post", "publish", "share", min_width=20, min_height=10)
 
         if el is None:
             return None
