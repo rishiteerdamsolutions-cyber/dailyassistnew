@@ -92,54 +92,50 @@ class SocialFlow(ABC):
         min_height: float = 0.0,
     ) -> Optional[Element]:
         """
-        Case-insensitive partial-match search across element text.
-
-        Tries each query in order and returns the first match.
-        Optionally filters by minimum bounding box size (useful for
-        distinguishing icon-only buttons from text labels).
-
-        Parameters
-        ----------
-        elements   Page element list.
-        *queries   One or more text substrings to search for.
-        min_width  Minimum element width to accept.
-        min_height Minimum element height to accept.
-
-        Returns
-        -------
-        The first matching element dict, or None.
+        Case-insensitive search across element text.
+        Finds the absolute BEST match across all elements, penalizing extra text.
         """
         import re
         from difflib import SequenceMatcher
+
+        best_element = None
+        best_score = 0.0
+
         for query in queries:
             q = re.sub(r'[^a-z0-9]', '', query.lower())
-            for el in elements:
-                el_text = re.sub(r'[^a-z0-9]', '', str(el.get("text", "")).lower())
-                
-                # Check for exact substring first
-                if q in el_text:
-                    match_ratio = 1.0
-                elif len(el_text) > 0 and len(q) > 0:
-                    # True fuzzy match (allows typos)
-                    match_ratio = SequenceMatcher(None, q, el_text).ratio()
-                    # Also check if q is a fuzzy substring of el_text
-                    if match_ratio < 0.8 and len(el_text) > len(q):
-                        # Find the best matching substring of length len(q)
-                        best_sub = 0
-                        for i in range(len(el_text) - len(q) + 1):
-                            sub = el_text[i:i+len(q)]
-                            r = SequenceMatcher(None, q, sub).ratio()
-                            if r > best_sub:
-                                best_sub = r
-                        match_ratio = max(match_ratio, best_sub)
-                else:
-                    match_ratio = 0.0
+            if not q: continue
 
-                if match_ratio >= 0.8:  # 80% similarity threshold
-                    w = float(el.get("width", 0))
-                    h = float(el.get("height", 0))
-                    if w >= min_width and h >= min_height:
-                        return el
+            for el in elements:
+                w = float(el.get("width", 0))
+                h = float(el.get("height", 0))
+                if w < min_width or h < min_height:
+                    continue
+
+                el_text = re.sub(r'[^a-z0-9]', '', str(el.get("text", "")).lower())
+                if not el_text: continue
+                
+                score = 0.0
+                if q == el_text:
+                    score = 1.0
+                elif q in el_text:
+                    # It's a substring. Score based on how much of the string it occupies
+                    # e.g. "post" in "post" = 1.0, "post" in "createpost" = 0.4
+                    score = 0.8 * (len(q) / len(el_text))
+                else:
+                    ratio = SequenceMatcher(None, q, el_text).ratio()
+                    if ratio >= 0.8:
+                        score = ratio * 0.7 # Penalize fuzzy matching
+
+                if score > best_score:
+                    best_score = score
+                    best_element = el
+
+            # If we found an excellent match (>0.85) for this query, stop searching
+            if best_score > 0.85:
+                break
+
+        if best_score > 0.5: # Require at least a 50% confidence match
+            return best_element
         return None
 
     @staticmethod
