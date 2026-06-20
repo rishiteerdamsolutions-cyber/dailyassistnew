@@ -55,21 +55,22 @@ class FacebookFlow(SocialFlow):
             )
 
         elif step == "type_text":
-            el = self.role_find(elements, "textbox", min_width=100, min_height=30)
+            el = self.role_find(elements, "textbox", min_width=50, min_height=10)
             if el is None:
                 el = self.fuzzy_find(
                     elements, 
                     "what's on your mind",
-                    min_width=100,
-                    min_height=30
+                    min_width=50,
+                    min_height=10
                 )
 
         elif step == "add_media":
             el = self.fuzzy_find(
                 elements,
+                "photo/video",
                 "add photos or videos",
-                min_width=16,
-                min_height=16,
+                min_width=10,
+                min_height=10,
             )
 
         elif step == "upload_signal":
