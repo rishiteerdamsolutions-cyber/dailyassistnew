@@ -229,6 +229,16 @@ async def _process_execute(ws: WebSocket, msg: dict) -> None:
         # We randomize this delay so it never repeats the exact same millisecond pattern
         await asyncio.sleep(random.uniform(2.2, 4.3))
 
+        # ── Pre-scan Hover Mechanics ──────────────────────────────────────────
+        if platform == "instagram" and step == "open_new_post":
+            # On medium screens, Instagram's sidebar is collapsed into icons.
+            # We must hover over the left edge to expand the sidebar and reveal the "Create" text.
+            logger.info("Instagram: Hovering left sidebar to reveal labels...")
+            hover_traj = generate_mouse_path(cursor_x, cursor_y, 20, 400, 10, 10)
+            await _send_mouse_move(ws, hover_traj.path, hover_traj.total_duration_ms)
+            cursor_x, cursor_y = hover_traj.path[-1]
+            await asyncio.sleep(0.8)  # Wait for CSS transition to expand sidebar
+
         # ── Re-scan the screen dynamically to see new modals or buttons ──────
         elements = await _send_rescan(ws)
 

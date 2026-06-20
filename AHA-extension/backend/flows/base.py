@@ -132,7 +132,7 @@ class SocialFlow(ABC):
                     if ratio >= 0.8:
                         score = ratio * 0.7 # Penalize fuzzy matching
 
-                if score > best_score:
+                if score >= best_score:
                     best_score = score
                     best_element = el
 
@@ -144,7 +144,6 @@ class SocialFlow(ABC):
             return best_element
         return None
 
-    @staticmethod
     @staticmethod
     def role_find(
         elements: list[Element],
