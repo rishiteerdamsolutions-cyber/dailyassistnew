@@ -132,6 +132,12 @@ class SocialFlow(ABC):
                     if ratio >= 0.8:
                         score = ratio * 0.7 # Penalize fuzzy matching
 
+                # ── Clickability Boost ──
+                # If this element is natively clickable (button, link, cursor: pointer),
+                # massively boost its score so it beats unclickable tooltips and text spans.
+                if el.get("clickable"):
+                    score += 0.5
+
                 if score >= best_score:
                     best_score = score
                     best_element = el

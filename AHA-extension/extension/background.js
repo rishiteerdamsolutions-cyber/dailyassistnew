@@ -591,9 +591,22 @@ async function scanScreen(tabId) {
 
         const style = window.getComputedStyle(element);
         if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return;
-        const rect = element.getBoundingClientRect();
-        if (rect.width === 0 || rect.height === 0) return;
         
+        const rect = element.getBoundingClientRect();
+        // Drop elements smaller than 5x5 (these are hidden screen-reader text traps)
+        // unless they are explicitly marked as textboxes
+        if (role !== 'textbox' && (rect.width < 5 || rect.height < 5)) return;
+        
+        const isClickable = (
+            style.cursor === 'pointer' ||
+            element.tagName.toLowerCase() === 'button' ||
+            element.tagName.toLowerCase() === 'a' ||
+            role === 'button' ||
+            role === 'link' ||
+            role === 'textbox' ||
+            element.getAttribute('onclick') !== null
+        );
+
         elements.push({
           text: cleanText,
           role: role,
@@ -601,6 +614,7 @@ async function scanScreen(tabId) {
           y: rect.top,
           width: rect.width,
           height: rect.height,
+          clickable: isClickable,
           confidence: 100
         });
       };

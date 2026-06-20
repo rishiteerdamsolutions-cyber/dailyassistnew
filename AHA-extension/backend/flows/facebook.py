@@ -59,7 +59,9 @@ class FacebookFlow(SocialFlow):
             if el is None:
                 el = self.fuzzy_find(
                     elements, 
-                    "what's on your mind"
+                    "what's on your mind",
+                    min_width=100,
+                    min_height=30
                 )
 
         elif step == "add_media":
