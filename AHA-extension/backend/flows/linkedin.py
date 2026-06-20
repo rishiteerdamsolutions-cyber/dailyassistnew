@@ -60,11 +60,13 @@ class LinkedInFlow(SocialFlow):
             )
 
         elif step == "type_text":
-            el = self.role_find(elements, "textbox", min_width=100, min_height=30)
+            el = self.role_find(elements, "textbox", min_width=50, min_height=10)
             if el is None:
                 el = self.fuzzy_find(
                     elements, 
                     "start a post",
+                    min_width=50,
+                    min_height=10
                 )
 
         elif step == "open_media":

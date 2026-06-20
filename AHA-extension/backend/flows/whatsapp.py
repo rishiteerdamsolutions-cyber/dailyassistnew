@@ -41,7 +41,7 @@ class WhatsAppFlow(SocialFlow):
     ) -> Optional[tuple[float, float, float, float]]:
         el = None
 
-        if step == "click_status_tab":
+        if step == "open_status":
             el = self.fuzzy_find(
                 elements,
                 "status",
@@ -49,7 +49,7 @@ class WhatsAppFlow(SocialFlow):
                 min_height=10,
             )
 
-        elif step == "click_new_status":
+        elif step == "click_add_status":
             el = self.fuzzy_find(
                 elements,
                 "new status",
@@ -71,14 +71,16 @@ class WhatsAppFlow(SocialFlow):
             return None
 
         elif step == "type_caption":
-            el = self.role_find(elements, "textbox", min_width=50, min_height=20)
+            el = self.role_find(elements, "textbox", min_width=50, min_height=10)
             if el is None:
                 el = self.fuzzy_find(
                     elements,
                     "type a caption",
+                    min_width=50,
+                    min_height=10
                 )
 
-        elif step == "send_status":
+        elif step == "submit_status":
             el = self.fuzzy_find(
                 elements,
                 "send",

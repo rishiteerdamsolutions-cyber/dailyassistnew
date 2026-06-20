@@ -55,12 +55,14 @@ class XFlow(SocialFlow):
             )
 
         elif step == "type_text":
-            el = self.role_find(elements, "textbox", min_width=100, min_height=30)
+            el = self.role_find(elements, "textbox", min_width=50, min_height=10)
             if el is None:
                 el = self.fuzzy_find(
                     elements, 
                     "what is happening",
-                    "what's happening"
+                    "what's happening",
+                    min_width=50,
+                    min_height=10
                 )
 
         elif step == "add_media":
