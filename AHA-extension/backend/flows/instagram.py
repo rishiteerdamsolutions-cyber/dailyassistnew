@@ -27,7 +27,7 @@ from flows.base import Element, SocialFlow
 class InstagramFlow(SocialFlow):
 
     def get_steps(self) -> list[str]:
-        steps: list[str] = ["open_new_post", "select_post_type"]
+        steps: list[str] = ["open_new_post"]
 
         has_image = bool(self.slots.get("image", False))
         has_video = bool(self.slots.get("video", False))
@@ -67,14 +67,6 @@ class InstagramFlow(SocialFlow):
                 el = self.role_find(elements, "link", "new post")
             if el is None:
                 el = self.role_find(elements, "menuitem", "new post")
-
-        elif step == "select_post_type":
-            el = self.fuzzy_find(
-                elements,
-                "post",
-                min_width=20,
-                min_height=10,
-            )
 
         elif step == "select_from_computer":
             el = self.fuzzy_find(
