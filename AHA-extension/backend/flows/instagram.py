@@ -87,12 +87,12 @@ class InstagramFlow(SocialFlow):
             )
 
         elif step == "type_caption":
-            el = self.role_find(elements, "textbox", min_width=50, min_height=20)
-            if el is None:
-                el = self.fuzzy_find(
-                    elements,
-                    "write a caption",
-                )
+            el = self.fuzzy_find(
+                elements,
+                "write a caption",
+                min_width=50,
+                min_height=10
+            )
 
         elif step == "share_post":
             el = self.fuzzy_find(

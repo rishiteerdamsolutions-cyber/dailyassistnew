@@ -71,14 +71,12 @@ class WhatsAppFlow(SocialFlow):
             return None
 
         elif step == "type_caption":
-            el = self.role_find(elements, "textbox", min_width=50, min_height=10)
-            if el is None:
-                el = self.fuzzy_find(
-                    elements,
-                    "type a caption",
-                    min_width=50,
-                    min_height=10
-                )
+            el = self.fuzzy_find(
+                elements,
+                "type a caption",
+                min_width=50,
+                min_height=10
+            )
 
         elif step == "submit_status":
             el = self.fuzzy_find(
