@@ -92,6 +92,7 @@ class LinkedInFlow(SocialFlow):
         elif step == "next_step":
             el = self.fuzzy_find(
                 elements,
+                "done",
                 "next",
                 min_width=20,
                 min_height=10,

@@ -36,7 +36,6 @@ class FacebookFlow(SocialFlow):
             steps.extend(["add_media", "upload_signal"])
 
         steps.append("submit_post")
-        steps.append("close_modal")
         return steps
 
     def find_target(
@@ -83,17 +82,6 @@ class FacebookFlow(SocialFlow):
                 min_width=20,
                 min_height=10,
             )
-
-        elif step == "close_modal":
-            el = self.fuzzy_find(
-                elements,
-                "close",
-                "x",
-                min_width=10,
-                min_height=10,
-            )
-            if el is None:
-                el = self.role_find(elements, "button", "close")
 
         if el is None:
             return None
