@@ -64,7 +64,8 @@ class LinkedInFlow(SocialFlow):
                 elements, 
                 "start a post",
                 min_width=50,
-                min_height=10
+                min_height=10,
+                boost_clickable=False
             )
 
         elif step == "open_media":

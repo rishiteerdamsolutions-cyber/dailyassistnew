@@ -75,7 +75,8 @@ class WhatsAppFlow(SocialFlow):
                 elements,
                 "type a caption",
                 min_width=50,
-                min_height=10
+                min_height=10,
+                boost_clickable=False
             )
 
         elif step == "submit_status":

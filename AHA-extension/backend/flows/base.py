@@ -90,6 +90,7 @@ class SocialFlow(ABC):
         *queries: str,
         min_width: float = 0.0,
         min_height: float = 0.0,
+        boost_clickable: bool = True
     ) -> Optional[Element]:
         """
         Case-insensitive search across element text.
@@ -134,8 +135,8 @@ class SocialFlow(ABC):
 
                 # ── Clickability Boost ──
                 # If this element is natively clickable (button, link, cursor: pointer),
-                # massively boost its score so it beats unclickable tooltips and text spans.
-                if el.get("clickable"):
+                # boost its score ONLY if boost_clickable is True.
+                if boost_clickable and el.get("clickable"):
                     score += 0.5
 
                 if score >= best_score:

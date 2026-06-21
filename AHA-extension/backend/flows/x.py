@@ -60,7 +60,8 @@ class XFlow(SocialFlow):
                 "what is happening",
                 "what's happening",
                 min_width=50,
-                min_height=10
+                min_height=10,
+                boost_clickable=False
             )
 
         elif step == "add_media":

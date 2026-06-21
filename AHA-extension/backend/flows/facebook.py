@@ -58,7 +58,8 @@ class FacebookFlow(SocialFlow):
                 elements, 
                 "what's on your mind",
                 min_width=50,
-                min_height=10
+                min_height=10,
+                boost_clickable=False
             )
 
         elif step == "add_media":

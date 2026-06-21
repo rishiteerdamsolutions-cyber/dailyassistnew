@@ -238,6 +238,12 @@ async def _process_execute(ws: WebSocket, msg: dict) -> None:
             await _send_mouse_move(ws, hover_traj.path, hover_traj.total_duration_ms)
             cursor_x, cursor_y = hover_traj.path[-1]
             await asyncio.sleep(0.8)  # Wait for CSS transition to expand sidebar
+            
+        if platform == "instagram" and step == "select_from_computer":
+            # Instagram's "Create new post" modal is a heavy React component that takes time to render.
+            # Give it an extra 2.5 seconds to guarantee it has fully appeared before we scan the DOM.
+            logger.info("Instagram: Waiting extra time for heavy React modal to open...")
+            await asyncio.sleep(2.5)
 
         # ── Re-scan the screen dynamically to see new modals or buttons ──────
         elements = await _send_rescan(ws)

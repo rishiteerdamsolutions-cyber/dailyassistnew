@@ -91,7 +91,8 @@ class InstagramFlow(SocialFlow):
                 elements,
                 "write a caption",
                 min_width=50,
-                min_height=10
+                min_height=10,
+                boost_clickable=False
             )
 
         elif step == "share_post":
