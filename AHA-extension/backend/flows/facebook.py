@@ -54,13 +54,13 @@ class FacebookFlow(SocialFlow):
             )
 
         elif step == "type_text":
-            el = self.fuzzy_find(
-                elements, 
-                "what's on your mind",
-                min_width=50,
-                min_height=10,
-                boost_clickable=False
-            )
+            # The modal's text area is an empty contenteditable div — it has NO
+            # placeholder text visible to the scanner.  Meanwhile the feed still
+            # has the "What's on your mind?" button in the DOM behind the modal.
+            # So we MUST NOT search by text.  Instead, find the LARGEST textbox
+            # on screen.  The composer is ~450×150 px; the search bar is ~250×36 px.
+            # min_height=60 guarantees the search bar is filtered out.
+            el = self.role_find(elements, "textbox", min_width=200, min_height=60)
 
         elif step == "add_media":
             el = self.fuzzy_find(
