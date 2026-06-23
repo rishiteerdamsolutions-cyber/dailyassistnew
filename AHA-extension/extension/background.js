@@ -18,13 +18,10 @@ const DEBUGGER_VERSION  = '1.3';
 
 // Dynamic config loader to override URLs (e.g. for local testing)
 async function loadConfig() {
-  // Disabled custom URL overrides to ensure connection to Render backend
-  /*
   const { customWsUrl } = await chrome.storage.local.get(['customWsUrl']);
   if (customWsUrl) {
     BACKEND_WS_URL = customWsUrl;
   }
-  */
 }
 
 // ─── WebSocket state (stored in chrome.storage.session to survive SW restart)
@@ -253,6 +250,8 @@ async function handleBackendMessage(msg) {
       break;
     case 'scan_screen':
     case 'SCAN_SCREEN':
+      // Give the page DOM a short window (e.g. 800ms) to update and settle before scanning
+      await sleep(800);
       const newElements = await scanScreen(_attachedTabId);
       safeSend({ type: 'scan_results', elements: newElements });
       break;
@@ -365,7 +364,11 @@ async function cdpKeyUp(tabId, key, text) {
 async function cdpTypeText(tabId, keystrokes) {
   if (typeof keystrokes === 'string') {
     for (const char of keystrokes) {
+      const isControl = char === '\r' || char === '\n' || char === '\t';
       await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'keyDown', key: char, text: char });
+      if (!isControl) {
+        await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'char', text: char, unmodifiedText: char });
+      }
       await sleep(20 + Math.random() * 20);
       await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'keyUp', key: char, text: char });
       await sleep(30 + Math.random() * 60);
@@ -377,6 +380,11 @@ async function cdpTypeText(tabId, keystrokes) {
     if (ks.shift) await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'keyDown', key: 'Shift' });
     
     await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'keyDown', key: ks.key, text: ks.text });
+    
+    if (ks.text) {
+      await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'char', text: ks.text, unmodifiedText: ks.text });
+    }
+    
     await sleep(20 + Math.random() * 20); // 20-40ms mechanical key press delay
     await cdpSend(tabId, 'Input.dispatchKeyEvent', { type: 'keyUp', key: ks.key, text: ks.text });
     
