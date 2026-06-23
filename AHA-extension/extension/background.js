@@ -575,32 +575,59 @@ async function scanScreen(tabId) {
     target: { tabId: tabId },
     world: "ISOLATED",
     func: () => {
+      const addedElements = new Set();
       const elements = [];
       const addNode = (text, element) => {
+        if (!element || addedElements.has(element)) return;
+
         let role = element.getAttribute('role') || '';
-        if (element.tagName.toLowerCase() === 'textarea' || element.tagName.toLowerCase() === 'input') {
+        const tagName = element.tagName.toLowerCase();
+        if (tagName === 'textarea' || tagName === 'input') {
             role = 'textbox';
         }
         if (element.getAttribute('contenteditable') === 'true') {
             role = 'textbox';
         }
 
-        const cleanText = text ? text.trim() : '';
-        // Drop empty nodes unless they are textboxes
-        if (!cleanText && role !== 'textbox' && role !== 'button') return;
+        let cleanText = text ? text.trim() : '';
+        if (!cleanText) {
+          cleanText = (
+            element.getAttribute('aria-label') ||
+            element.getAttribute('placeholder') ||
+            element.getAttribute('title') ||
+            element.getAttribute('data-placeholder') ||
+            element.getAttribute('alt') ||
+            (tagName !== 'input' && tagName !== 'textarea' ? element.innerText : '') ||
+            ''
+          ).trim();
+        }
+
+        // Drop empty nodes unless they are textboxes or buttons
+        if (!cleanText && role !== 'textbox' && role !== 'button' && tagName !== 'button' && tagName !== 'input' && tagName !== 'textarea') return;
 
         const style = window.getComputedStyle(element);
         if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return;
         
         const rect = element.getBoundingClientRect();
         // Drop elements smaller than 5x5 (these are hidden screen-reader text traps)
-        // unless they are explicitly marked as textboxes
-        if (role !== 'textbox' && (rect.width < 5 || rect.height < 5)) return;
+        // unless they are explicitly marked as textboxes/buttons
+        if (role !== 'textbox' && role !== 'button' && tagName !== 'button' && tagName !== 'input' && tagName !== 'textarea' && (rect.width < 5 || rect.height < 5)) return;
         
+        // Occlusion check: verify if the center of the element is covered by an overlay or modal
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        if (centerX >= 0 && centerY >= 0 && centerX <= window.innerWidth && centerY <= window.innerHeight) {
+          const topEl = document.elementFromPoint(centerX, centerY);
+          // If topEl exists and is neither the element itself nor inside/containing it, it is occluded!
+          if (topEl && topEl !== element && !element.contains(topEl) && !topEl.contains(element)) {
+            return;
+          }
+        }
+
         const isClickable = (
             style.cursor === 'pointer' ||
-            element.tagName.toLowerCase() === 'button' ||
-            element.tagName.toLowerCase() === 'a' ||
+            tagName === 'button' ||
+            tagName === 'a' ||
             role === 'button' ||
             role === 'link' ||
             role === 'textbox' ||
@@ -617,6 +644,8 @@ async function scanScreen(tabId) {
           clickable: isClickable,
           confidence: 100
         });
+
+        addedElements.add(element);
       };
 
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
@@ -625,10 +654,12 @@ async function scanScreen(tabId) {
         if (node.parentElement) addNode(node.nodeValue, node.parentElement);
       }
 
-      const labeled = document.querySelectorAll('[aria-label], [title], img[alt], input[placeholder], textarea[placeholder], [data-placeholder]');
-      for (const el of labeled) {
-        const text = el.getAttribute('aria-label') || el.getAttribute('title') || el.getAttribute('alt') || el.getAttribute('placeholder') || el.getAttribute('data-placeholder');
-        addNode(text, el);
+      // Query all labeled and interactive elements to ensure nothing is missed
+      const interactive = document.querySelectorAll(
+        'button, input, textarea, a, [contenteditable="true"], [role="button"], [role="textbox"], [role="link"], [onclick], [aria-label], [title], img[alt], [data-placeholder]'
+      );
+      for (const el of interactive) {
+        addNode('', el);
       }
 
       return elements;
